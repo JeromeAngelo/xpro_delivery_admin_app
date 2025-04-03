@@ -1,18 +1,30 @@
-import 'dart:async';
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_state.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/domain/entity/trip_update_entity.dart';
+import 'package:desktop_app/core/enums/trip_update_status.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 class TripMapWidget extends StatefulWidget {
   final String tripId;
+  final TripEntity? trip;
+  final List<TripUpdateEntity> tripUpdates;
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback onRefresh;
   final double height;
 
-  const TripMapWidget({super.key, required this.tripId, this.height = 300.0});
+  const TripMapWidget({
+    super.key,
+    required this.tripId,
+    this.trip,
+    required this.tripUpdates,
+    required this.isLoading,
+    this.errorMessage,
+    required this.onRefresh,
+    this.height = 300.0,
+  });
 
   @override
   State<TripMapWidget> createState() => _TripMapWidgetState();
@@ -24,7 +36,8 @@ class _TripMapWidgetState extends State<TripMapWidget>
   bool isMapReady = false;
   late AnimationController _controller;
   late Animation<double> _heightAnimation;
-  Timer? _refreshTimer;
+  bool isActivityLogExpanded = false;
+  final ScrollController _horizontalScrollController = ScrollController();
 
   @override
   void initState() {
@@ -44,22 +57,6 @@ class _TripMapWidgetState extends State<TripMapWidget>
       setState(() {
         isMapReady = true;
       });
-
-      // Start auto-refresh timer
-      _startRefreshTimer();
-    });
-  }
-
-  void _startRefreshTimer() {
-    // Cancel any existing timer
-    _refreshTimer?.cancel();
-
-    // Create a new timer that refreshes the trip data every minute
-    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      if (mounted) {
-        context.read<TripBloc>().add(GetTripTicketByIdEvent(widget.tripId));
-        debugPrint('🔄 Auto-refreshing trip map data');
-      }
     });
   }
 
@@ -73,41 +70,39 @@ class _TripMapWidgetState extends State<TripMapWidget>
       ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
       _controller.forward(from: 0);
     }
-
-    if (oldWidget.tripId != widget.tripId) {
-      // If trip ID changed, refresh the data
-      context.read<TripBloc>().add(GetTripTicketByIdEvent(widget.tripId));
-      _startRefreshTimer();
-    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _refreshTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TripBloc, TripState>(
-      builder: (context, state) {
-        if (state is TripLoading) {
-          return _buildLoadingCard();
-        }
+    if (widget.isLoading) {
+      return _buildLoadingCard();
+    }
 
-        if (state is TripError) {
-          return _buildErrorCard(state.message);
-        }
+    if (widget.errorMessage != null) {
+      return _buildErrorCard(widget.errorMessage!);
+    }
 
-        if (state is TripTicketLoaded) {
-          final trip = state.trip;
-          return _buildMapCard(trip);
-        }
+    if (widget.trip != null) {
+      return _buildMapWithActivityLog(widget.trip!);
+    }
 
-        // Default placeholder if no trip data is available yet
-        return _buildPlaceholderCard();
-      },
+    // Default placeholder if no trip data is available yet
+    return _buildPlaceholderCard();
+  }
+
+  Widget _buildMapWithActivityLog(TripEntity trip) {
+    return Column(
+      children: [
+        _buildMapCard(trip),
+        const SizedBox(height: 16),
+        _buildActivityLogCard(trip),
+      ],
     );
   }
 
@@ -118,6 +113,59 @@ class _TripMapWidgetState extends State<TripMapWidget>
 
     // Check if we have valid coordinates
     final hasValidCoordinates = lat != 0.0 && lng != 0.0;
+
+    // Prepare markers for trip updates with valid coordinates
+    final updateMarkers =
+        widget.tripUpdates
+            .where(
+              (update) =>
+                  update.latitude != null &&
+                  update.longitude != null &&
+                  update.latitude!.isNotEmpty &&
+                  update.longitude!.isNotEmpty,
+            )
+            .map((update) {
+              final updateLat = double.tryParse(update.latitude!) ?? 0.0;
+              final updateLng = double.tryParse(update.longitude!) ?? 0.0;
+              if (updateLat == 0.0 || updateLng == 0.0) return null;
+
+              return Marker(
+                point: LatLng(updateLat, updateLng),
+                width: 30,
+                height: 30,
+                child: _buildUpdateMarker(update),
+              );
+            })
+            .whereType<Marker>() // Filter out null markers
+            .toList();
+
+    // Add current trip location marker if valid
+    final allMarkers = [...updateMarkers];
+    if (hasValidCoordinates) {
+      allMarkers.add(
+        Marker(
+          point: LatLng(lat, lng),
+          width: 40,
+          height: 40,
+          child: Icon(
+            Icons.local_shipping,
+            color: Theme.of(context).primaryColor,
+            size: 40,
+          ),
+        ),
+      );
+    }
+
+    // Determine map center - use trip location or first update location
+    LatLng mapCenter;
+    if (hasValidCoordinates) {
+      mapCenter = LatLng(lat, lng);
+    } else if (updateMarkers.isNotEmpty) {
+      mapCenter = updateMarkers.first.point;
+    } else {
+      // Default to a fallback location if no valid coordinates
+      mapCenter = const LatLng(0, 0);
+    }
 
     return Card(
       elevation: 2,
@@ -141,19 +189,18 @@ class _TripMapWidgetState extends State<TripMapWidget>
                     IconButton(
                       icon: const Icon(Icons.refresh),
                       tooltip: 'Refresh Map',
-                      onPressed: () {
-                        context.read<TripBloc>().add(
-                          GetTripTicketByIdEvent(widget.tripId),
-                        );
-                      },
+                      onPressed: widget.onRefresh,
                     ),
                     IconButton(
                       icon: const Icon(Icons.fullscreen),
                       tooltip: 'Expand Map',
                       onPressed:
-                          hasValidCoordinates
-                              ? () =>
-                                  _showFullScreenMap(context, LatLng(lat, lng))
+                          allMarkers.isNotEmpty
+                              ? () => _showFullScreenMap(
+                                context,
+                                mapCenter,
+                                allMarkers,
+                              )
                               : null,
                     ),
                   ],
@@ -162,7 +209,7 @@ class _TripMapWidgetState extends State<TripMapWidget>
             ),
             const SizedBox(height: 8),
 
-            if (!hasValidCoordinates)
+            if (!hasValidCoordinates && updateMarkers.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Text(
@@ -179,7 +226,7 @@ class _TripMapWidgetState extends State<TripMapWidget>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Current Location: ${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}',
+                    'Current Trip Location: ${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   Text(
@@ -190,6 +237,21 @@ class _TripMapWidgetState extends State<TripMapWidget>
                   ),
                   const SizedBox(height: 8),
                 ],
+              ),
+
+            if (updateMarkers.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: Colors.blue[400]),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Map shows ${updateMarkers.length} location updates',
+                      style: TextStyle(fontSize: 13, color: Colors.blue[700]),
+                    ),
+                  ],
+                ),
               ),
 
             AnimatedBuilder(
@@ -205,48 +267,88 @@ class _TripMapWidgetState extends State<TripMapWidget>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child:
-                        hasValidCoordinates && isMapReady
-                            ? _buildMap(LatLng(lat, lng))
+                        allMarkers.isNotEmpty && isMapReady
+                            ? _buildMap(mapCenter, allMarkers)
                             : _buildMapPlaceholder(),
                   ),
                 );
               },
             ),
 
-            if (hasValidCoordinates && isMapReady)
+            if (allMarkers.isNotEmpty && isMapReady)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.zoom_in),
-                      tooltip: 'Zoom In',
-                      onPressed: () {
-                        final currentZoom = mapController.camera.zoom;
-                        mapController.move(
-                          mapController.camera.center,
-                          currentZoom + 1,
-                        );
-                      },
+                    // Map legend
+                    Row(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.local_shipping,
+                              color: Theme.of(context).primaryColor,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Current Location',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 16),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              color: Colors.red[400],
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Location Updates',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.zoom_out),
-                      tooltip: 'Zoom Out',
-                      onPressed: () {
-                        final currentZoom = mapController.camera.zoom;
-                        mapController.move(
-                          mapController.camera.center,
-                          currentZoom - 1,
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.my_location),
-                      tooltip: 'Center Map',
-                      onPressed: () {
-                        mapController.move(LatLng(lat, lng), 16);
-                      },
+
+                    // Map controls
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.zoom_in, size: 20),
+                          tooltip: 'Zoom In',
+                          onPressed: () {
+                            final currentZoom = mapController.camera.zoom;
+                            mapController.move(
+                              mapController.camera.center,
+                              currentZoom + 1,
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.zoom_out, size: 20),
+                          tooltip: 'Zoom Out',
+                          onPressed: () {
+                            final currentZoom = mapController.camera.zoom;
+                            mapController.move(
+                              mapController.camera.center,
+                              currentZoom - 1,
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.my_location, size: 20),
+                          tooltip: 'Center Map',
+                          onPressed: () {
+                            mapController.move(mapCenter, 14);
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -257,13 +359,60 @@ class _TripMapWidgetState extends State<TripMapWidget>
     );
   }
 
-  Widget _buildMap(LatLng location) {
+  Widget _buildUpdateMarker(TripUpdateEntity update) {
+    // Different colors based on status
+    Color markerColor;
+    switch (update.status) {
+      case TripUpdateStatus.generalUpdate:
+        markerColor = Colors.green;
+        break;
+      case TripUpdateStatus.refuelling:
+        markerColor = Colors.blue;
+        break;
+      case TripUpdateStatus.roadClosure:
+        markerColor = Colors.orange;
+        break;
+      case TripUpdateStatus.others:
+        markerColor = Colors.purple;
+        break;
+      default:
+        markerColor = Colors.red;
+    }
+
+    return Stack(
+      children: [
+        Icon(Icons.location_on, color: markerColor, size: 30),
+        Positioned(
+          right: 0,
+          top: 0,
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: markerColor, width: 1),
+            ),
+            child: Text(
+              (widget.tripUpdates.indexOf(update) + 1).toString(),
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
+                color: markerColor,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMap(LatLng center, List<Marker> markers) {
     try {
       return FlutterMap(
         mapController: mapController,
         options: MapOptions(
-          initialCenter: location,
-          initialZoom: 16,
+          initialCenter: center,
+          initialZoom: 14,
           minZoom: 5,
           maxZoom: 18,
           // Enable drag with mouse
@@ -278,20 +427,18 @@ class _TripMapWidgetState extends State<TripMapWidget>
             urlTemplate: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
             userAgentPackageName: 'com.example.desktop_app',
           ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                point: location,
-                width: 40,
-                height: 40,
-                child: Icon(
-                  Icons.local_shipping,
-                  color: Theme.of(context).primaryColorDark,
-                  size: 40,
+          // Add polyline to connect markers in chronological order
+          if (markers.length > 1)
+            PolylineLayer(
+              polylines: [
+                Polyline(
+                  points: markers.map((marker) => marker.point).toList(),
+                  color: Colors.blue.withOpacity(0.7),
+                  strokeWidth: 3.0,
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          MarkerLayer(markers: markers),
           // Add a custom mouse cursor layer
           RichAttributionWidget(
             attributions: [
@@ -302,16 +449,748 @@ class _TripMapWidgetState extends State<TripMapWidget>
         ],
       );
     } catch (e) {
-      debugPrint('Error building map: $e');
+      debugPrint('❌ Error building map: $e');
       return SizedBox(
         height: widget.height,
         child: Center(
-          child: Text(
-            'Error loading map: ${e.toString().substring(0, 100)}...',
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+              const SizedBox(height: 16),
+              Text(
+                'Error rendering map: ${e.toString().substring(0, min(100, e.toString().length))}...',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: widget.onRefresh,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
           ),
         ),
       );
     }
+  }
+
+  Widget _buildActivityLogCard(TripEntity trip) {
+    // Get the available width (same as the map width)
+    final availableWidth =
+        MediaQuery.of(context).size.width - 64; // Account for padding
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Activity Log',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: Icon(
+                    isActivityLogExpanded
+                        ? Icons.expand_less
+                        : Icons.expand_more,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      isActivityLogExpanded = !isActivityLogExpanded;
+                    });
+                  },
+                ),
+              ],
+            ),
+
+            if (widget.tripUpdates.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.history, size: 48, color: Colors.grey[400]),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No activity logs available yet',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              AnimatedCrossFade(
+                firstChild: _buildActivityLogTablePreview(availableWidth),
+                secondChild: _buildActivityLogTableFull(availableWidth),
+                crossFadeState:
+                    isActivityLogExpanded
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 300),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivityLogTablePreview(double tableWidth) {
+    // Show only the latest 3 updates
+    final previewUpdates = widget.tripUpdates.take(3).toList();
+
+    return Column(
+      children: [
+        _buildActivityLogTable(previewUpdates, tableWidth),
+        if (widget.tripUpdates.length > 3)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  isActivityLogExpanded = true;
+                });
+              },
+              child: Text(
+                'Show all ${widget.tripUpdates.length} activities',
+                style: TextStyle(color: Theme.of(context).primaryColor),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildActivityLogTableFull(double tableWidth) {
+    // Sort updates by timestamp (newest first)
+    final sortedUpdates = List<TripUpdateEntity>.from(widget.tripUpdates)..sort(
+      (a, b) => (b.date ?? DateTime.now()).compareTo(a.date ?? DateTime.now()),
+    );
+
+    return _buildActivityLogTable(sortedUpdates, tableWidth);
+  }
+
+  Widget _buildActivityLogTable(
+    List<TripUpdateEntity> updates,
+    double tableWidth,
+  ) {
+    // Calculate column widths to fill the available space
+    // Status: 15%, Description: 30%, Date: 20%, Coordinates: 20%, Actions: 15%
+    final statusWidth = tableWidth * 0.15;
+    final descriptionWidth = tableWidth * 0.20;
+    final dateWidth = tableWidth * 0.20;
+    final coordinatesWidth = tableWidth * 0.20;
+    final actionsWidth = tableWidth * 0.15;
+
+    // Create explicit ScrollController for horizontal scrolling
+    final ScrollController horizontalScrollController = ScrollController();
+
+    return Container(
+      width: tableWidth,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Horizontal scroll hint
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Icon(Icons.swipe, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  'Scroll horizontally to see more',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Table with horizontal scrolling
+          Scrollbar(
+            controller: horizontalScrollController,
+            thumbVisibility: true,
+            trackVisibility: true,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              controller: horizontalScrollController,
+              child: SingleChildScrollView(
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(
+                    Colors.grey.shade100,
+                  ),
+                  dataRowMinHeight: 48,
+                  dataRowMaxHeight: 64,
+                  headingTextStyle: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  columnSpacing: 16,
+                  border: TableBorder(
+                    horizontalInside: BorderSide(
+                      color: Colors.grey[300]!,
+                      width: 1,
+                    ),
+                  ),
+                  columns: [
+                    DataColumn(
+                      label: SizedBox(
+                        width:
+                            statusWidth - 32, // Account for padding and spacing
+                        child: const Text('Status'),
+                      ),
+                    ),
+                    DataColumn(
+                      label: SizedBox(
+                        width: descriptionWidth - 32,
+                        child: const Text('Description'),
+                      ),
+                    ),
+                    DataColumn(
+                      label: SizedBox(
+                        width: dateWidth - 32,
+                        child: const Text('Date & Time'),
+                      ),
+                    ),
+                    DataColumn(
+                      label: SizedBox(
+                        width: coordinatesWidth - 32,
+                        child: const Text('Coordinates'),
+                      ),
+                    ),
+                    DataColumn(
+                      label: SizedBox(
+                        width: actionsWidth - 32,
+                        child: const Text('Actions'),
+                      ),
+                    ),
+                  ],
+                  rows:
+                      updates.map((update) {
+                        // Format timestamp
+                        final formattedTime =
+                            update.date != null
+                                ? DateFormat(
+                                  'MMM dd, yyyy hh:mm a',
+                                ).format(update.date!)
+                                : 'N/A';
+
+                        // Determine status color
+                        switch (update.status) {
+                          case TripUpdateStatus.generalUpdate:
+                            break;
+                          case TripUpdateStatus.refuelling:
+                            break;
+                          case TripUpdateStatus.roadClosure:
+                            break;
+                          case TripUpdateStatus.others:
+                            break;
+                          default:
+                        }
+
+                        // Check if we have valid coordinates
+                        final hasCoordinates =
+                            update.latitude != null &&
+                            update.longitude != null &&
+                            update.latitude!.isNotEmpty &&
+                            update.longitude!.isNotEmpty;
+
+                        // Check if we have an image
+                        final hasImage =
+                            update.image != null && update.image!.isNotEmpty;
+
+                        return DataRow(
+                          cells: [
+                            // Status Cell
+                            DataCell(
+                              SizedBox(
+                                child: _buildTripUpdateStatusChip(
+                                  update.status,
+                                ),
+                              ),
+                            ),
+
+                            // Description Cell
+                            DataCell(
+                              SizedBox(
+                                width: descriptionWidth - 32,
+                                child: Text(
+                                  update.description ?? 'No description',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                ),
+                              ),
+                            ),
+
+                            // Date & Time Cell
+                            DataCell(
+                              SizedBox(
+                                width: dateWidth - 32,
+                                child: Text(
+                                  formattedTime,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+
+                            // Coordinates Cell
+                            DataCell(
+                              SizedBox(
+                                width: coordinatesWidth - 32,
+                                child:
+                                    hasCoordinates
+                                        ? Text(
+                                          '${update.latitude}, ${update.longitude}',
+                                          overflow: TextOverflow.ellipsis,
+                                        )
+                                        : const Text(
+                                          'No coordinates',
+                                          style: TextStyle(
+                                            fontStyle: FontStyle.italic,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                              ),
+                            ),
+
+                            // Actions Cell
+                            DataCell(
+                              SizedBox(
+                                width: actionsWidth - 32,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // View on Map Button
+                                    if (hasCoordinates)
+                                      Tooltip(
+                                        message: 'View on Map',
+                                        child: IconButton(
+                                          icon: const Icon(
+                                            Icons.map,
+                                            color: Colors.blue,
+                                            size: 20,
+                                          ),
+                                          onPressed: () {
+                                            final lat =
+                                                double.tryParse(
+                                                  update.latitude!,
+                                                ) ??
+                                                0.0;
+                                            final lng =
+                                                double.tryParse(
+                                                  update.longitude!,
+                                                ) ??
+                                                0.0;
+                                            if (lat != 0.0 && lng != 0.0) {
+                                              mapController.move(
+                                                LatLng(lat, lng),
+                                                16,
+                                              );
+
+                                              // Scroll to the map section
+                                              Scrollable.ensureVisible(
+                                                context,
+                                                duration: const Duration(
+                                                  milliseconds: 500,
+                                                ),
+                                                curve: Curves.easeInOut,
+                                              );
+                                            }
+                                          },
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                        ),
+                                      )
+                                    else
+                                      const SizedBox(width: 20),
+
+                                    const SizedBox(width: 8),
+
+                                    // View Image Button
+                                    if (hasImage)
+                                      Tooltip(
+                                        message: 'View Image',
+                                        child: IconButton(
+                                          icon: const Icon(
+                                            Icons.image,
+                                            color: Colors.green,
+                                            size: 20,
+                                          ),
+                                          onPressed: () {
+                                            _showImageDialog(
+                                              context,
+                                              update.image!,
+                                            );
+                                          },
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                        ),
+                                      )
+                                    else
+                                      const SizedBox(width: 20),
+
+                                    const SizedBox(width: 8),
+
+                                    // View Details Button
+                                    Tooltip(
+                                      message: 'View Details',
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.info_outline,
+                                          color: Colors.orange,
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          _showUpdateDetailsDialog(
+                                            context,
+                                            update,
+                                          );
+                                        },
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Add this helper method to format status names
+
+
+  // TripStatusChip
+  Widget _buildTripUpdateStatusChip(TripUpdateStatus? status) {
+    Color color;
+    String statusText;
+
+    switch (status) {
+      case TripUpdateStatus.generalUpdate:
+        color = Colors.green;
+        statusText = 'General Update';
+        break;
+      case TripUpdateStatus.refuelling:
+        color = Colors.blue;
+        statusText = 'Refuelling';
+        break;
+      case TripUpdateStatus.roadClosure:
+        color = Colors.orange;
+        statusText = 'Road Closure';
+        break;
+      case TripUpdateStatus.others:
+        color = Colors.purple;
+        statusText = 'Others';
+        break;
+      default:
+        color = Colors.red;
+        statusText = 'Unknown';
+    }
+
+    return Chip(
+      label: Text(
+        statusText,
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
+      backgroundColor: color,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  void _showImageDialog(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppBar(
+                title: const Text('Update Image'),
+                automaticallyImplyLeading: false,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Image.network(
+                      imageUrl,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value:
+                                loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Column(
+                          children: [
+                            Icon(
+                              Icons.broken_image,
+                              size: 64,
+                              color: Colors.red[300],
+                            ),
+                            const SizedBox(height: 16),
+                            Text('Failed to load image: $error'),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.download),
+                          label: const Text('Download'),
+                          onPressed: () {
+                            // Implement download functionality
+                            // This would typically use a plugin like url_launcher
+                            // to open the image in a browser for download
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showUpdateDetailsDialog(BuildContext context, TripUpdateEntity update) {
+    final formattedTime =
+        update.date != null
+            ? DateFormat('MMM dd, yyyy hh:mm a').format(update.date!)
+            : 'N/A';
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppBar(
+                title: const Text('Update Details'),
+                automaticallyImplyLeading: false,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Status
+                    Row(
+                      children: [
+                        const Icon(Icons.info_outline, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Status:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(update.status?.name ?? 'Unknown'),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Description
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.description, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Description:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(update.description ?? 'No description'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Date & Time
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Date & Time:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(formattedTime),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Coordinates
+                    if (update.latitude != null && update.longitude != null)
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, size: 20),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Coordinates:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 8),
+                          Text('${update.latitude}, ${update.longitude}'),
+                        ],
+                      ),
+
+                    // Image preview if available
+                    if (update.image != null && update.image!.isNotEmpty)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Image:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              update.image!,
+                              height: 200,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (
+                                context,
+                                child,
+                                loadingProgress,
+                              ) {
+                                if (loadingProgress == null) return child;
+                                return SizedBox(
+                                  height: 200,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      value:
+                                          loadingProgress.expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                              : null,
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return SizedBox(
+                                  height: 200,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.broken_image,
+                                          size: 48,
+                                          color: Colors.red[300],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        const Text('Failed to load image'),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+
+                    const SizedBox(height: 16),
+
+                    // Action buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (update.latitude != null &&
+                            update.longitude != null &&
+                            update.latitude!.isNotEmpty &&
+                            update.longitude!.isNotEmpty)
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.map),
+                            label: const Text('Show on Map'),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              final lat =
+                                  double.tryParse(update.latitude!) ?? 0.0;
+                              final lng =
+                                  double.tryParse(update.longitude!) ?? 0.0;
+                              if (lat != 0.0 && lng != 0.0) {
+                                mapController.move(LatLng(lat, lng), 16);
+                              }
+                            },
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildMapPlaceholder() {
@@ -395,11 +1274,7 @@ class _TripMapWidgetState extends State<TripMapWidget>
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: () {
-                        context.read<TripBloc>().add(
-                          GetTripTicketByIdEvent(widget.tripId),
-                        );
-                      },
+                      onPressed: widget.onRefresh,
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                     ),
@@ -434,11 +1309,7 @@ class _TripMapWidgetState extends State<TripMapWidget>
                 IconButton(
                   icon: const Icon(Icons.refresh),
                   tooltip: 'Refresh Map',
-                  onPressed: () {
-                    context.read<TripBloc>().add(
-                      GetTripTicketByIdEvent(widget.tripId),
-                    );
-                  },
+                  onPressed: widget.onRefresh,
                 ),
               ],
             ),
@@ -465,11 +1336,7 @@ class _TripMapWidgetState extends State<TripMapWidget>
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: () {
-                        context.read<TripBloc>().add(
-                          GetTripTicketByIdEvent(widget.tripId),
-                        );
-                      },
+                      onPressed: widget.onRefresh,
                       icon: const Icon(Icons.refresh),
                       label: const Text('Load Data'),
                     ),
@@ -483,7 +1350,11 @@ class _TripMapWidgetState extends State<TripMapWidget>
     );
   }
 
-  void _showFullScreenMap(BuildContext context, LatLng location) {
+  void _showFullScreenMap(
+    BuildContext context,
+    LatLng center,
+    List<Marker> markers,
+  ) {
     showDialog(
       context: context,
       builder:
@@ -516,8 +1387,8 @@ class _TripMapWidgetState extends State<TripMapWidget>
                       borderRadius: BorderRadius.circular(8),
                       child: FlutterMap(
                         options: MapOptions(
-                          initialCenter: location,
-                          initialZoom: 16,
+                          initialCenter: center,
+                          initialZoom: 14,
                           minZoom: 5,
                           maxZoom: 18,
                         ),
@@ -527,20 +1398,21 @@ class _TripMapWidgetState extends State<TripMapWidget>
                                 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
                             userAgentPackageName: 'com.example.desktop_app',
                           ),
-                          MarkerLayer(
-                            markers: [
-                              Marker(
-                                point: location,
-                                width: 40,
-                                height: 40,
-                                child: Icon(
-                                  Icons.local_shipping,
-                                  color: Theme.of(context).primaryColor,
-                                  size: 40,
+                          // Add polyline to connect markers in chronological order
+                          if (markers.length > 1)
+                            PolylineLayer(
+                              polylines: [
+                                Polyline(
+                                  points:
+                                      markers
+                                          .map((marker) => marker.point)
+                                          .toList(),
+                                  color: Colors.blue.withOpacity(0.7),
+                                  strokeWidth: 3.0,
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
+                          MarkerLayer(markers: markers),
                           RichAttributionWidget(
                             attributions: [
                               TextSourceAttribution(
@@ -554,12 +1426,32 @@ class _TripMapWidgetState extends State<TripMapWidget>
                     ),
                   ),
                   const SizedBox(height: 16),
+                  // Map legend
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'Coordinates: ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.local_shipping,
+                            color: Theme.of(context).primaryColor,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text('Current Location'),
+                        ],
+                      ),
+                      const SizedBox(width: 24),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            color: Colors.red[400],
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text('Location Updates'),
+                        ],
                       ),
                     ],
                   ),
@@ -575,17 +1467,60 @@ class _TripMapWidgetState extends State<TripMapWidget>
 extension TripEntityLocationExtension on TripEntity {
   double? get latitude {
     try {
-      return double.tryParse(totalTripDistance?.split(',')[0] ?? '');
+      // First try to parse from totalTripDistance field which might contain "lat,lng"
+      if (totalTripDistance != null && totalTripDistance!.contains(',')) {
+        final parts = totalTripDistance!.split(',');
+        if (parts.length >= 2) {
+          final lat = double.tryParse(parts[0].trim());
+          if (lat != null) return lat;
+        }
+      }
+
+      // If that fails, try to get from tripUpdates if available
+      if (tripUpdates.isNotEmpty) {
+        for (final update in tripUpdates) {
+          if (update.latitude != null && update.latitude!.isNotEmpty) {
+            final lat = double.tryParse(update.latitude!);
+            if (lat != null) return lat;
+          }
+        }
+      }
+
+      return null;
     } catch (e) {
+      debugPrint('Error parsing latitude: $e');
       return null;
     }
   }
 
   double? get longitude {
     try {
-      return double.tryParse(totalTripDistance?.split(',')[1] ?? '');
+      // First try to parse from totalTripDistance field which might contain "lat,lng"
+      if (totalTripDistance != null && totalTripDistance!.contains(',')) {
+        final parts = totalTripDistance!.split(',');
+        if (parts.length >= 2) {
+          final lng = double.tryParse(parts[1].trim());
+          if (lng != null) return lng;
+        }
+      }
+
+      // If that fails, try to get from tripUpdates if available
+      if (tripUpdates.isNotEmpty) {
+        for (final update in tripUpdates) {
+          if (update.longitude != null && update.longitude!.isNotEmpty) {
+            final lng = double.tryParse(update.longitude!);
+            if (lng != null) return lng;
+          }
+        }
+      }
+
+      return null;
     } catch (e) {
+      debugPrint('Error parsing longitude: $e');
       return null;
     }
   }
 }
+
+// Helper function to get min of two integers
+int min(int a, int b) => a < b ? a : b;

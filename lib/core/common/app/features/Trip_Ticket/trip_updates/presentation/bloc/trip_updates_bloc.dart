@@ -41,32 +41,39 @@ class TripUpdatesBloc extends Bloc<TripUpdatesEvent, TripUpdatesState> {
     on<DeleteAllTripUpdatesEvent>(_onDeleteAllTripUpdates);
   }
 
-  Future<void> _onGetTripUpdates(
-    GetTripUpdatesEvent event,
-    Emitter<TripUpdatesState> emit,
-  ) async {
-    debugPrint('🔄 Getting trip updates for trip: ${event.tripId}');
+Future<void> _onGetTripUpdates(
+  GetTripUpdatesEvent event,
+  Emitter<TripUpdatesState> emit,
+) async {
+  debugPrint('🔄 Getting trip updates for trip: ${event.tripId}');
 
-    if (_cachedState is TripUpdatesLoaded) {
-      emit(_cachedState!);
-    } else {
-      emit(TripUpdatesLoading());
-    }
-
-    final result = await _getTripUpdates(event.tripId);
-    result.fold(
-      (failure) {
-        debugPrint('❌ Failed to get trip updates: ${failure.message}');
-        emit(TripUpdatesError(failure.message));
-      },
-      (updates) {
-        debugPrint('✅ Successfully retrieved ${updates.length} trip updates');
-        final newState = TripUpdatesLoaded(updates);
-        _cachedState = newState;
-        emit(newState);
-      },
-    );
+  // Only use cache if it's for the same trip ID
+  final shouldUseCache = _cachedState is TripUpdatesLoaded && 
+                         (_cachedState as TripUpdatesLoaded).updates.isNotEmpty && 
+                         (_cachedState as TripUpdatesLoaded).updates.first.trip?.id == event.tripId;
+  
+  if (shouldUseCache) {
+    emit(_cachedState!);
+  } else {
+    emit(TripUpdatesLoading());
   }
+
+  final result = await _getTripUpdates(event.tripId);
+  result.fold(
+    (failure) {
+      debugPrint('❌ Failed to get trip updates: ${failure.message}');
+      emit(TripUpdatesError(failure.message));
+    },
+    (updates) {
+      debugPrint('✅ Successfully retrieved ${updates.length} trip updates');
+      final newState = TripUpdatesLoaded(updates);
+      _cachedState = newState;
+      emit(newState);
+    },
+  );
+}
+
+
 
   Future<void> _onGetAllTripUpdates(
     GetAllTripUpdatesEvent event,

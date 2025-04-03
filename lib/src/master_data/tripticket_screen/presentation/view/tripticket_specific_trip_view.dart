@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_bloc.dart';
 import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_event.dart';
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
@@ -6,9 +8,14 @@ import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_bloc.dart';
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_state.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart';
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_state.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/domain/entity/trip_update_entity.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/presentation/bloc/trip_updates_bloc.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/presentation/bloc/trip_updates_event.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/presentation/bloc/trip_updates_state.dart';
 import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/entity/end_trip_otp_entity.dart';
 import 'package:desktop_app/core/common/app/features/end_trip_otp/presentation/bloc/end_trip_otp_bloc.dart';
 import 'package:desktop_app/core/common/app/features/end_trip_otp/presentation/bloc/end_trip_otp_event.dart';
@@ -69,6 +76,11 @@ class _TripTicketSpecificTripViewState
   final TextEditingController _invoiceSearchController =
       TextEditingController();
 
+  Timer? _mapRefreshTimer;
+  List<TripUpdateEntity> _tripUpdates = [];
+  bool _isMapLoading = true;
+  String? _mapErrorMessage;
+
   @override
   void initState() {
     super.initState();
@@ -90,6 +102,34 @@ class _TripTicketSpecificTripViewState
       '🔄 Dispatching GetInvoicesByTripEvent for trip: ${widget.tripId}',
     );
     context.read<InvoiceBloc>().add(GetInvoicesByTripEvent(widget.tripId));
+
+      _loadTripUpdatesForMap();
+  
+  // Start auto-refresh timer for map data
+  _startMapRefreshTimer();
+  }
+
+  void _loadTripUpdatesForMap() {
+    setState(() {
+      _isMapLoading = true;
+      _mapErrorMessage = null;
+    });
+
+    // Load trip updates
+    context.read<TripUpdatesBloc>().add(GetTripUpdatesEvent(widget.tripId));
+  }
+
+  void _startMapRefreshTimer() {
+    // Cancel any existing timer
+    _mapRefreshTimer?.cancel();
+
+    // Create a new timer that refreshes the data every minute
+    _mapRefreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) {
+        _loadTripUpdatesForMap();
+        debugPrint('🔄 Auto-refreshing trip map data');
+      }
+    });
   }
 
   @override
@@ -220,7 +260,8 @@ class _TripTicketSpecificTripViewState
                       const SizedBox(height: 16),
 
                       // Map Placeholder
-                      TripMapWidget(tripId: widget.tripId),
+                      // With this:
+                      _buildTripMapWidget(trip),
 
                       const SizedBox(height: 16),
 
@@ -466,6 +507,39 @@ class _TripTicketSpecificTripViewState
           tripId: widget.tripId,
         );
       },
+    );
+  }
+
+  // Add this method to your class
+  Widget _buildTripMapWidget(TripEntity trip) {
+    
+    return BlocListener<TripUpdatesBloc, TripUpdatesState>(
+      listener: (context, state) {
+        if (state is TripUpdatesLoading) {
+          // We don't set _isMapLoading here to avoid flickering if only updates are refreshing
+        } else if (state is TripUpdatesError) {
+          setState(() {
+            _mapErrorMessage = state.message;
+            _isMapLoading = false;
+          });
+          debugPrint('❌ Error loading trip updates: ${state.message}');
+        } else if (state is TripUpdatesLoaded) {
+          setState(() {
+            _tripUpdates = state.updates;
+            _isMapLoading = false;
+          });
+          debugPrint('✅ Loaded ${_tripUpdates.length} trip updates');
+        }
+      },
+      child: TripMapWidget(
+        tripId: widget.tripId,
+        trip: trip,
+        tripUpdates: _tripUpdates,
+        isLoading: _isMapLoading,
+        errorMessage: _mapErrorMessage,
+        onRefresh: _loadTripUpdatesForMap,
+        height: 400, // You can adjust this height as needed
+      ),
     );
   }
 
