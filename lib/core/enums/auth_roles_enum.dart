@@ -1,0 +1,1 @@
+enum AdminRole { superAdmin, manager, dispatcher, viewer }

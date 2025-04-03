@@ -1,0 +1,45 @@
+import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/domain/entity/vehicle_entity.dart';
+import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/domain/repo/vehicle_repo.dart';
+import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:desktop_app/core/usecases/usecase.dart';
+import 'package:equatable/equatable.dart';
+
+class CreateVehicle implements UsecaseWithParams<VehicleEntity, CreateVehicleParams> {
+  final VehicleRepo _repo;
+
+  const CreateVehicle(this._repo);
+
+  @override
+  ResultFuture<VehicleEntity> call(CreateVehicleParams params) => _repo.createVehicle(
+    vehicleName: params.vehicleName,
+    vehiclePlateNumber: params.vehiclePlateNumber,
+    vehicleType: params.vehicleType,
+    deliveryTeamId: params.deliveryTeamId,
+    tripId: params.tripId,
+  );
+}
+
+class CreateVehicleParams extends Equatable {
+  final String vehicleName;
+  final String vehiclePlateNumber;
+  final String vehicleType;
+  final String? deliveryTeamId;
+  final String? tripId;
+
+  const CreateVehicleParams({
+    required this.vehicleName,
+    required this.vehiclePlateNumber,
+    required this.vehicleType,
+    this.deliveryTeamId,
+    this.tripId,
+  });
+
+  @override
+  List<Object?> get props => [
+    vehicleName, 
+    vehiclePlateNumber, 
+    vehicleType, 
+    deliveryTeamId, 
+    tripId
+  ];
+}

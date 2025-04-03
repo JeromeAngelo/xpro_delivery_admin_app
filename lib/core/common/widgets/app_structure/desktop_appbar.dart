@@ -1,0 +1,218 @@
+import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
+import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+
+class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final VoidCallback onThemeToggle;
+  final VoidCallback onNotificationTap;
+  final VoidCallback onProfileTap;
+
+  const DesktopAppBar({
+    super.key,
+    required this.onThemeToggle,
+    required this.onNotificationTap,
+    required this.onProfileTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        // Default username if not authenticated or loading
+        String userName = 'User';
+        String? userEmail;
+        String? userAvatar;
+        bool isAuthenticated = false;
+
+        // Check the state and update user information
+        if (state is Authenticated) {
+          userName = state.user.name ?? 'User';
+          userEmail = state.user.email;
+          userAvatar = state.user.profilePic;
+          isAuthenticated = true;
+        } else if (state is UserLoaded) {
+          userName = state.user.name ?? 'User';
+          userEmail = state.user.email;
+          userAvatar = state.user.profilePic;
+          isAuthenticated = true;
+        }
+
+        return Container(
+          height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // App Logo
+              Padding(
+                padding: const EdgeInsets.only(right: 24),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  height: 40,
+                  // If you don't have a logo yet, use a placeholder
+                  errorBuilder:
+                      (context, error, stackTrace) => const Text(
+                        'X-Pro Delivery',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                ),
+              ),
+
+              // Search Bar
+              Expanded(
+                child: Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Theme Toggle
+              IconButton(
+                icon: const Icon(Icons.desktop_windows),
+                onPressed: onThemeToggle,
+                tooltip: 'Toggle theme',
+              ),
+
+              // Notifications
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: onNotificationTap,
+                tooltip: 'Notifications',
+              ),
+
+              // User Profile
+              InkWell(
+                onTap: onProfileTap,
+                borderRadius: BorderRadius.circular(30),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    children: [
+                      if (userAvatar != null && userAvatar.isNotEmpty)
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundImage: NetworkImage(userAvatar),
+                        )
+                      else
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Colors.blue.shade100,
+                          child: Text(
+                            userName.isNotEmpty
+                                ? userName[0].toUpperCase()
+                                : 'U',
+                            style: TextStyle(
+                              color: Colors.blue.shade800,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userName,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          if (userEmail != null && userEmail.isNotEmpty)
+                            Text(
+                              userEmail,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (isAuthenticated)
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.arrow_drop_down),
+                          offset: const Offset(0, 40),
+                          onSelected: (value) {
+                            if (value == 'profile') {
+                              onProfileTap();
+                            } else if (value == 'logout') {
+                              context.read<AuthBloc>().add(
+                                const SignOutEvent(),
+                              );
+                              context.go('/');
+                            }
+                          },
+                          itemBuilder:
+                              (context) => [
+                                const PopupMenuItem(
+                                  value: 'profile',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.person, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Profile'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'settings',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.settings, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Settings'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'logout',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.logout, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Logout'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(60);
+}

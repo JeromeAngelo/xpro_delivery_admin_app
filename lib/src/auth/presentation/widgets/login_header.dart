@@ -1,0 +1,35 @@
+import 'package:flutter/material.dart';
+
+class LoginHeader extends StatelessWidget {
+  const LoginHeader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: 40),
+        Image.asset(
+          'assets/images/logo.png',
+          height: 100,
+          width: 100,
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'X-Pro Delivery Admin App',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Delivery Management System',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.grey[600],
+              ),
+        ),
+        const SizedBox(height: 40),
+      ],
+    );
+  }
+}
