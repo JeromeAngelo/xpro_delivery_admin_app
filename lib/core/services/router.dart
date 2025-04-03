@@ -1,5 +1,6 @@
 import 'package:desktop_app/src/auth/presentation/view/auth_view.dart';
 import 'package:desktop_app/src/collection_data/completed_customer_list/presentation/view/completed_customer_list_screen.dart';
+import 'package:desktop_app/src/collection_data/completed_customer_list/presentation/view/completed_customer_overview.dart';
 import 'package:desktop_app/src/collection_data/completed_customer_list/presentation/view/specific_completed_customer_data.dart';
 import 'package:desktop_app/src/collection_data/tripricket_list/presentation/view/specific_trip_collection.dart';
 import 'package:desktop_app/src/collection_data/tripricket_list/presentation/view/tripticket_list_for_collection.dart';
@@ -92,6 +93,10 @@ GoRoute(
 GoRoute(
   path: '/checklist',
   builder: (context, state) => const ChecklistScreenView(),
+),
+GoRoute(
+  path: '/collections-overview',
+  builder: (context, state) => const CompletedCustomerOverview(),
 ),
 GoRoute(
   path: '/collections',

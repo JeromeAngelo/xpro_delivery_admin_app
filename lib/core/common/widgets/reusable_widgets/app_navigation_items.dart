@@ -160,6 +160,11 @@ class AppNavigationItems {
         title: 'Master Data',
         icon: Icons.storage,
         children: [
+           NavigationItem(
+            title: 'Collection Overview',
+            icon: Icons.summarize,
+            route: '/collections-overview',
+          ),
           NavigationItem(
             title: 'Trip Tickets',
             icon: Icons.trip_origin,

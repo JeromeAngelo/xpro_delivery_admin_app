@@ -262,7 +262,7 @@ class _MainScreenViewState extends State<MainScreenView> {
                         title: 'Collections',
                         subtitle: 'View and Manage transactions',
                         color: Colors.purple,
-                        onTap: () => context.go('/collections'),
+                        onTap: () => context.go('/collections-overview'),
                         iconSize: iconSize,
                       ),
                       _buildCategoryCard(
