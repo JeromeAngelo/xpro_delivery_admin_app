@@ -107,10 +107,7 @@ class CompletedCustomerDataTable extends StatelessWidget {
                   ),
                 ),
                 DataCell(
-                  Text(
-                    _formatModeOfPayment(customer.modeOfPayment),
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  PaymentModeChip(customer: customer),
                   onTap: () => _navigateToCustomerData(context, customer),
                 ),
                 DataCell(
@@ -175,54 +172,6 @@ class CompletedCustomerDataTable extends StatelessWidget {
     );
   }
 
-  // Format mode of payment from enum to readable text
-  String _formatModeOfPayment(String? modeOfPaymentStr) {
-    if (modeOfPaymentStr == null) return 'N/A';
-
-    try {
-      // Try to parse the string to the enum
-      ModeOfPayment? modeOfPayment;
-
-      // Handle both enum name and raw string cases
-      if (modeOfPaymentStr == 'cashOnDelivery' ||
-          modeOfPaymentStr == 'Cash On Delivery') {
-        modeOfPayment = ModeOfPayment.cashOnDelivery;
-      } else if (modeOfPaymentStr == 'bankTransfer' ||
-          modeOfPaymentStr == 'Bank Transfer') {
-        modeOfPayment = ModeOfPayment.bankTransfer;
-      } else if (modeOfPaymentStr == 'cheque' || modeOfPaymentStr == 'Cheque') {
-        modeOfPayment = ModeOfPayment.cheque;
-      } else if (modeOfPaymentStr == 'eWallet' ||
-          modeOfPaymentStr == 'E-Wallet') {
-        modeOfPayment = ModeOfPayment.eWallet;
-      }
-
-      if (modeOfPayment != null) {
-        switch (modeOfPayment) {
-          case ModeOfPayment.cashOnDelivery:
-            return 'Cash On Delivery';
-          case ModeOfPayment.bankTransfer:
-            return 'Bank Transfer';
-          case ModeOfPayment.cheque:
-            return 'Cheque';
-          case ModeOfPayment.eWallet:
-            return 'E-Wallet';
-        }
-      }
-
-      // If we couldn't parse it as an enum, format the string directly
-      return modeOfPaymentStr
-          .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
-          .replaceAllMapped(
-            RegExp(r'^([a-z])'),
-            (match) => match.group(0)!.toUpperCase(),
-          );
-    } catch (e) {
-      // If any error occurs, return the original string
-      return modeOfPaymentStr;
-    }
-  }
-
   void _showCustomerDetailsDialog(
     BuildContext context,
     CompletedCustomerEntity customer,
@@ -260,7 +209,7 @@ class CompletedCustomerDataTable extends StatelessWidget {
                   _buildDetailRow('Province', customer.province ?? 'N/A'),
                   _buildDetailRow(
                     'Mode of Payment',
-                    _formatModeOfPayment(customer.modeOfPayment),
+                    _getPaymentModeText(customer),
                   ),
                   _buildDetailRow(
                     'Completed At',
@@ -350,6 +299,30 @@ class CompletedCustomerDataTable extends StatelessWidget {
     );
   }
 
+  String _getPaymentModeText(CompletedCustomerEntity customer) {
+    if (customer.modeOfPaymentString != null) {
+      final paymentMode = ModeOfPayment.values.firstWhere(
+        (mode) => mode.toString() == customer.modeOfPaymentString,
+        orElse: () => ModeOfPayment.cashOnDelivery,
+      );
+
+      switch (paymentMode) {
+        case ModeOfPayment.cashOnDelivery:
+          return 'Cash on Delivery';
+        case ModeOfPayment.bankTransfer:
+          return 'Bank Transfer';
+        case ModeOfPayment.cheque:
+          return 'Cheque';
+        case ModeOfPayment.eWallet:
+          return 'E-Wallet';
+      }
+    } else if (customer.modeOfPayment != null) {
+      return customer.modeOfPayment!;
+    }
+
+    return 'Unknown';
+  }
+
   void _navigateToCustomerData(
     BuildContext context,
     CompletedCustomerEntity customer,
@@ -359,7 +332,80 @@ class CompletedCustomerDataTable extends StatelessWidget {
         GetCompletedCustomerByIdEvent(customer.id!),
       );
 
-      context.go('/completed-customers/:{$customer.id}');
+      context.go('/completed-customers/${customer.id}');
     }
+  }
+}
+
+// Create a separate PaymentModeChip widget similar to TripStatusChip
+class PaymentModeChip extends StatelessWidget {
+  final CompletedCustomerEntity customer;
+
+  const PaymentModeChip({super.key, required this.customer});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    String paymentModeText;
+
+    // Determine payment mode and color based on the ModeOfPayment enum
+    if (customer.modeOfPaymentString != null) {
+      final paymentMode = ModeOfPayment.values.firstWhere(
+        (mode) => mode.toString() == customer.modeOfPaymentString,
+        orElse: () => ModeOfPayment.cashOnDelivery,
+      );
+
+      switch (paymentMode) {
+        case ModeOfPayment.cashOnDelivery:
+          color = Colors.orange;
+          paymentModeText = 'Cash on Delivery';
+          break;
+        case ModeOfPayment.bankTransfer:
+          color = Colors.purple;
+          paymentModeText = 'Bank Transfer';
+          break;
+        case ModeOfPayment.cheque:
+          color = Colors.indigo;
+          paymentModeText = 'Cheque';
+          break;
+        case ModeOfPayment.eWallet:
+          color = Colors.teal;
+          paymentModeText = 'E-Wallet';
+          break;
+      }
+    } else if (customer.modeOfPayment != null) {
+      // Try to parse from the string representation
+      if (customer.modeOfPayment!.toLowerCase().contains('cash')) {
+        color = Colors.orange;
+        paymentModeText = 'Cash on Delivery';
+      } else if (customer.modeOfPayment!.toLowerCase().contains('bank')) {
+        color = Colors.purple;
+        paymentModeText = 'Bank Transfer';
+      } else if (customer.modeOfPayment!.toLowerCase().contains('cheque')) {
+        color = Colors.indigo;
+        paymentModeText = 'Cheque';
+      } else if (customer.modeOfPayment!.toLowerCase().contains('wallet') ||
+          customer.modeOfPayment!.toLowerCase().contains('e-wallet')) {
+        color = Colors.teal;
+        paymentModeText = 'E-Wallet';
+      } else {
+        color = Colors.blue;
+        paymentModeText = customer.modeOfPayment!;
+      }
+    } else {
+      color = Colors.grey;
+      paymentModeText = 'Unknown';
+    }
+
+    // Use the Chip widget with the same styling as TripStatusChip
+    return Chip(
+      label: Text(
+        paymentModeText,
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
+      backgroundColor: color,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      visualDensity: VisualDensity.compact,
+    );
   }
 }

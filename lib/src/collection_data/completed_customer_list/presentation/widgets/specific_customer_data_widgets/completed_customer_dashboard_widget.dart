@@ -42,7 +42,12 @@ class CompletedCustomerDashboardWidget extends StatelessWidget {
           label: 'Owner Name',
           iconColor: Colors.orange,
         ),
-
+        DashboardInfoItem(
+          icon: Icons.store,
+          value: customer.storeName ?? 'N/A',
+          label: 'Store Name',
+          iconColor: Colors.green,
+        ),
         DashboardInfoItem(
           icon: Icons.payments,
           value:
@@ -54,9 +59,9 @@ class CompletedCustomerDashboardWidget extends StatelessWidget {
         ),
         DashboardInfoItem(
           icon: Icons.payment,
-          value: _formatModeOfPayment(customer.modeOfPayment),
+          value: _formatModeOfPayment(customer),
           label: 'Mode of Payment',
-          iconColor: Colors.indigo,
+          iconColor: _getPaymentModeColor(customer),
         ),
         DashboardInfoItem(
           icon: Icons.access_time,
@@ -67,7 +72,6 @@ class CompletedCustomerDashboardWidget extends StatelessWidget {
           label: 'Completed At',
           iconColor: Colors.teal,
         ),
-
         DashboardInfoItem(
           icon: Icons.location_on,
           value: [customer.address, customer.municipality, customer.province]
@@ -82,55 +86,111 @@ class CompletedCustomerDashboardWidget extends StatelessWidget {
           label: 'Invoices',
           iconColor: Colors.cyan,
         ),
+        DashboardInfoItem(
+          icon: Icons.timer,
+          value: customer.totalTime ?? 'N/A',
+          label: 'Total Time',
+          iconColor: Colors.amber,
+        ),
       ],
     );
   }
 
   // Format mode of payment from enum to readable text
-  String _formatModeOfPayment(String? modeOfPaymentStr) {
-    if (modeOfPaymentStr == null) return 'N/A';
+  String _formatModeOfPayment(CompletedCustomerEntity customer) {
+    // First check if we have the enum string representation
+    if (customer.modeOfPaymentString != null) {
+      final paymentMode = ModeOfPayment.values.firstWhere(
+        (mode) => mode.toString() == customer.modeOfPaymentString,
+        orElse: () => ModeOfPayment.cashOnDelivery,
+      );
 
-    try {
-      // Try to parse the string to the enum
-      ModeOfPayment? modeOfPayment;
-
-      // Handle both enum name and raw string cases
-      if (modeOfPaymentStr == 'cashOnDelivery' ||
-          modeOfPaymentStr == 'Cash On Delivery') {
-        modeOfPayment = ModeOfPayment.cashOnDelivery;
-      } else if (modeOfPaymentStr == 'bankTransfer' ||
-          modeOfPaymentStr == 'Bank Transfer') {
-        modeOfPayment = ModeOfPayment.bankTransfer;
-      } else if (modeOfPaymentStr == 'cheque' || modeOfPaymentStr == 'Cheque') {
-        modeOfPayment = ModeOfPayment.cheque;
-      } else if (modeOfPaymentStr == 'eWallet' ||
-          modeOfPaymentStr == 'E-Wallet') {
-        modeOfPayment = ModeOfPayment.eWallet;
+      switch (paymentMode) {
+        case ModeOfPayment.cashOnDelivery:
+          return 'Cash on Delivery';
+        case ModeOfPayment.bankTransfer:
+          return 'Bank Transfer';
+        case ModeOfPayment.cheque:
+          return 'Cheque';
+        case ModeOfPayment.eWallet:
+          return 'E-Wallet';
       }
-
-      if (modeOfPayment != null) {
-        switch (modeOfPayment) {
-          case ModeOfPayment.cashOnDelivery:
-            return 'Cash On Delivery';
-          case ModeOfPayment.bankTransfer:
-            return 'Bank Transfer';
-          case ModeOfPayment.cheque:
-            return 'Cheque';
-          case ModeOfPayment.eWallet:
-            return 'E-Wallet';
-        }
-      }
-
-      // If we couldn't parse it as an enum, format the string directly
-      return modeOfPaymentStr
-          .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
-          .replaceAllMapped(
-            RegExp(r'^([a-z])'),
-            (match) => match.group(0)!.toUpperCase(),
-          );
-    } catch (e) {
-      // If any error occurs, return the original string
-      return modeOfPaymentStr;
     }
+
+    // If we have a string representation
+    if (customer.modeOfPayment != null) {
+      final modeOfPaymentStr = customer.modeOfPayment!.toLowerCase();
+
+      if (modeOfPaymentStr.contains('cash')) {
+        return 'Cash on Delivery';
+      } else if (modeOfPaymentStr.contains('bank')) {
+        return 'Bank Transfer';
+      } else if (modeOfPaymentStr.contains('cheque') ||
+          modeOfPaymentStr.contains('check')) {
+        return 'Cheque';
+      } else if (modeOfPaymentStr.contains('wallet') ||
+          modeOfPaymentStr.contains('e-wallet') ||
+          modeOfPaymentStr.contains('ewallet')) {
+        return 'E-Wallet';
+      }
+
+      // If it's a camelCase or snake_case string, format it properly
+      return customer.modeOfPayment!
+          .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
+          .replaceAll('_', ' ')
+          .trim()
+          .split(' ')
+          .map(
+            (word) =>
+                word.isNotEmpty
+                    ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+                    : '',
+          )
+          .join(' ');
+    }
+
+    return 'N/A';
+  }
+
+  // Get color based on payment mode
+  Color _getPaymentModeColor(CompletedCustomerEntity customer) {
+    // First check if we have the enum string representation
+    if (customer.modeOfPaymentString != null) {
+      final paymentMode = ModeOfPayment.values.firstWhere(
+        (mode) => mode.toString() == customer.modeOfPaymentString,
+        orElse: () => ModeOfPayment.cashOnDelivery,
+      );
+
+      switch (paymentMode) {
+        case ModeOfPayment.cashOnDelivery:
+          return Colors.orange;
+        case ModeOfPayment.bankTransfer:
+          return Colors.purple;
+        case ModeOfPayment.cheque:
+          return Colors.indigo;
+        case ModeOfPayment.eWallet:
+          return Colors.teal;
+      }
+    }
+
+    // If we have a string representation
+    if (customer.modeOfPayment != null) {
+      final modeOfPaymentStr = customer.modeOfPayment!.toLowerCase();
+
+      if (modeOfPaymentStr.contains('cash')) {
+        return Colors.orange;
+      } else if (modeOfPaymentStr.contains('bank')) {
+        return Colors.purple;
+      } else if (modeOfPaymentStr.contains('cheque') ||
+          modeOfPaymentStr.contains('check')) {
+        return Colors.indigo;
+      } else if (modeOfPaymentStr.contains('wallet') ||
+          modeOfPaymentStr.contains('e-wallet') ||
+          modeOfPaymentStr.contains('ewallet')) {
+        return Colors.teal;
+      }
+    }
+
+    return Colors.blue; // Default color
   }
 }

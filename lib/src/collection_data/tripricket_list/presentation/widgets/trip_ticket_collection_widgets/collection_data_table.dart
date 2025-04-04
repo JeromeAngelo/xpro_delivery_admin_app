@@ -2,7 +2,9 @@ import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/ent
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart';
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
 import 'package:desktop_app/core/common/widgets/app_structure/data_table_layout.dart';
+import 'package:desktop_app/core/enums/mode_of_payment.dart';
 import 'package:desktop_app/src/collection_data/tripricket_list/presentation/widgets/trip_ticket_collection_widgets/collection_searchbar.dart';
+import 'package:desktop_app/src/collection_data/tripricket_list/presentation/widgets/trip_ticket_collection_widgets/payment_mode_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -45,6 +47,7 @@ class CollectionDataTable extends StatelessWidget {
         DataColumn(label: Text('Trip Number')),
         DataColumn(label: Text('Start Date')),
         DataColumn(label: Text('End Date')),
+        DataColumn(label: Text('Payment Modes')),
         DataColumn(label: Text('Status')),
         DataColumn(label: Text('Actions')),
       ],
@@ -66,6 +69,10 @@ class CollectionDataTable extends StatelessWidget {
                 ),
                 DataCell(
                   Text(_formatDate(trip.timeEndTrip)),
+                  onTap: () => _navigateToTripData(context, trip),
+                ),
+                DataCell(
+                  _buildPaymentModesCell(trip),
                   onTap: () => _navigateToTripData(context, trip),
                 ),
                 DataCell(
@@ -135,5 +142,92 @@ class CollectionDataTable extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
       visualDensity: VisualDensity.compact,
     );
+  }
+
+  // New method to build payment modes cell
+  Widget _buildPaymentModesCell(TripEntity trip) {
+    // Get all completed customers from the trip
+    final completedCustomers = trip.completedCustomers;
+    
+    if (completedCustomers.isEmpty) {
+      return const Text('No collections');
+    }
+    
+    // Count payment modes
+    final Map<ModeOfPayment, int> paymentModeCounts = {};
+    
+    for (final customer in completedCustomers) {
+      ModeOfPayment paymentMode = _determinePaymentMode(customer);
+      paymentModeCounts[paymentMode] = (paymentModeCounts[paymentMode] ?? 0) + 1;
+    }
+    
+    // If we have too many payment modes, just show a summary
+    if (paymentModeCounts.length > 2) {
+      return Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        children: [
+          PaymentModeChip(
+            mode: ModeOfPayment.cashOnDelivery,
+            count: paymentModeCounts[ModeOfPayment.cashOnDelivery] ?? 0,
+          ),
+          PaymentModeChip(
+            mode: ModeOfPayment.bankTransfer,
+            count: paymentModeCounts[ModeOfPayment.bankTransfer] ?? 0,
+          ),
+          PaymentModeChip(
+            mode: ModeOfPayment.cheque,
+            count: paymentModeCounts[ModeOfPayment.cheque] ?? 0,
+          ),
+          PaymentModeChip(
+            mode: ModeOfPayment.eWallet,
+            count: paymentModeCounts[ModeOfPayment.eWallet] ?? 0,
+          ),
+        ],
+      );
+    }
+    
+    // Otherwise, show each payment mode with its count
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: paymentModeCounts.entries.map((entry) {
+        return PaymentModeChip(
+          mode: entry.key,
+          count: entry.value,
+        );
+      }).toList(),
+    );
+  }
+  
+  // Helper method to determine payment mode from a completed customer
+  ModeOfPayment _determinePaymentMode(dynamic customer) {
+    // Check if we have the enum string representation
+    if (customer.modeOfPaymentString != null) {
+      return ModeOfPayment.values.firstWhere(
+        (mode) => mode.toString() == customer.modeOfPaymentString,
+        orElse: () => ModeOfPayment.cashOnDelivery,
+      );
+    } 
+    
+    // If we have a string representation
+    if (customer.modeOfPayment != null) {
+      final modeOfPaymentStr = customer.modeOfPayment.toString().toLowerCase();
+      
+      if (modeOfPaymentStr.contains('cash')) {
+        return ModeOfPayment.cashOnDelivery;
+      } else if (modeOfPaymentStr.contains('bank')) {
+        return ModeOfPayment.bankTransfer;
+      } else if (modeOfPaymentStr.contains('cheque') || 
+                modeOfPaymentStr.contains('check')) {
+        return ModeOfPayment.cheque;
+      } else if (modeOfPaymentStr.contains('wallet') || 
+                modeOfPaymentStr.contains('e-wallet') ||
+                modeOfPaymentStr.contains('ewallet')) {
+        return ModeOfPayment.eWallet;
+      }
+    }
+    
+    return ModeOfPayment.cashOnDelivery; // Default
   }
 }
