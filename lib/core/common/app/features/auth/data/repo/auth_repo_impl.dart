@@ -75,4 +75,23 @@ class AuthRepoImpl implements AuthRepo {
       return Left(ServerFailure(message: e.toString(), statusCode: '500'));
     }
   }
+  
+  @override
+ResultFuture<AuthEntity> getCurrentUser() async {
+  try {
+    final result = await _remoteDataSource.getCurrentUser();
+    if (result == null) {
+      return Left(ServerFailure(
+        message: 'No user is currently logged in',
+        statusCode: '401',
+      ));
+    }
+    return Right(result);
+  } on ServerException catch (e) {
+    return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+  } catch (e) {
+    return Left(ServerFailure(message: e.toString(), statusCode: '500'));
+  }
+}
+
 }

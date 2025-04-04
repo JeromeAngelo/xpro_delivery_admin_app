@@ -31,7 +31,7 @@ import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widge
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_end_trip_otp_table.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_header_widget.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_invoice_table.dart';
-import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_map_place_holder.dart';
+import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_map_place_widget.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_options_dialog.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_otp_table.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_personels_table.dart';
