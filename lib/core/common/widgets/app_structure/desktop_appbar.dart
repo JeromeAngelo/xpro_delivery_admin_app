@@ -109,6 +109,8 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
 
               // User Profile
+
+              // User Profile
               InkWell(
                 onTap: onProfileTap,
                 borderRadius: BorderRadius.circular(30),
@@ -116,25 +118,7 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
                     children: [
-                      if (userAvatar != null && userAvatar.isNotEmpty)
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundImage: NetworkImage(userAvatar),
-                        )
-                      else
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: Colors.blue.shade100,
-                          child: Text(
-                            userName.isNotEmpty
-                                ? userName[0].toUpperCase()
-                                : 'U',
-                            style: TextStyle(
-                              color: Colors.blue.shade800,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                      _buildProfileAvatar(userName, userAvatar),
                       const SizedBox(width: 8),
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -207,6 +191,100 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Add this method to the class:
+  Widget _buildProfileAvatar(String userName, String? avatarUrl) {
+    return Builder(
+      builder: (context) {
+        if (avatarUrl == null || avatarUrl.isEmpty) {
+          // No avatar URL, show initials
+          return CircleAvatar(
+            radius: 16,
+            backgroundColor: Colors.blue.shade100,
+            child: Text(
+              userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+              style: TextStyle(
+                color: Colors.blue.shade800,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        }
+
+        // Try to validate the URL
+        bool isValidUrl = false;
+        try {
+          final uri = Uri.parse(avatarUrl);
+          isValidUrl =
+              uri.isAbsolute && (uri.scheme == 'http' || uri.scheme == 'https');
+        } catch (e) {
+          debugPrint('Invalid avatar URL: $e');
+        }
+
+        if (!isValidUrl) {
+          // Invalid URL, show initials
+          return CircleAvatar(
+            radius: 16,
+            backgroundColor: Colors.blue.shade100,
+            child: Text(
+              userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+              style: TextStyle(
+                color: Colors.blue.shade800,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        }
+
+        // Valid URL, try to load image with error handling
+        return ClipOval(
+          child: Image.network(
+            avatarUrl,
+            width: 32,
+            height: 32,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('Error loading avatar: $error');
+              // On error, show initials
+              return CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.blue.shade100,
+                child: Text(
+                  userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                  style: TextStyle(
+                    color: Colors.blue.shade800,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              );
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) {
+                return child;
+              }
+              // Show a loading indicator while the image is loading
+              return CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.grey[200],
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    value:
+                        loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                  ),
+                ),
+              );
+            },
           ),
         );
       },
