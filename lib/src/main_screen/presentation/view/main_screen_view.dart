@@ -36,6 +36,7 @@ class _MainScreenViewState extends State<MainScreenView> {
       appBar: AppBar(
         title: const Text('X-Pro Delivery Admin App'),
         actions: [
+          IconButton(icon: const Icon(Icons.desktop_windows), onPressed: () {}),
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {

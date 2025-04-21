@@ -90,7 +90,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
 
       // Prepare data for creation
       final Map<String, dynamic> tripData = {};
-
+String tripNumberId = trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSinceEpoch}';
       // Set basic fields
       tripData['tripNumberId'] =
           trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSinceEpoch}';
@@ -98,6 +98,12 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
       tripData['updated'] = DateTime.now().toIso8601String();
       tripData['isAccepted'] = false;
       tripData['isEndTrip'] = false;
+
+       // Generate QR code (using trip number as the QR code value)
+    // You can customize this to include more information if needed
+    tripData['qrCode'] = tripNumberId;
+    debugPrint('📄 Generated QR code: ${tripData['qrCode']}');
+
 
       // Handle relationship fields - convert objects to IDs for PocketBase
 

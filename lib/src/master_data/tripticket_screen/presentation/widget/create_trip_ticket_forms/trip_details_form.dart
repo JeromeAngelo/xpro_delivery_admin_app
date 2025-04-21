@@ -2,12 +2,14 @@ import 'package:desktop_app/core/common/widgets/create_screen_widgets/app_drop_d
 import 'package:desktop_app/core/common/widgets/create_screen_widgets/app_textfield.dart';
 import 'package:desktop_app/core/common/widgets/create_screen_widgets/form_title.dart';
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
 
 class TripDetailsForm extends StatelessWidget {
   final TextEditingController tripIdController;
+  final TextEditingController qrCodeController;
   final List<CustomerModel> availableCustomers;
   final List<CustomerModel> selectedCustomers;
   final List<InvoiceModel> availableInvoices;
@@ -18,6 +20,7 @@ class TripDetailsForm extends StatelessWidget {
   const TripDetailsForm({
     super.key,
     required this.tripIdController,
+    required this.qrCodeController,
     required this.availableCustomers,
     required this.selectedCustomers,
     required this.availableInvoices,
@@ -33,13 +36,78 @@ class TripDetailsForm extends StatelessWidget {
       children: [
         const FormSectionTitle(title: 'Trip Details'),
 
-        // Trip ID field
-        AppTextField(
-          label: 'Trip ID',
-          controller: tripIdController,
-          readOnly: true, // Auto-generated, so read-only
-          //  helperText: 'Automatically generated trip ID',
+        // Trip ID and QR Code in a row
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Trip ID field
+            Expanded(
+              flex: 2,
+              child: AppTextField(
+                label: 'Trip ID',
+                controller: tripIdController,
+                readOnly: true, // Auto-generated, so read-only
+              ),
+            ),
+            const SizedBox(width: 24),
+            
+            // QR Code display
+            Expanded(
+              flex: 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Trip QR Code',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 1,
+                          blurRadius: 3,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: QrImageView(
+                      data: qrCodeController.text,
+                      version: QrVersions.auto,
+                      size: 150,
+                      backgroundColor: Colors.white,
+                      errorStateBuilder: (context, error) {
+                        return const Center(
+                          child: Text(
+                            'Error generating QR code',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'QR Code Value: ${qrCodeController.text}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
+
+        const SizedBox(height: 24),
 
         // Customers dropdown
         _buildCustomersDropdown(context),
@@ -96,7 +164,6 @@ class TripDetailsForm extends StatelessWidget {
     );
   }
 
-  // ignore: unused_element
   Widget _buildInvoicesDropdown(BuildContext context) {
     if (availableInvoices.isEmpty) {
       return const AppTextField(

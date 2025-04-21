@@ -58,6 +58,7 @@ class _CreateTripTicketScreenViewState
     extends State<CreateTripTicketScreenView> {
   final _formKey = GlobalKey<FormState>();
   final _tripIdController = TextEditingController();
+  final _qrCodeController = TextEditingController();
 
   // Selected items
   List<CustomerModel> _selectedCustomers = [];
@@ -73,20 +74,30 @@ class _CreateTripTicketScreenViewState
   @override
   void initState() {
     super.initState();
-    _generateTripId();
+    _generateTripIdAndQrCode();
     _loadData();
   }
 
   @override
   void dispose() {
     _tripIdController.dispose();
+    _qrCodeController.dispose();
     super.dispose();
   }
 
-  void _generateTripId() {
-    // Generate a unique trip ID
+ void _generateTripIdAndQrCode() {
+    // Generate a unique trip ID based on timestamp
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    _tripIdController.text = 'TRIP-$timestamp';
+    final tripId = 'TRIP-$timestamp';
+    
+    // Set the trip ID
+    _tripIdController.text = tripId;
+    
+    // Use the same value for QR code (or you could create a more complex value)
+    _qrCodeController.text = tripId;
+    
+    debugPrint('Generated Trip ID: $tripId');
+    debugPrint('Generated QR Code: ${_qrCodeController.text}');
   }
 
   // Function to create a trip ticket
@@ -317,7 +328,7 @@ class _CreateTripTicketScreenViewState
                 setState(() {
                   _selectedInvoices = invoices;
                 });
-              },
+              }, qrCodeController: _qrCodeController,
             );
           },
         );
