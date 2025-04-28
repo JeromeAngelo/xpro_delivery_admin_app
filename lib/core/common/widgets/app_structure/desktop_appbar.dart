@@ -44,7 +44,7 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
           height: 60,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: Theme.of(context).colorScheme.primary,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
@@ -96,14 +96,20 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
 
               // Theme Toggle
               IconButton(
-                icon: const Icon(Icons.desktop_windows),
+                icon: Icon(
+                  Icons.desktop_windows,
+                  color: Theme.of(context).colorScheme.surface,
+                ),
                 onPressed: onThemeToggle,
                 tooltip: 'Toggle theme',
               ),
 
               // Notifications
               IconButton(
-                icon: const Icon(Icons.notifications_outlined),
+                icon: Icon(
+                  Icons.notifications_outlined,
+                  color: Theme.of(context).colorScheme.surface,
+                ),
                 onPressed: onNotificationTap,
                 tooltip: 'Notifications',
               ),
@@ -126,21 +132,19 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
                         children: [
                           Text(
                             userName,
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                          if (userEmail != null && userEmail.isNotEmpty)
-                            Text(
-                              userEmail,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[600],
-                              ),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context).colorScheme.surface,
                             ),
+                          ),
                         ],
                       ),
                       if (isAuthenticated)
                         PopupMenuButton<String>(
-                          icon: const Icon(Icons.arrow_drop_down),
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: Theme.of(context).colorScheme.surface,
+                          ),
                           offset: const Offset(0, 40),
                           onSelected: (value) {
                             if (value == 'profile') {

@@ -41,7 +41,7 @@ class _CustomerListScreenViewState extends State<CustomerListScreenView> {
   @override
   Widget build(BuildContext context) {
     // Use the reusable navigation items
-    final navigationItems = AppNavigationItems.tripticketNavigationItems();
+    final navigationItems = AppNavigationItems.generalTripItems();
 
     return DesktopLayout(
       navigationItems: navigationItems,

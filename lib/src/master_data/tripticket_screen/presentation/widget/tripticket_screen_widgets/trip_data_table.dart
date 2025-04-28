@@ -12,7 +12,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:intl/intl.dart';
 
-class TripDataTable extends StatelessWidget {
+class TripDataTable extends StatefulWidget {
   final List<TripEntity> trips;
   final bool isLoading;
   final int currentPage;
@@ -35,6 +35,13 @@ class TripDataTable extends StatelessWidget {
   });
 
   @override
+  State<TripDataTable> createState() => _TripDataTableState();
+}
+
+class _TripDataTableState extends State<TripDataTable> {
+  List<int> _selectedRows = [];
+
+  @override
   Widget build(BuildContext context) {
     final headerStyle = TextStyle(
       fontWeight: FontWeight.bold,
@@ -44,9 +51,9 @@ class TripDataTable extends StatelessWidget {
     return DataTableLayout(
       title: 'Trip Tickets',
       searchBar: TripSearchBar(
-        controller: searchController,
-        searchQuery: searchQuery,
-        onSearchChanged: onSearchChanged,
+        controller: widget.searchController,
+        searchQuery: widget.searchQuery,
+        onSearchChanged: widget.onSearchChanged,
       ),
       onCreatePressed: () {
         context.go('/tripticket-create');
@@ -58,15 +65,11 @@ class TripDataTable extends StatelessWidget {
         DataColumn(label: Text('Start Date', style: headerStyle)),
         DataColumn(label: Text('End Date', style: headerStyle)),
         DataColumn(label: Text('User', style: headerStyle)),
-
-        //invoices and others
         DataColumn(label: Text('Status', style: headerStyle)),
-
-        //  DataColumn(label: Text('Customers', style: headerStyle)),
         DataColumn(label: Text('Actions', style: headerStyle)),
       ],
       rows:
-          trips.map((trip) {
+          widget.trips.map((trip) {
             // Debug print for each trip
             debugPrint('🔍 TABLE: Processing trip: ${trip.id}');
 
@@ -92,16 +95,10 @@ class TripDataTable extends StatelessWidget {
                   Text(trip.user?.name ?? 'N/A'),
                   onTap: () => _navigateToTripDetails(context, trip),
                 ),
-
                 DataCell(
                   TripStatusChip(trip: trip),
                   onTap: () => _navigateToTripDetails(context, trip),
                 ),
-
-                // DataCell(
-                //   Text(trip.customers.length.toString()),
-                //   onTap: () => _navigateToTripDetails(context, trip),
-                // ),
                 DataCell(
                   Row(
                     children: [
@@ -141,12 +138,13 @@ class TripDataTable extends StatelessWidget {
               ],
             );
           }).toList(),
-      currentPage: currentPage,
-      totalPages: totalPages,
-      onPageChanged: onPageChanged,
-      isLoading: isLoading,
-      enableSelection: false,
-      onFiltered: () {}, // Keep selection disabled to avoid checkbox issues
+      currentPage: widget.currentPage,
+      totalPages: widget.totalPages,
+      onPageChanged: widget.onPageChanged,
+      isLoading: widget.isLoading,
+      enableSelection: true,
+      onFiltered: _handleFiltering,
+      onRowsSelected: _handleRowsSelected,
     );
   }
 
@@ -170,5 +168,113 @@ class TripDataTable extends StatelessWidget {
       debugPrint('❌ Error formatting date: $e');
       return 'Invalid Date';
     }
+  }
+
+  // Handle row selection
+  void _handleRowsSelected(List<int> selectedIndices) {
+    setState(() {
+      _selectedRows = selectedIndices;
+    });
+
+    // You can perform actions with the selected rows here
+    debugPrint('Selected ${_selectedRows.length} rows: $_selectedRows');
+
+    // Example: Get the selected trip entities
+    final selectedTrips =
+        _selectedRows
+            .map(
+              (index) =>
+                  index < widget.trips.length ? widget.trips[index] : null,
+            )
+            .where((trip) => trip != null)
+            .toList();
+
+    debugPrint('Selected ${selectedTrips.length} trips');
+  }
+
+  // Handle filtering action
+  void _handleFiltering() {
+    // Implement filtering logic here
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Filter Options'),
+            content: SizedBox(
+              width: 300,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Add filter options here
+                  const TextField(
+                    decoration: InputDecoration(
+                      labelText: 'Trip Number',
+                      hintText: 'Filter by trip number',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Add date range picker
+                  Row(
+                    children: [
+                      const Text('Date Range:'),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () {
+                          // Show date picker
+                        },
+                        child: const Text('Select Dates'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Add status filter
+                  const Text('Status:'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      FilterChip(
+                        label: const Text('Pending'),
+                        selected: false,
+                        onSelected: (selected) {
+                          // Handle selection
+                        },
+                      ),
+                      FilterChip(
+                        label: const Text('In Progress'),
+                        selected: false,
+                        onSelected: (selected) {
+                          // Handle selection
+                        },
+                      ),
+                      FilterChip(
+                        label: const Text('Completed'),
+                        selected: false,
+                        onSelected: (selected) {
+                          // Handle selection
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Apply filters
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Apply'),
+              ),
+            ],
+          ),
+    );
   }
 }

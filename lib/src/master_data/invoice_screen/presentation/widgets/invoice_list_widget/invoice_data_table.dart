@@ -58,6 +58,8 @@ class InvoiceDataTable extends StatelessWidget {
         DataColumn(label: Text('Customer')),
         DataColumn(label: Text('Trip')),
         DataColumn(label: Text('Total Amount')),
+        DataColumn(label: Text('Confirmed Amount')),
+
         DataColumn(label: Text('Status')),
         DataColumn(label: Text('Actions')),
       ],
@@ -83,6 +85,10 @@ class InvoiceDataTable extends StatelessWidget {
                 ),
                 DataCell(
                   Text(_formatAmount(invoice.totalAmount)),
+                  onTap: () => _navigateToInvoiceDetails(context, invoice),
+                ),
+                DataCell(
+                  Text(_formatAmount(invoice.confirmTotalAmount)),
                   onTap: () => _navigateToInvoiceDetails(context, invoice),
                 ),
                 DataCell(

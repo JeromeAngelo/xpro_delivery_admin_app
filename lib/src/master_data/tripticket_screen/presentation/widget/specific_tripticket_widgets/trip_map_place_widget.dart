@@ -318,56 +318,58 @@ class _TripMapWidgetState extends State<TripMapWidget>
 
                     // Map controls
                     // Inside the _buildMapCard method, update the map controls section
-// Find the existing map controls row and modify it:
+                    // Find the existing map controls row and modify it:
 
-// Map controls
-Row(
-  children: [
-    IconButton(
-      icon: const Icon(Icons.zoom_in, size: 20),
-      tooltip: 'Zoom In',
-      onPressed: () {
-        final currentZoom = mapController.camera.zoom;
-        mapController.move(
-          mapController.camera.center,
-          currentZoom + 1,
-        );
-      },
-    ),
-    IconButton(
-      icon: const Icon(Icons.zoom_out, size: 20),
-      tooltip: 'Zoom Out',
-      onPressed: () {
-        final currentZoom = mapController.camera.zoom;
-        mapController.move(
-          mapController.camera.center,
-          currentZoom - 1,
-        );
-      },
-    ),
-    IconButton(
-      icon: const Icon(Icons.my_location, size: 20),
-      tooltip: 'Center Map',
-      onPressed: () {
-        mapController.move(mapCenter, 14);
-      },
-    ),
-    // Add the new map type toggle button
-    IconButton(
-      icon: Icon(
-        _isSatelliteView ? Icons.map : Icons.satellite, 
-        size: 20
-      ),
-      tooltip: _isSatelliteView ? 'Switch to Default View' : 'Switch to Satellite View',
-      onPressed: () {
-        setState(() {
-          _isSatelliteView = !_isSatelliteView;
-        });
-      },
-    ),
-  ],
-),
-
+                    // Map controls
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.zoom_in, size: 20),
+                          tooltip: 'Zoom In',
+                          onPressed: () {
+                            final currentZoom = mapController.camera.zoom;
+                            mapController.move(
+                              mapController.camera.center,
+                              currentZoom + 1,
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.zoom_out, size: 20),
+                          tooltip: 'Zoom Out',
+                          onPressed: () {
+                            final currentZoom = mapController.camera.zoom;
+                            mapController.move(
+                              mapController.camera.center,
+                              currentZoom - 1,
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.my_location, size: 20),
+                          tooltip: 'Center Map',
+                          onPressed: () {
+                            mapController.move(mapCenter, 14);
+                          },
+                        ),
+                        // Add the new map type toggle button
+                        IconButton(
+                          icon: Icon(
+                            _isSatelliteView ? Icons.map : Icons.satellite,
+                            size: 20,
+                          ),
+                          tooltip:
+                              _isSatelliteView
+                                  ? 'Switch to Default View'
+                                  : 'Switch to Satellite View',
+                          onPressed: () {
+                            setState(() {
+                              _isSatelliteView = !_isSatelliteView;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -425,51 +427,52 @@ Row(
   }
 
   Widget _buildMap(LatLng center, List<Marker> markers) {
-  try {
-    return FlutterMap(
-      mapController: mapController,
-      options: MapOptions(
-        initialCenter: center,
-        initialZoom: 14,
-        minZoom: 5,
-        maxZoom: 18,
-        // Enable drag with mouse
-        interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.all,
-          // The following settings make dragging with mouse primary behavior
-          pinchMoveWinGestures: 10,
-        ),
-      ),
-      children: [
-        TileLayer(
-          // Change the URL template based on the view type
-          urlTemplate: _isSatelliteView 
-              ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}' // Satellite view
-              : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', // Default view
-          userAgentPackageName: 'com.example.desktop_app',
-        ),
-        // Add polyline to connect markers in chronological order
-        if (markers.length > 1)
-          PolylineLayer(
-            polylines: [
-              Polyline(
-                points: markers.map((marker) => marker.point).toList(),
-                color: Colors.blue.withOpacity(0.7),
-                strokeWidth: 3.0,
-              ),
-            ],
+    try {
+      return FlutterMap(
+        mapController: mapController,
+        options: MapOptions(
+          initialCenter: center,
+          initialZoom: 14,
+          minZoom: 5,
+          maxZoom: 25,
+          // Enable drag with mouse
+          interactionOptions: const InteractionOptions(
+            flags: InteractiveFlag.all,
+            // The following settings make dragging with mouse primary behavior
+            pinchMoveWinGestures: 10,
           ),
-        MarkerLayer(markers: markers),
-        // Add a custom mouse cursor layer
-        RichAttributionWidget(
-          attributions: [
-            TextSourceAttribution('Drag to move map', onTap: () {}),
-          ],
-          alignment: AttributionAlignment.bottomRight,
         ),
-      ],
-    );
-  } catch (e) {
+        children: [
+          TileLayer(
+            // Change the URL template based on the view type
+            urlTemplate:
+                _isSatelliteView
+                    ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}' // Satellite view
+                    : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', // Default view
+            userAgentPackageName: 'com.example.desktop_app',
+          ),
+          // Add polyline to connect markers in chronological order
+          if (markers.length > 1)
+            PolylineLayer(
+              polylines: [
+                Polyline(
+                  points: markers.map((marker) => marker.point).toList(),
+                  color: Colors.blue.withOpacity(0.7),
+                  strokeWidth: 3.0,
+                ),
+              ],
+            ),
+          MarkerLayer(markers: markers),
+          // Add a custom mouse cursor layer
+          RichAttributionWidget(
+            attributions: [
+              TextSourceAttribution('Drag to move map', onTap: () {}),
+            ],
+            alignment: AttributionAlignment.bottomRight,
+          ),
+        ],
+      );
+    } catch (e) {
       debugPrint('❌ Error building map: $e');
       return SizedBox(
         height: widget.height,
@@ -1414,10 +1417,11 @@ Row(
                         ),
                         children: [
                           TileLayer(
-                             // Update the URL template here too
-                          urlTemplate: _isSatelliteView 
-                              ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}' // Satellite view
-                              : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', // Default view
+                            // Update the URL template here too
+                            urlTemplate:
+                                _isSatelliteView
+                                    ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}' // Satellite view
+                                    : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', // Default view
                             userAgentPackageName: 'com.example.desktop_app',
                           ),
                           // Add polyline to connect markers in chronological order

@@ -27,7 +27,7 @@ class CompletedCustomerHeaderWidget extends StatelessWidget {
             onPressed: onPrintReceipt,
           ),
       ],
-      backgroundColor: const Color.fromARGB(255, 37, 36, 36),
+      //backgroundColor: const Color.fromARGB(255, 37, 36, 36),
       padding: const EdgeInsets.all(20),
     );
   }

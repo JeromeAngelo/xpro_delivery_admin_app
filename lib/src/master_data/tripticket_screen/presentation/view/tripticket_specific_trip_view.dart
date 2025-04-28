@@ -29,10 +29,8 @@ import 'package:desktop_app/core/common/widgets/reusable_widgets/app_navigation_
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_customer_table.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_dashboard_widget.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_end_trip_otp_table.dart';
-import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_header_widget.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_invoice_table.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_map_place_widget.dart';
-import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_options_dialog.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_otp_table.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_personels_table.dart';
 import 'package:desktop_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_vehicle_table.dart';
@@ -103,13 +101,15 @@ class _TripTicketSpecificTripViewState
     );
     context.read<InvoiceBloc>().add(GetInvoicesByTripEvent(widget.tripId));
 
-      _loadTripUpdatesForMap();
-  
-  // Start auto-refresh timer for map data
-  _startMapRefreshTimer();
+    _loadTripUpdatesForMap();
+
+    // Start auto-refresh timer for map data
+    _startMapRefreshTimer();
   }
 
+  // Update the _loadTripUpdatesForMap method
   void _loadTripUpdatesForMap() {
+    debugPrint('🔄 Loading trip updates for map...');
     setState(() {
       _isMapLoading = true;
       _mapErrorMessage = null;
@@ -119,6 +119,7 @@ class _TripTicketSpecificTripViewState
     context.read<TripUpdatesBloc>().add(GetTripUpdatesEvent(widget.tripId));
   }
 
+  // Update the _startMapRefreshTimer method
   void _startMapRefreshTimer() {
     // Cancel any existing timer
     _mapRefreshTimer?.cancel();
@@ -126,14 +127,16 @@ class _TripTicketSpecificTripViewState
     // Create a new timer that refreshes the data every minute
     _mapRefreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       if (mounted) {
-        _loadTripUpdatesForMap();
         debugPrint('🔄 Auto-refreshing trip map data');
+        // Don't set loading state for auto-refresh to avoid flickering
+        context.read<TripUpdatesBloc>().add(GetTripUpdatesEvent(widget.tripId));
       }
     });
   }
 
   @override
   void dispose() {
+    _mapRefreshTimer?.cancel();
     _otpSearchController.dispose();
     _endTripOtpSearchController.dispose();
     _invoiceSearchController.dispose();
@@ -242,16 +245,15 @@ class _TripTicketSpecificTripViewState
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       // Trip Header
-                      TripHeaderWidget(
-                        trip: trip,
-                        onEditPressed: () {
-                          // Navigate to edit trip screen
-                        },
-                        onOptionsPressed: () {
-                          showTripOptionsDialog(context, trip);
-                        },
-                      ),
-
+                      // TripHeaderWidget(
+                      //   trip: trip,
+                      //   onEditPressed: () {
+                      //     // Navigate to edit trip screen
+                      //   },
+                      //   onOptionsPressed: () {
+                      //     showTripOptionsDialog(context, trip);
+                      //   },
+                      // ),
                       const SizedBox(height: 16),
 
                       // Trip Dashboard
@@ -512,12 +514,9 @@ class _TripTicketSpecificTripViewState
 
   // Add this method to your class
   Widget _buildTripMapWidget(TripEntity trip) {
-    
-    return BlocListener<TripUpdatesBloc, TripUpdatesState>(
+    return BlocConsumer<TripUpdatesBloc, TripUpdatesState>(
       listener: (context, state) {
-        if (state is TripUpdatesLoading) {
-          // We don't set _isMapLoading here to avoid flickering if only updates are refreshing
-        } else if (state is TripUpdatesError) {
+        if (state is TripUpdatesError) {
           setState(() {
             _mapErrorMessage = state.message;
             _isMapLoading = false;
@@ -531,15 +530,18 @@ class _TripTicketSpecificTripViewState
           debugPrint('✅ Loaded ${_tripUpdates.length} trip updates');
         }
       },
-      child: TripMapWidget(
-        tripId: widget.tripId,
-        trip: trip,
-        tripUpdates: _tripUpdates,
-        isLoading: _isMapLoading,
-        errorMessage: _mapErrorMessage,
-        onRefresh: _loadTripUpdatesForMap,
-        height: 400, // You can adjust this height as needed
-      ),
+      builder: (context, state) {
+        // Always show the map widget, but pass the loading state
+        return TripMapWidget(
+          tripId: widget.tripId,
+          trip: trip,
+          tripUpdates: _tripUpdates,
+          isLoading: state is TripUpdatesLoading || _isMapLoading,
+          errorMessage: _mapErrorMessage,
+          onRefresh: _loadTripUpdatesForMap,
+          height: 400, // You can adjust this height as needed
+        );
+      },
     );
   }
 

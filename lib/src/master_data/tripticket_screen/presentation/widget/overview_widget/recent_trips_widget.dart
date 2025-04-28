@@ -163,7 +163,7 @@ class RecentTripsWidget extends StatelessWidget {
         icon: const Icon(Icons.visibility, color: Colors.blue),
         onPressed: () {
           if (trip.id != null) {
-            context.go('/tripticket/details/${trip.id}');
+            context.go('/tripticket/${trip.id}');
           }
         },
         tooltip: 'View Details',

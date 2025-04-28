@@ -13,18 +13,29 @@ class InvoiceRepoImpl extends InvoiceRepo {
 
   final InvoiceRemoteDatasource _remoteDataSource;
 
-  @override
-  ResultFuture<List<InvoiceEntity>> getInvoices() async {
-    try {
-      debugPrint('🔄 Fetching invoices from remote source...');
-      final remoteInvoices = await _remoteDataSource.getInvoices();
-      debugPrint('✅ Successfully fetched ${remoteInvoices.length} invoices');
-      return Right(remoteInvoices);
-    } on ServerException catch (e) {
-      debugPrint('⚠️ API Error: ${e.message}');
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+ @override
+ResultFuture<List<InvoiceEntity>> getInvoices() async {
+  try {
+    debugPrint('🔄 Fetching invoices from remote source...');
+    final remoteInvoices = await _remoteDataSource.getInvoices();
+    debugPrint('✅ Successfully fetched ${remoteInvoices.length} invoices');
+    
+    // Add additional check for empty list
+    if (remoteInvoices.isEmpty) {
+      debugPrint('⚠️ No invoices returned from remote source');
     }
+    
+    return Right(remoteInvoices);
+  } on ServerException catch (e) {
+    debugPrint('⚠️ API Error: ${e.message}');
+    return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+  } catch (e) {
+    // Handle other exceptions
+    debugPrint('❌ Unexpected error: $e');
+    return Left(ServerFailure(message: e.toString(), statusCode: '500'));
   }
+}
+
 
   @override
   ResultFuture<List<InvoiceEntity>> getInvoicesByCustomerId(String customerId) async {

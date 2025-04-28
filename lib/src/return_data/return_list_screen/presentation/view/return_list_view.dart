@@ -3,6 +3,7 @@ import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/presentation/bloc/return_event.dart';
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/presentation/bloc/return_state.dart';
 import 'package:desktop_app/core/common/widgets/app_structure/desktop_layout.dart';
+import 'package:desktop_app/core/common/widgets/app_structure/empty_data_table.dart';
 import 'package:desktop_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:desktop_app/src/return_data/return_list_screen/presentation/widgets/return_list_screen_widgets/return_data_table.dart';
 import 'package:desktop_app/src/return_data/return_list_screen/presentation/widgets/return_list_screen_widgets/return_error_widget.dart';
@@ -93,18 +94,136 @@ class _ReturnListViewState extends State<ReturnListView> {
           }
 
           if (state is AllReturnsLoaded) {
+            // Check if returns is null or empty
+            // Inside the build method, where we check for empty returns:
+            if (state.returns.isEmpty) {
+              // Use EmptyDataTable when there's no data
+              return EmptyDataTable(
+                title: 'Returns',
+                errorMessage: 'No return data available',
+                columns: const [
+                  DataColumn(label: Text('Product')),
+                  DataColumn(label: Text('Description')),
+                  DataColumn(label: Text('Customer')),
+                  DataColumn(label: Text('Trip')),
+                  DataColumn(label: Text('Reason')),
+                  DataColumn(label: Text('Date')),
+                  DataColumn(label: Text('Actions')),
+                ],
+                onRetry: () {
+                  context.read<ReturnBloc>().add(const GetAllReturnsEvent());
+                },
+                onCreatePressed: () {
+                  // Navigate to create return screen
+                },
+                createButtonText: 'Create Return',
+                searchBar: SizedBox(
+                  height: 48, // Explicit height for the search bar
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search returns...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+              );
+            }
+
             List<ReturnEntity> returns = state.returns;
 
             // Filter returns based on search query
             if (_searchQuery.isNotEmpty) {
-              returns = returns.where((returnItem) {
-                final query = _searchQuery.toLowerCase();
-                return (returnItem.productName?.toLowerCase().contains(query) ?? false) ||
-                       (returnItem.productDescription?.toLowerCase().contains(query) ?? false) ||
-                       (returnItem.customer?.storeName?.toLowerCase().contains(query) ?? false) ||
-                       (returnItem.trip?.tripNumberId?.toLowerCase().contains(query) ?? false) ||
-                       (returnItem.reason?.toString().toLowerCase().contains(query) ?? false);
-              }).toList();
+              returns =
+                  returns.where((returnItem) {
+                    final query = _searchQuery.toLowerCase();
+                    return (returnItem.productName?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (returnItem.productDescription?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (returnItem.customer?.storeName?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (returnItem.trip?.tripNumberId?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (returnItem.reason?.toString().toLowerCase().contains(
+                              query,
+                            ) ??
+                            false);
+                  }).toList();
+            }
+
+            // If filtered returns is empty, show EmptyDataTable
+            if (returns.isEmpty) {
+              return EmptyDataTable(
+                title: 'Returns',
+                errorMessage: 'No returns match your search criteria',
+                columns: const [
+                  DataColumn(label: Text('Product')),
+                  DataColumn(label: Text('Description')),
+                  DataColumn(label: Text('Customer')),
+                  DataColumn(label: Text('Trip')),
+                  DataColumn(label: Text('Reason')),
+                  DataColumn(label: Text('Date')),
+                  DataColumn(label: Text('Actions')),
+                ],
+                onRetry: () {
+                  setState(() {
+                    _searchQuery = '';
+                    _searchController.clear();
+                  });
+                  context.read<ReturnBloc>().add(const GetAllReturnsEvent());
+                },
+                onCreatePressed: () {
+                  // Navigate to create return screen
+                },
+                createButtonText: 'Create Return',
+                searchBar: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search returns...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon:
+                        _searchQuery.isNotEmpty
+                            ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                setState(() {
+                                  _searchController.clear();
+                                  _searchQuery = '';
+                                });
+                                context.read<ReturnBloc>().add(
+                                  const GetAllReturnsEvent(),
+                                );
+                              },
+                            )
+                            : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              );
             }
 
             // Calculate total pages
@@ -113,13 +232,15 @@ class _ReturnListViewState extends State<ReturnListView> {
 
             // Paginate returns
             final startIndex = (_currentPage - 1) * _itemsPerPage;
-            final endIndex = startIndex + _itemsPerPage > returns.length
-                ? returns.length
-                : startIndex + _itemsPerPage;
+            final endIndex =
+                startIndex + _itemsPerPage > returns.length
+                    ? returns.length
+                    : startIndex + _itemsPerPage;
 
-            final paginatedReturns = startIndex < returns.length
-                ? returns.sublist(startIndex, endIndex)
-                : [];
+            final paginatedReturns =
+                startIndex < returns.length
+                    ? returns.sublist(startIndex, endIndex)
+                    : [];
 
             return ReturnDataTable(
               returns: paginatedReturns as List<ReturnEntity>,

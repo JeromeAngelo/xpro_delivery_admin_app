@@ -76,11 +76,11 @@ class MyApp extends StatelessWidget {
           // Add responsive typography
           typography: Typography.material2018(platform: TargetPlatform.windows),
         ),
-        darkTheme: FlexThemeData.dark(
-          scheme: FlexScheme.amber,
-          // Add responsive typography
-          typography: Typography.material2018(platform: TargetPlatform.windows),
-        ),
+        // darkTheme: FlexThemeData.dark(
+        //   scheme: FlexScheme.amber,
+        //   // Add responsive typography
+        //   typography: Typography.material2018(platform: TargetPlatform.windows),
+        // ),
         themeMode: ThemeMode.system,
         routerConfig: router,
         builder: (context, child) {

@@ -3,6 +3,7 @@ import 'package:desktop_app/core/common/app/features/Trip_Ticket/undeliverable_c
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/undeliverable_customer/presentation/bloc/undeliverable_customer_event.dart';
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/undeliverable_customer/presentation/bloc/undeliverable_customer_state.dart';
 import 'package:desktop_app/core/common/widgets/app_structure/desktop_layout.dart';
+import 'package:desktop_app/core/common/widgets/app_structure/empty_data_table.dart';
 import 'package:desktop_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:desktop_app/src/return_data/undelivered_customer_data/presentation/widgets/undelivered_screen_list_widgets/undeliverable_customer_table.dart';
 import 'package:desktop_app/src/return_data/undelivered_customer_data/presentation/widgets/undelivered_screen_list_widgets/undelivered_customer_error_wigdet.dart';
@@ -93,6 +94,48 @@ class _UndeliveredCustomerListViewState extends State<UndeliveredCustomerListVie
           }
 
           if (state is AllUndeliverableCustomersLoaded) {
+            // Check if customers list is null or empty
+            if (state.customers.isEmpty) {
+              return EmptyDataTable(
+                title: 'Undeliverable Customers',
+                errorMessage: 'No undeliverable customers found',
+                columns: const [
+                  DataColumn(label: Text('ID')),
+                  DataColumn(label: Text('Store Name')),
+                  DataColumn(label: Text('Delivery Number')),
+                  DataColumn(label: Text('Address')),
+                  DataColumn(label: Text('Municipality')),
+                  DataColumn(label: Text('Province')),
+                  DataColumn(label: Text('Actions')),
+                ],
+                onRetry: () {
+                  context.read<UndeliverableCustomerBloc>().add(
+                    const GetAllUndeliverableCustomersEvent(),
+                  );
+                },
+                onCreatePressed: () {
+                  // Navigate to create undeliverable customer screen
+                  // Implement this based on your navigation requirements
+                },
+                createButtonText: 'Add Undeliverable Customer',
+                searchBar: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search by ID, Store Name, or Address...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              );
+            }
+
             List<UndeliverableCustomerEntity> customers = state.customers;
 
             // Filter customers based on search query
@@ -106,6 +149,65 @@ class _UndeliveredCustomerListViewState extends State<UndeliveredCustomerListVie
                     (customer.municipality?.toLowerCase().contains(query) ?? false) ||
                     (customer.province?.toLowerCase().contains(query) ?? false);
               }).toList();
+            }
+
+            // If filtered customers is empty, show EmptyDataTable
+            if (customers.isEmpty) {
+              return EmptyDataTable(
+                title: 'Undeliverable Customers',
+                errorMessage: 'No customers match your search criteria',
+                columns: const [
+                  DataColumn(label: Text('ID')),
+                  DataColumn(label: Text('Store Name')),
+                  DataColumn(label: Text('Delivery Number')),
+                  DataColumn(label: Text('Address')),
+                  DataColumn(label: Text('Municipality')),
+                  DataColumn(label: Text('Province')),
+                  DataColumn(label: Text('Actions')),
+                ],
+                onRetry: () {
+                  setState(() {
+                    _searchQuery = '';
+                    _searchController.clear();
+                  });
+                  context.read<UndeliverableCustomerBloc>().add(
+                    const GetAllUndeliverableCustomersEvent(),
+                  );
+                },
+                onCreatePressed: () {
+                  // Navigate to create undeliverable customer screen
+                },
+                createButtonText: 'Add Undeliverable Customer',
+                searchBar: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search by ID, Store Name, or Address...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                _searchController.clear();
+                                _searchQuery = '';
+                              });
+                              context.read<UndeliverableCustomerBloc>().add(
+                                const GetAllUndeliverableCustomersEvent(),
+                              );
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              );
             }
 
             // Calculate total pages

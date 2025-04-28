@@ -39,7 +39,7 @@ class _ProductListScreenViewState extends State<ProductListScreenView> {
   @override
   Widget build(BuildContext context) {
     // Define navigation items
-    final navigationItems = AppNavigationItems.tripticketNavigationItems();
+    final navigationItems = AppNavigationItems.generalTripItems();
 
     return DesktopLayout(
       navigationItems: navigationItems,

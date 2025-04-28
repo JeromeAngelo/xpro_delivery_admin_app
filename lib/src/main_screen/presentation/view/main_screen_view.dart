@@ -34,11 +34,27 @@ class _MainScreenViewState extends State<MainScreenView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('X-Pro Delivery Admin App'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        title: Text(
+          'X-Pro Delivery Admin App',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.surface,
+          ),
+        ),
         actions: [
-          IconButton(icon: const Icon(Icons.desktop_windows), onPressed: () {}),
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: Icon(
+              Icons.desktop_windows,
+              color: Theme.of(context).colorScheme.surface,
+            ),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.notifications,
+              color: Theme.of(context).colorScheme.surface,
+            ),
             onPressed: () {
               // Handle notifications
               ScaffoldMessenger.of(context).showSnackBar(
@@ -62,7 +78,8 @@ class _MainScreenViewState extends State<MainScreenView> {
                       children: [
                         CircleAvatar(
                           radius: 16,
-                          backgroundColor: Colors.blue.shade100,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.surface,
                           child: Text(
                             firstLetter,
                             style: TextStyle(
@@ -74,9 +91,15 @@ class _MainScreenViewState extends State<MainScreenView> {
                         const SizedBox(width: 8),
                         Text(
                           userName,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(context).colorScheme.surface,
+                          ),
                         ),
-                        const Icon(Icons.arrow_drop_down),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: Theme.of(context).colorScheme.surface,
+                        ),
                       ],
                     ),
                     itemBuilder:
@@ -85,17 +108,25 @@ class _MainScreenViewState extends State<MainScreenView> {
                             value: 'profile',
                             child: Row(
                               children: [
-                                const Icon(Icons.person, size: 20),
+                                Icon(
+                                  Icons.person,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(state.user.email ?? 'n/a'),
                               ],
                             ),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'settings',
                             child: Row(
                               children: [
-                                Icon(Icons.settings, size: 20),
+                                Icon(
+                                  Icons.settings,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
                                 SizedBox(width: 8),
                                 Text('Settings'),
                               ],
@@ -201,7 +232,10 @@ class _MainScreenViewState extends State<MainScreenView> {
               } else {
                 // Show a simple icon for unauthenticated users
                 return IconButton(
-                  icon: const Icon(Icons.account_circle),
+                  icon: Icon(
+                    Icons.account_circle,
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
                   onPressed: () {
                     // Navigate to login page if not authenticated
                     context.go('/');
@@ -228,14 +262,15 @@ class _MainScreenViewState extends State<MainScreenView> {
                     'Dashboard',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Welcome to the X-Pro Delivery Admin Dashboard',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   GridView.count(

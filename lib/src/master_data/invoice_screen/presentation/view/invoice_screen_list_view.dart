@@ -41,7 +41,7 @@ class _InvoiceScreenListViewState extends State<InvoiceScreenListView> {
   @override
   Widget build(BuildContext context) {
     // Define navigation items
-    final navigationItems = AppNavigationItems.tripticketNavigationItems();
+    final navigationItems = AppNavigationItems.generalTripItems();
 
     return DesktopLayout(
       navigationItems: navigationItems,

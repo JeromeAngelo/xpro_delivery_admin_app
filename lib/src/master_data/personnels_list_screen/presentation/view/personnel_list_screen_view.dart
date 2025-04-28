@@ -41,7 +41,7 @@ class _PersonnelListScreenViewState extends State<PersonnelListScreenView> {
   @override
   Widget build(BuildContext context) {
     // Define navigation items
-    final navigationItems = AppNavigationItems.tripticketNavigationItems();
+    final navigationItems = AppNavigationItems.generalTripItems();
 
     return DesktopLayout(
       navigationItems: navigationItems,

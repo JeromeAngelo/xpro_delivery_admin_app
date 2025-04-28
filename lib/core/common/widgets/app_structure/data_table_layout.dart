@@ -15,6 +15,7 @@ class DataTableLayout extends StatefulWidget {
   final String? errorMessage; // New parameter for error message
   final VoidCallback? onRetry; // New parameter for retry callback
   final VoidCallback? onFiltered;
+  final Function(List<int>)? onRowsSelected; // Callback for selected rows
 
   const DataTableLayout({
     super.key,
@@ -29,9 +30,10 @@ class DataTableLayout extends StatefulWidget {
     required this.totalPages,
     required this.onPageChanged,
     this.isLoading = false,
-    this.enableSelection = false,
+    this.enableSelection = true, // Changed default to true
     this.errorMessage, // Add this parameter
     this.onRetry, // Add this parameter
+    this.onRowsSelected, // Add this parameter
   });
 
   @override
@@ -46,6 +48,10 @@ class _DataTableLayoutState extends State<DataTableLayout> {
     fontWeight: FontWeight.bold,
     color: Colors.black, // or any color you prefer
   );
+
+  // Track selected rows
+  final List<int> _selectedRows = [];
+  bool _selectAll = false;
 
   @override
   void dispose() {
@@ -70,7 +76,7 @@ class _DataTableLayoutState extends State<DataTableLayout> {
               Text(
                 widget.title,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -79,9 +85,19 @@ class _DataTableLayoutState extends State<DataTableLayout> {
               if (widget.onCreatePressed != null)
                 ElevatedButton.icon(
                   onPressed: widget.onCreatePressed,
-                  icon: const Icon(Icons.add),
-                  label: Text(widget.createButtonText),
+                  icon: Icon(
+                    Icons.add,
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
+                  label: Text(
+                    widget.createButtonText,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.surface,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -167,6 +183,7 @@ class _DataTableLayoutState extends State<DataTableLayout> {
                 // Table with horizontal scrolling - Always show the structure
                 Scrollbar(
                   controller: _horizontalScrollController,
+                  thickness: 5,
                   thumbVisibility: true,
                   trackVisibility: true,
                   child: SingleChildScrollView(
@@ -189,7 +206,7 @@ class _DataTableLayoutState extends State<DataTableLayout> {
                     horizontal: 16.0,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 36, 34, 34),
+                    // color: const Color.fromARGB(255, 36, 34, 34),
                     border: Border(
                       top: BorderSide(color: Colors.grey[300]!, width: 1),
                     ),
@@ -224,7 +241,6 @@ class _DataTableLayoutState extends State<DataTableLayout> {
             ),
           ),
         ),
-        
       ],
     );
   }
@@ -257,9 +273,78 @@ class _DataTableLayoutState extends State<DataTableLayout> {
         ),
       );
     } else {
+      // Create a new list of columns with a checkbox column at the beginning
+      final List<DataColumn> columnsWithCheckbox = [
+        DataColumn(
+          label:
+              widget.enableSelection
+                  ? Checkbox(
+                    value: _selectAll,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _selectAll = value ?? false;
+                        _selectedRows.clear();
+
+                        if (_selectAll) {
+                          // Add all row indices to selected rows
+                          for (int i = 0; i < widget.rows.length; i++) {
+                            _selectedRows.add(i);
+                          }
+                        }
+
+                        // Notify parent about selection change
+                        if (widget.onRowsSelected != null) {
+                          widget.onRowsSelected!(_selectedRows);
+                        }
+                      });
+                    },
+                  )
+                  : const SizedBox.shrink(),
+        ),
+        ...widget.columns,
+      ];
+
+      // Create a new list of rows with a checkbox cell at the beginning of each row
+      final List<DataRow> rowsWithCheckbox = List.generate(widget.rows.length, (
+        index,
+      ) {
+        final isSelected = _selectedRows.contains(index);
+
+        return DataRow(
+          selected: isSelected,
+          cells: [
+            DataCell(
+              widget.enableSelection
+                  ? Checkbox(
+                    value: isSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        if (value == true) {
+                          _selectedRows.add(index);
+                        } else {
+                          _selectedRows.remove(index);
+                        }
+
+                        // Update selectAll checkbox
+                        _selectAll = _selectedRows.length == widget.rows.length;
+
+                        // Notify parent about selection change
+                        if (widget.onRowsSelected != null) {
+                          widget.onRowsSelected!(_selectedRows);
+                        }
+                      });
+                    },
+                  )
+                  : const SizedBox.shrink(),
+            ),
+            ...widget.rows[index].cells,
+          ],
+        );
+      });
+
       return DataTable(
-        columns: widget.columns,
-        rows: widget.rows,
+        columns: columnsWithCheckbox,
+        rows: rowsWithCheckbox,
         headingRowColor: MaterialStateProperty.all(Colors.grey[100]),
         headingTextStyle: headerStyle,
         dataRowMinHeight: 48,
@@ -276,8 +361,18 @@ class _DataTableLayoutState extends State<DataTableLayout> {
   // Helper method to build a table with a centered message
   Widget _buildTableWithMessage(Widget messageWidget) {
     // Create a DataTable with the same columns but with a single row containing our message
+    final List<DataColumn> columnsWithCheckbox = [
+      DataColumn(
+        label:
+            widget.enableSelection
+                ? Checkbox(value: false, onChanged: null)
+                : const SizedBox.shrink(),
+      ),
+      ...widget.columns,
+    ];
+
     return DataTable(
-      columns: widget.columns,
+      columns: columnsWithCheckbox,
       rows: [
         DataRow(
           cells: [
@@ -286,15 +381,12 @@ class _DataTableLayoutState extends State<DataTableLayout> {
               Center(
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 32.0),
-                  child: Text(
-                    messageWidget.toString(),
-                    style: TextStyle(color: Colors.black),
-                  ),
+                  child: messageWidget,
                 ),
               ),
             ),
             // Add empty cells for the remaining columns
-            for (int i = 1; i < widget.columns.length; i++)
+            for (int i = 1; i < columnsWithCheckbox.length; i++)
               const DataCell(SizedBox.shrink()),
           ],
         ),

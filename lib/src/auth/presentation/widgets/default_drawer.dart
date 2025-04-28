@@ -5,7 +5,7 @@ import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth
 import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';
 
 class DefaultDrawer extends StatefulWidget {
-  const DefaultDrawer({Key? key}) : super(key: key);
+  const DefaultDrawer({super.key});
 
   @override
   State<DefaultDrawer> createState() => _DefaultDrawerState();
@@ -31,24 +31,17 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
 
   Widget _buildDrawerHeader(BuildContext context) {
     return DrawerHeader(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
-      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            'assets/images/logo.png',
-            height: 80,
-            width: 80,
-          ),
+          Image.asset('assets/images/logo.png', height: 80, width: 80),
           const SizedBox(height: 10),
           Text(
             'X-Pro Delivery Admin',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -68,7 +61,7 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
           },
         ),
         const Divider(),
-        
+
         // Resources Expandable Section
         ListTile(
           leading: const Icon(Icons.inventory),
@@ -82,7 +75,7 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
             });
           },
         ),
-        
+
         // Expandable Resources Items
         if (_isResourcesExpanded) ...[
           _buildSubListTile(
@@ -110,9 +103,9 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
             route: '/returns',
           ),
         ],
-        
+
         const Divider(),
-        
+
         // Reports
         ListTile(
           leading: const Icon(Icons.bar_chart),
@@ -122,7 +115,7 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
             Navigator.pushNamed(context, '/reports');
           },
         ),
-        
+
         // Settings
         ListTile(
           leading: const Icon(Icons.settings),
@@ -160,30 +153,28 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
         builder: (context, state) {
           return ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.red),
-            ),
+            title: const Text('Logout', style: TextStyle(color: Colors.red)),
             onTap: () {
               showDialog(
                 context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Confirm Logout'),
-                  content: const Text('Are you sure you want to logout?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('Confirm Logout'),
+                      content: const Text('Are you sure you want to logout?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context); // Close dialog
+                            context.read<AuthBloc>().add(const SignOutEvent());
+                          },
+                          child: const Text('Logout'),
+                        ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context); // Close dialog
-                        context.read<AuthBloc>().add(const SignOutEvent());
-                      },
-                      child: const Text('Logout'),
-                    ),
-                  ],
-                ),
               );
             },
           );

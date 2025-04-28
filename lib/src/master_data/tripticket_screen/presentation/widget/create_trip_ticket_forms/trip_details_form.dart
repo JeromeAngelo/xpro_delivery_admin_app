@@ -50,7 +50,7 @@ class TripDetailsForm extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 24),
-            
+
             // QR Code display
             Expanded(
               flex: 1,
@@ -59,10 +59,7 @@ class TripDetailsForm extends StatelessWidget {
                 children: [
                   const Text(
                     'Trip QR Code',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -109,28 +106,38 @@ class TripDetailsForm extends StatelessWidget {
 
         const SizedBox(height: 24),
 
-        // Customers dropdown
+        // Customers dropdown - filter for unassigned customers
         _buildCustomersDropdown(context),
 
-        // Invoices dropdown
+        // Invoices dropdown - filter for unassigned invoices
         _buildInvoicesDropdown(context),
       ],
     );
   }
 
   Widget _buildCustomersDropdown(BuildContext context) {
-    if (availableCustomers.isEmpty) {
+    // Filter customers to only show those without a trip assigned
+    final unassignedCustomers =
+        availableCustomers.where((customer) {
+          // Check if customer has no trip assigned or trip is null
+          return customer.tripId == null || customer.tripId!.isEmpty;
+        }).toList();
+
+    debugPrint('📊 Available customers: ${availableCustomers.length}');
+    debugPrint('📊 Unassigned customers: ${unassignedCustomers.length}');
+
+    if (unassignedCustomers.isEmpty) {
       return const AppTextField(
         label: 'Customers',
-        initialValue: 'No Customers',
+        initialValue: 'No Unassigned Customers',
         readOnly: true,
-        helperText: 'No customers available to select',
+        helperText: 'No unassigned customers available to select',
       );
     }
 
     // Convert available customers to dropdown items with search terms
     final customerItems =
-        availableCustomers.map((customer) {
+        unassignedCustomers.map((customer) {
           // Create search terms focused on store name
           final List<String> searchTerms =
               [
@@ -157,7 +164,7 @@ class TripDetailsForm extends StatelessWidget {
           onCustomersChanged(updatedList);
         }
       },
-      //   helperText: 'Select customers for this trip (search by store name)',
+      helperText: 'Select customers without an assigned trip',
       selectedItems: selectedCustomers,
       onSelectedItemsChanged: onCustomersChanged,
       enableSearch: true, // Enable search functionality
@@ -165,27 +172,44 @@ class TripDetailsForm extends StatelessWidget {
   }
 
   Widget _buildInvoicesDropdown(BuildContext context) {
-    if (availableInvoices.isEmpty) {
+    // Filter invoices to only show those without a trip assigned
+    final unassignedInvoices =
+        availableInvoices.where((invoice) {
+          // Check if invoice has no trip assigned or trip is null
+          return invoice.tripId == null || invoice.tripId!.isEmpty;
+        }).toList();
+
+    debugPrint('📊 Available invoices: ${availableInvoices.length}');
+    debugPrint('📊 Unassigned invoices: ${unassignedInvoices.length}');
+
+    if (unassignedInvoices.isEmpty) {
       return const AppTextField(
         label: 'Invoices',
-        initialValue: 'No Invoices',
+        initialValue: 'No Unassigned Invoices',
         readOnly: true,
-        helperText: 'No invoices available to select',
+        helperText: 'No unassigned invoices available to select',
       );
     }
 
     // Convert available invoices to dropdown items with search terms
     final invoiceItems =
-        availableInvoices.map((invoice) {
+        unassignedInvoices.map((invoice) {
           // Create search terms focused on invoice number
           final List<String> searchTerms =
               [
                 invoice.invoiceNumber ?? '',
               ].where((term) => term.isNotEmpty).toList();
 
+          // Add customer name to the label if available
+          String label = invoice.invoiceNumber ?? 'Invoice ${invoice.id}';
+          if (invoice.customer?.storeName != null &&
+              invoice.customer!.storeName!.isNotEmpty) {
+            label += ' - ${invoice.customer!.storeName}';
+          }
+
           return DropdownItem<InvoiceModel>(
             value: invoice,
-            label: invoice.invoiceNumber ?? 'Invoice ${invoice.id}',
+            label: label,
             icon: const Icon(Icons.receipt, size: 16),
             uniqueId: invoice.id ?? 'invoice_${invoice.hashCode}',
             searchTerms: searchTerms, // Add search terms for better filtering
@@ -203,7 +227,7 @@ class TripDetailsForm extends StatelessWidget {
           onInvoicesChanged(updatedList);
         }
       },
-      //   helperText: 'Select invoices for this trip (search by invoice number)',
+      helperText: 'Select invoices without an assigned trip',
       selectedItems: selectedInvoices,
       onSelectedItemsChanged: onInvoicesChanged,
       enableSearch: true, // Enable search functionality

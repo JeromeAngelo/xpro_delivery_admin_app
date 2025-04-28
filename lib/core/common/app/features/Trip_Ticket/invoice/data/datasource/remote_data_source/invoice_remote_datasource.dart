@@ -55,56 +55,75 @@ class InvoiceRemoteDatasourceImpl implements InvoiceRemoteDatasource {
       : _pocketBaseClient = pocketBaseClient;
 
   final PocketBase _pocketBaseClient;
-  @override
-  Future<List<InvoiceModel>> getInvoices() async {
-    try {
-      debugPrint('🔄 Fetching all invoices');
+ @override
+Future<List<InvoiceModel>> getInvoices() async {
+  try {
+    debugPrint('🔄 Fetching all invoices');
 
-      // Get invoices with expanded relations
-      final result = await _pocketBaseClient.collection('invoices').getFullList(
-            expand: 'customer,customer.deliveryStatus,productsList,trip',
-            sort: '-created'
-          );
+    // Get invoices with expanded relations - increase the default limit
+    final result = await _pocketBaseClient.collection('invoices').getFullList(
+          expand: 'customer,customer.deliveryStatus,productsList,trip',
+          sort: '-created',
+          batch: 200, // Increase batch size to get more records at once
+        );
 
-      debugPrint('✅ Retrieved ${result.length} invoices from API');
+    debugPrint('✅ Retrieved ${result.length} invoices from API');
 
-      List<InvoiceModel> invoices = [];
+    List<InvoiceModel> invoices = [];
 
-      for (var record in result) {
-        final mappedData = {
-          'id': record.id,
-          'collectionId': record.collectionId,
-          'collectionName': record.collectionName,
-          'invoiceNumber': record.data['invoiceNumber'],
-          'customerId': record.data['customer'],
-          'tripId': record.data['trip'],
-          'status': record.data['status'],
-          'totalAmount': record.data['totalAmount'],
-          'expand': {
-            'customer': record.expand['customer']?[0].data,
-            'productsList': record.expand['productsList']
-                    ?.map((product) => {
-                          'id': product.id,
-                          'collectionId': product.collectionId,
-                          'collectionName': product.collectionName,
-                          ...product.data,
-                        })
-                    .toList() ??
-                [],
-            'trip': record.expand['trip']?[0].data,
-          }
-        };
+    // Process records in batches to avoid UI freezing
+    const batchSize = 20;
+    for (int i = 0; i < result.length; i += batchSize) {
+      final end = (i + batchSize < result.length) ? i + batchSize : result.length;
+      final batch = result.sublist(i, end);
+      
+      for (var record in batch) {
+        try {
+          final mappedData = {
+            'id': record.id,
+            'collectionId': record.collectionId,
+            'collectionName': record.collectionName,
+            'invoiceNumber': record.data['invoiceNumber'],
+            'customerId': record.data['customer'],
+            'tripId': record.data['trip'],
+            'status': record.data['status'],
+            'totalAmount': record.data['totalAmount'],
+            'expand': {
+              'customer': record.expand['customer']?[0].data,
+              'productsList': record.expand['productsList']
+                      ?.map((product) => {
+                            'id': product.id,
+                            'collectionId': product.collectionId,
+                            'collectionName': product.collectionName,
+                            ...product.data,
+                          })
+                      .toList() ??
+                  [],
+              'trip': record.expand['trip']?[0].data,
+            }
+          };
 
-        invoices.add(InvoiceModel.fromJson(mappedData));
-        await Future.delayed(const Duration(milliseconds: 300));
+          invoices.add(InvoiceModel.fromJson(mappedData));
+        } catch (recordError) {
+          debugPrint('⚠️ Error processing invoice record: $recordError');
+          // Continue with other records
+        }
       }
-
-      return invoices;
-    } catch (e) {
-      debugPrint('❌ Error fetching invoices: $e');
-      throw ServerException(message: e.toString(), statusCode: '500');
+      
+      // Only add a small delay between batches, not between individual records
+      if (i + batchSize < result.length) {
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
     }
+
+    debugPrint('✅ Successfully processed ${invoices.length} invoices');
+    return invoices;
+  } catch (e) {
+    debugPrint('❌ Error fetching invoices: $e');
+    throw ServerException(message: e.toString(), statusCode: '500');
   }
+}
+
 @override
 Future<List<InvoiceModel>> getInvoicesByTripId(String tripId) async {
   try {

@@ -51,7 +51,11 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
                       const Spacer(),
                       // Toggle visibility button
                       IconButton(
-                        icon: Icon(_isQrVisible ? Icons.visibility_off : Icons.visibility),
+                        icon: Icon(
+                          _isQrVisible
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
                         tooltip: _isQrVisible ? 'Hide QR Code' : 'Show QR Code',
                         onPressed: () {
                           setState(() {
@@ -61,8 +65,13 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
                       ),
                       // Toggle size button
                       IconButton(
-                        icon: Icon(_isQrExpanded ? Icons.compress : Icons.expand),
-                        tooltip: _isQrExpanded ? 'Minimize QR Code' : 'Maximize QR Code',
+                        icon: Icon(
+                          _isQrExpanded ? Icons.compress : Icons.expand,
+                        ),
+                        tooltip:
+                            _isQrExpanded
+                                ? 'Minimize QR Code'
+                                : 'Maximize QR Code',
                         onPressed: () {
                           setState(() {
                             _isQrExpanded = !_isQrExpanded;
@@ -72,7 +81,7 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
                     ],
                   ),
                 ),
-                
+
                 // QR Code content (conditionally visible)
                 if (_isQrVisible)
                   Padding(
@@ -103,9 +112,9 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
                             backgroundColor: Colors.white,
                           ),
                         ),
-                        
+
                         const SizedBox(width: 24),
-                        
+
                         // QR Code Info
                         Expanded(
                           child: Column(
@@ -131,9 +140,13 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
                                     label: const Text('Print QR Code'),
                                     onPressed: () {
                                       // Implement printing functionality
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
-                                          content: Text('Print functionality will be implemented soon'),
+                                          content: Text(
+                                            'Print functionality will be implemented soon',
+                                          ),
                                         ),
                                       );
                                     },
@@ -148,9 +161,13 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
                                     label: const Text('Save as Image'),
                                     onPressed: () {
                                       // Implement save functionality
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
-                                          content: Text('Save functionality will be implemented soon'),
+                                          content: Text(
+                                            'Save functionality will be implemented soon',
+                                          ),
                                         ),
                                       );
                                     },
@@ -208,7 +225,7 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
             DashboardInfoItem(
               icon: Icons.route,
               value: widget.trip.totalTripDistance ?? '0 km',
-              label: 'Total Distance',
+              label: 'Total Distance in KM',
             ),
           ],
         ),
