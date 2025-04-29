@@ -9,6 +9,7 @@ import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentati
 import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
 import 'package:desktop_app/core/common/widgets/app_structure/data_table_layout.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
 import 'package:intl/intl.dart';
 
@@ -68,84 +69,164 @@ class _TripDataTableState extends State<TripDataTable> {
         DataColumn(label: Text('Status', style: headerStyle)),
         DataColumn(label: Text('Actions', style: headerStyle)),
       ],
-      rows:
-          widget.trips.map((trip) {
-            // Debug print for each trip
-            debugPrint('🔍 TABLE: Processing trip: ${trip.id}');
-
-            return DataRow(
-              cells: [
-                DataCell(
-                  Text(trip.id ?? 'N/A'),
-                  onTap: () => _navigateToTripDetails(context, trip),
-                ),
-                DataCell(
-                  Text(trip.tripNumberId ?? 'N/A'),
-                  onTap: () => _navigateToTripDetails(context, trip),
-                ),
-                DataCell(
-                  Text(_formatDate(trip.timeAccepted)),
-                  onTap: () => _navigateToTripDetails(context, trip),
-                ),
-                DataCell(
-                  Text(_formatDate(trip.timeEndTrip)),
-                  onTap: () => _navigateToTripDetails(context, trip),
-                ),
-                DataCell(
-                  Text(trip.user?.name ?? 'N/A'),
-                  onTap: () => _navigateToTripDetails(context, trip),
-                ),
-                DataCell(
-                  TripStatusChip(trip: trip),
-                  onTap: () => _navigateToTripDetails(context, trip),
-                ),
-                DataCell(
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.visibility, color: Colors.blue),
-                        tooltip: 'View Details',
-                        onPressed: () => _navigateToTripDetails(context, trip),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.orange),
-                        tooltip: 'Edit',
-                        onPressed: () {
-                          // Edit trip
-                          if (trip.id != null) {
-                            // Navigate to edit screen with trip data
-                          }
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        tooltip: 'Delete',
-                        onPressed: () {
-                          // We need to check if trip is TripModel before showing delete dialog
-                          if (trip is TripModel) {
-                            showTripDeleteDialog(context, trip);
-                          } else if (trip.id != null) {
-                            // Alternative approach if it's not a TripModel
-                            context.read<TripBloc>().add(
-                              DeleteTripTicketEvent(trip.id!),
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
+      rows: widget.isLoading ? _buildLoadingRows() : _buildDataRows(),
       currentPage: widget.currentPage,
       totalPages: widget.totalPages,
       onPageChanged: widget.onPageChanged,
       isLoading: widget.isLoading,
       enableSelection: true,
       onFiltered: _handleFiltering,
-      onRowsSelected: _handleRowsSelected,
+      onRowsSelected: _handleRowsSelected, dataLength: '${widget.trips.length}',
     );
+  }
+
+  List<DataRow> _buildLoadingRows() {
+    // Create 10 shimmer loading rows (or however many you want to show during loading)
+    return List.generate(
+      10,
+      (index) => DataRow(
+        cells: [
+          // ID cell
+          DataCell(_buildShimmerCell(60)),
+          // Trip Number cell
+          DataCell(_buildShimmerCell(100)),
+          // Start Date cell
+          DataCell(_buildShimmerCell(120)),
+          // End Date cell
+          DataCell(_buildShimmerCell(120)),
+          // User cell
+          DataCell(_buildShimmerCell(100)),
+          // Status cell
+          DataCell(_buildStatusShimmer()),
+          // Actions cell
+          DataCell(
+            Row(
+              children: [
+                _buildShimmerIcon(),
+                const SizedBox(width: 8),
+                _buildShimmerIcon(),
+                const SizedBox(width: 8),
+                _buildShimmerIcon(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerCell(double width) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: width,
+        height: 16,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusShimmer() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: 80,
+        height: 24,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerIcon() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+      ),
+    );
+  }
+
+  List<DataRow> _buildDataRows() {
+    return widget.trips.map((trip) {
+      // Debug print for each trip
+      debugPrint('🔍 TABLE: Processing trip: ${trip.id}');
+
+      return DataRow(
+        cells: [
+          DataCell(
+            Text(trip.id ?? 'N/A'),
+            onTap: () => _navigateToTripDetails(context, trip),
+          ),
+          DataCell(
+            Text(trip.tripNumberId ?? 'N/A'),
+            onTap: () => _navigateToTripDetails(context, trip),
+          ),
+          DataCell(
+            Text(_formatDate(trip.timeAccepted)),
+            onTap: () => _navigateToTripDetails(context, trip),
+          ),
+          DataCell(
+            Text(_formatDate(trip.timeEndTrip)),
+            onTap: () => _navigateToTripDetails(context, trip),
+          ),
+          DataCell(
+            Text(trip.user?.name ?? 'N/A'),
+            onTap: () => _navigateToTripDetails(context, trip),
+          ),
+          DataCell(
+            TripStatusChip(trip: trip),
+            onTap: () => _navigateToTripDetails(context, trip),
+          ),
+          DataCell(
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.visibility, color: Colors.blue),
+                  tooltip: 'View Details',
+                  onPressed: () => _navigateToTripDetails(context, trip),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.orange),
+                  tooltip: 'Edit',
+                  onPressed: () {
+                    // Edit trip
+                    if (trip.id != null) {
+                      // Navigate to edit screen with trip data
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  tooltip: 'Delete',
+                  onPressed: () {
+                    // We need to check if trip is TripModel before showing delete dialog
+                    if (trip is TripModel) {
+                      showTripDeleteDialog(context, trip);
+                    } else if (trip.id != null) {
+                      // Alternative approach if it's not a TripModel
+                      context.read<TripBloc>().add(
+                        DeleteTripTicketEvent(trip.id!),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }).toList();
   }
 
   // Helper method to navigate to trip details

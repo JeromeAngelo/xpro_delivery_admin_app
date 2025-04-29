@@ -129,7 +129,7 @@ class _InvoiceProductsDataTableState extends State<InvoiceProductsDataTable> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Filter options coming soon')),
         );
-      },
+      }, dataLength: '',
     );
   }
 

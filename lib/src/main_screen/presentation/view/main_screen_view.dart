@@ -35,6 +35,9 @@ class _MainScreenViewState extends State<MainScreenView> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
+        iconTheme: IconThemeData(
+    color: Theme.of(context).colorScheme.surface, // This sets the drawer icon color
+  ),
         title: Text(
           'X-Pro Delivery Admin App',
           style: TextStyle(

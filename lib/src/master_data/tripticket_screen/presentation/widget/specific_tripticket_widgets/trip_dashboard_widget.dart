@@ -3,11 +3,17 @@ import 'package:desktop_app/core/common/widgets/app_structure/data_dashboard.dar
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:shimmer/shimmer.dart';
 
 class TripDashboardWidget extends StatefulWidget {
-  final TripEntity trip;
+  final TripEntity? trip;
+  final bool isLoading;
 
-  const TripDashboardWidget({super.key, required this.trip});
+  const TripDashboardWidget({
+    super.key,
+    required this.trip,
+    this.isLoading = false,
+  });
 
   @override
   State<TripDashboardWidget> createState() => _TripDashboardWidgetState();
@@ -19,6 +25,10 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isLoading) {
+      return _buildLoadingSkeleton(context);
+    }
+
     String formatDate(DateTime? date) {
       if (date == null) return 'Not set';
       return DateFormat('MM/dd/yyyy hh:mm a').format(date);
@@ -28,7 +38,7 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // QR Code Display Section
-        if (widget.trip.qrCode != null && widget.trip.qrCode!.isNotEmpty)
+        if (widget.trip?.qrCode != null && widget.trip!.qrCode!.isNotEmpty)
           Card(
             margin: const EdgeInsets.only(bottom: 16),
             elevation: 2,
@@ -106,7 +116,7 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
                           ),
                           padding: const EdgeInsets.all(12),
                           child: QrImageView(
-                            data: widget.trip.qrCode!,
+                            data: widget.trip!.qrCode!,
                             version: QrVersions.auto,
                             size: _isQrExpanded ? 250 : 150,
                             backgroundColor: Colors.white,
@@ -121,7 +131,7 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'QR Code Value: ${widget.trip.qrCode}',
+                                'QR Code Value: ${widget.trip!.qrCode}',
                                 style: const TextStyle(fontSize: 14),
                               ),
                               const SizedBox(height: 16),
@@ -189,47 +199,296 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
           items: [
             DashboardInfoItem(
               icon: Icons.numbers,
-              value: widget.trip.tripNumberId ?? 'N/A',
+              value: widget.trip?.tripNumberId ?? 'N/A',
               label: 'Trip Number',
             ),
             DashboardInfoItem(
               icon: Icons.people,
-              value: widget.trip.customers.length.toString(),
+              value: widget.trip?.customers.length.toString() ?? '0',
               label: 'Customers',
             ),
             DashboardInfoItem(
               icon: Icons.receipt,
-              value: widget.trip.invoices.length.toString(),
+              value: widget.trip?.invoices.length.toString() ?? '0',
               label: 'Invoices',
             ),
             DashboardInfoItem(
               icon: Icons.play_circle_filled,
-              value: formatDate(widget.trip.timeAccepted),
+              value: formatDate(widget.trip?.timeAccepted),
               label: 'Start of Trip',
             ),
             DashboardInfoItem(
               icon: Icons.stop_circle,
-              value: formatDate(widget.trip.timeEndTrip),
+              value: formatDate(widget.trip?.timeEndTrip),
               label: 'End of Trip',
             ),
             DashboardInfoItem(
               icon: Icons.check_circle,
-              value: widget.trip.completedCustomers.length.toString(),
+              value: widget.trip?.completedCustomers.length.toString() ?? '0',
               label: 'Completed Deliveries',
             ),
             DashboardInfoItem(
               icon: Icons.cancel,
-              value: widget.trip.undeliverableCustomers.length.toString(),
+              value:
+                  widget.trip?.undeliverableCustomers.length.toString() ?? '0',
               label: 'Undelivered',
             ),
             DashboardInfoItem(
               icon: Icons.route,
-              value: widget.trip.totalTripDistance ?? '0 km',
+              value: widget.trip?.totalTripDistance ?? '0 km',
               label: 'Total Distance in KM',
             ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildLoadingSkeleton(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // QR Code skeleton
+        Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          elevation: 2,
+          child: Column(
+            children: [
+              // Header skeleton
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
+                  children: [
+                    Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        width: 120,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    // Fake toggle buttons
+                    Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // QR Code content skeleton
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // QR Code skeleton
+                    Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 24),
+
+                    // QR Code Info skeleton
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Shimmer.fromColors(
+                            baseColor: Colors.grey[300]!,
+                            highlightColor: Colors.grey[100]!,
+                            child: Container(
+                              width: double.infinity,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Shimmer.fromColors(
+                            baseColor: Colors.grey[300]!,
+                            highlightColor: Colors.grey[100]!,
+                            child: Container(
+                              width: double.infinity,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Shimmer.fromColors(
+                            baseColor: Colors.grey[300]!,
+                            highlightColor: Colors.grey[100]!,
+                            child: Container(
+                              width: double.infinity,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Shimmer.fromColors(
+                                baseColor: Colors.grey[300]!,
+                                highlightColor: Colors.grey[100]!,
+                                child: Container(
+                                  width: 120,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Shimmer.fromColors(
+                                baseColor: Colors.grey[300]!,
+                                highlightColor: Colors.grey[100]!,
+                                child: Container(
+                                  width: 120,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Dashboard Summary skeleton
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Grid of skeleton items
+                GridView.count(
+                  crossAxisCount: 4,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: 2.5,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  children: List.generate(
+                    8,
+                    (index) => _buildDashboardSkeletonItem(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDashboardSkeletonItem(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icon placeholder
+          Container(
+            width: 24,
+            height: 24,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Value placeholder
+          Container(
+            width: 100,
+            height: 18,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 4),
+
+          // Label placeholder
+          Container(
+            width: 80,
+            height: 14,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

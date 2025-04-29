@@ -12,6 +12,9 @@ class DesktopLayout extends StatelessWidget {
   final Widget child;
   final String? title;
   final bool disableScrolling;
+  final bool useCompactNavigation;
+  final double sidebarWidth;
+  final bool adaptiveLayout;
 
   const DesktopLayout({
     super.key,
@@ -24,10 +27,16 @@ class DesktopLayout extends StatelessWidget {
     required this.child,
     this.title,
     this.disableScrolling = false,
+    this.useCompactNavigation = false,
+    this.sidebarWidth = 250,
+    this.adaptiveLayout = true,
   });
 
   @override
   Widget build(BuildContext context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = adaptiveLayout && screenWidth < 1100;
+
     return Scaffold(
       appBar: DesktopAppBar(
         onThemeToggle: onThemeToggle,
@@ -43,22 +52,26 @@ class DesktopLayout extends StatelessWidget {
             child: Row(
               children: [
                 // Side Navigation
-                SideNavigation(
-                  items: navigationItems,
-                  onNavigate: onNavigate,
-                  currentRoute: currentRoute,
-                ),
+                if (!isCompact || !adaptiveLayout)
+                  SideNavigation(
+                    items: navigationItems,
+                    onNavigate: onNavigate,
+                    currentRoute: currentRoute,
+                    isCompact: useCompactNavigation || (adaptiveLayout && screenWidth < 1300),
+                    width: sidebarWidth,
+                  ),
 
-                // Main Content
+                // Main Content - adapt to available space
                 Expanded(
                   child: Container(
                     color: Theme.of(context).colorScheme.background,
-                    child: _buildContent(context),
+                    child: _buildContent(context, isCompact),
                   ),
                 ),
               ],
             ),
           ),
+
 
           // Footer
           Container(
@@ -82,7 +95,7 @@ class DesktopLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent(BuildContext context,  bool isCompact) {
     // If scrolling is disabled or the child is already a scrollable widget,
     // just return the child with minimal wrapping
     if (disableScrolling) {

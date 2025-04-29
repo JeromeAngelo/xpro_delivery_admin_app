@@ -171,7 +171,7 @@ class TripEndTripOtpTable extends StatelessWidget {
       onFiltered: () {
         // Show filter dialog
         _showFilterDialog(context);
-      },
+      }, dataLength: '',
     );
   }
 

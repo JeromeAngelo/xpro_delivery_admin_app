@@ -172,7 +172,7 @@ Widget build(BuildContext context) {
     totalPages: totalPages,
     onPageChanged: onPageChanged,
     isLoading: isLoading,
-    onFiltered: () {},
+    onFiltered: () {}, dataLength: '${users.length}',
   );
 }
 

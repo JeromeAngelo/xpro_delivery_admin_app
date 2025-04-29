@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 
 class DataTableLayout extends StatefulWidget {
   final String title;
@@ -16,6 +17,7 @@ class DataTableLayout extends StatefulWidget {
   final VoidCallback? onRetry; // New parameter for retry callback
   final VoidCallback? onFiltered;
   final Function(List<int>)? onRowsSelected; // Callback for selected rows
+  final String dataLength;
 
   const DataTableLayout({
     super.key,
@@ -34,6 +36,7 @@ class DataTableLayout extends StatefulWidget {
     this.errorMessage, // Add this parameter
     this.onRetry, // Add this parameter
     this.onRowsSelected, // Add this parameter
+    required this.dataLength,
   });
 
   @override
@@ -43,7 +46,7 @@ class DataTableLayout extends StatefulWidget {
 class _DataTableLayoutState extends State<DataTableLayout> {
   // Create explicit ScrollController for horizontal scrolling
   final ScrollController _horizontalScrollController = ScrollController();
-
+  final GlobalKey _checkboxColumnKey = GlobalKey();
   final headerStyle = TextStyle(
     fontWeight: FontWeight.bold,
     color: Colors.black, // or any color you prefer
@@ -58,6 +61,83 @@ class _DataTableLayoutState extends State<DataTableLayout> {
     // Dispose controllers when the widget is removed
     _horizontalScrollController.dispose();
     super.dispose();
+  }
+
+  void _showSelectionMenu(BuildContext context) {
+    final RenderBox? renderBox =
+        _checkboxColumnKey.currentContext?.findRenderObject() as RenderBox?;
+
+    if (renderBox == null) return;
+
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        renderBox.localToGlobal(Offset.zero),
+        renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero)),
+      ),
+      Offset.zero &
+          (Overlay.of(context).context.findRenderObject() as RenderBox).size,
+    );
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      items: [
+        PopupMenuItem<String>(
+          value: 'page',
+          child: Row(
+            children: [
+              Checkbox(
+                value: _selectAll,
+                onChanged: (bool? value) {
+                  setState(() {
+                    _selectAll = value ?? false;
+                    _selectedRows.clear();
+
+                    if (_selectAll) {
+                      // Add all row indices to selected rows
+                      for (int i = 0; i < widget.rows.length; i++) {
+                        _selectedRows.add(i);
+                      }
+                    }
+
+                    // Notify parent about selection change
+                    if (widget.onRowsSelected != null) {
+                      widget.onRowsSelected!(_selectedRows);
+                    }
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              Text('Select this page (${widget.rows.length})'),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'all',
+          child: Row(
+            children: [
+              Checkbox(
+                value: false, // This would need to be a separate state variable
+                onChanged: (bool? value) {
+                  // Logic to select all data across all pages
+                  if (value == true) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Selected all ${widget.dataLength} items',
+                        ),
+                      ),
+                    );
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+              Text('Select all ${widget.dataLength}'),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -223,7 +303,7 @@ class _DataTableLayoutState extends State<DataTableLayout> {
                         child: const Text('Previous'),
                       ),
                       Text(
-                        'Page ${widget.currentPage} of ${widget.totalPages}',
+                        'Page ${widget.currentPage}-${widget.totalPages} of ${widget.dataLength}',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       TextButton(
@@ -248,16 +328,7 @@ class _DataTableLayoutState extends State<DataTableLayout> {
   // Build the appropriate table content based on state
   Widget _buildTableContent() {
     if (widget.isLoading) {
-      return _buildTableWithMessage(
-        const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading data...'),
-          ],
-        ),
-      );
+      return _buildShimmerTable();
     } else if (widget.rows.isEmpty) {
       return _buildTableWithMessage(
         Column(
@@ -278,26 +349,36 @@ class _DataTableLayoutState extends State<DataTableLayout> {
         DataColumn(
           label:
               widget.enableSelection
-                  ? Checkbox(
-                    value: _selectAll,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        _selectAll = value ?? false;
-                        _selectedRows.clear();
+                  ? // Replace the existing GestureDetector with this:
+                  GestureDetector(
+                    onTap: () => _showSelectionMenu(context),
+                    key: _checkboxColumnKey,
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: _selectAll,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              _selectAll = value ?? false;
+                              _selectedRows.clear();
 
-                        if (_selectAll) {
-                          // Add all row indices to selected rows
-                          for (int i = 0; i < widget.rows.length; i++) {
-                            _selectedRows.add(i);
-                          }
-                        }
+                              if (_selectAll) {
+                                // Add all row indices to selected rows
+                                for (int i = 0; i < widget.rows.length; i++) {
+                                  _selectedRows.add(i);
+                                }
+                              }
 
-                        // Notify parent about selection change
-                        if (widget.onRowsSelected != null) {
-                          widget.onRowsSelected!(_selectedRows);
-                        }
-                      });
-                    },
+                              // Notify parent about selection change
+                              if (widget.onRowsSelected != null) {
+                                widget.onRowsSelected!(_selectedRows);
+                              }
+                            });
+                          },
+                        ),
+                        Icon(Icons.arrow_drop_down),
+                      ],
+                    ),
                   )
                   : const SizedBox.shrink(),
         ),
@@ -403,6 +484,99 @@ class _DataTableLayoutState extends State<DataTableLayout> {
           color: const Color.fromARGB(255, 100, 95, 95),
           width: 1,
         ),
+      ),
+    );
+  }
+
+  // Helper method to build a shimmer loading table
+  Widget _buildShimmerTable() {
+    return DataTable(
+      columns: [
+        DataColumn(
+          label:
+              widget.enableSelection
+                  ? Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  )
+                  : const SizedBox.shrink(),
+        ),
+        ...widget.columns.map(
+          (column) => DataColumn(
+            label: Shimmer.fromColors(
+              baseColor: Colors.grey[300]!,
+              highlightColor: Colors.grey[100]!,
+              child: Container(
+                width: 100,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+      rows: List.generate(
+        15, // 15 rows of shimmer loading
+        (index) => DataRow(
+          cells: [
+            DataCell(
+              widget.enableSelection
+                  ? Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  )
+                  : const SizedBox.shrink(),
+            ),
+            ...List.generate(
+              widget.columns.length,
+              (cellIndex) => DataCell(
+                Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Container(
+                    width:
+                        120 +
+                        (cellIndex *
+                            20 %
+                            80), // Varying widths for natural look
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      headingRowColor: MaterialStateProperty.all(Colors.grey[100]),
+      dataRowMinHeight: 48,
+      dataRowMaxHeight: 64,
+      horizontalMargin: 16,
+      columnSpacing: 24,
+      border: TableBorder(
+        horizontalInside: BorderSide(color: Colors.grey[300]!, width: 1),
       ),
     );
   }

@@ -114,7 +114,7 @@ class CompletedCustomerInvoiceTable extends StatelessWidget {
       isLoading: isLoading,
       errorMessage: errorMessage,
       onRetry: onRetry,
-      onFiltered: () {},
+      onFiltered: () {}, dataLength: '${invoices.length}',
     );
   }
 

@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable
+
 import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
 import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';

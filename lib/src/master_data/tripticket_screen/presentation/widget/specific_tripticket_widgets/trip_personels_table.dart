@@ -1,7 +1,7 @@
 import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/domain/entity/personel_entity.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_bloc.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_event.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_state.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_state.dart';
 import 'package:desktop_app/core/common/widgets/app_structure/data_table_layout.dart';
 import 'package:desktop_app/core/enums/user_role.dart';
 import 'package:flutter/material.dart';
@@ -27,13 +27,6 @@ class _TripPersonelsTableState extends State<TripPersonelsTable> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    // Load personnel for this trip
-    context.read<PersonelBloc>().add(LoadPersonelsByTripIdEvent(widget.tripId));
-  }
-
-  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -41,16 +34,13 @@ class _TripPersonelsTableState extends State<TripPersonelsTable> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PersonelBloc, PersonelState>(
+    return BlocBuilder<TripBloc, TripState>(
       builder: (context, state) {
-        if (state is PersonelLoading) {
-          return const SizedBox(
-            height: 300,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
+        // if (state is TripLoading) {
+        //   return _buildLoadingTable();
+        // }
 
-        if (state is PersonelError) {
+        if (state is TripError) {
           return SizedBox(
             height: 300,
             child: Center(
@@ -66,8 +56,8 @@ class _TripPersonelsTableState extends State<TripPersonelsTable> {
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () {
-                      context.read<PersonelBloc>().add(
-                        LoadPersonelsByTripIdEvent(widget.tripId),
+                      context.read<TripBloc>().add(
+                        GetTripTicketByIdEvent(widget.tripId),
                       );
                     },
                     icon: const Icon(Icons.refresh),
@@ -81,19 +71,10 @@ class _TripPersonelsTableState extends State<TripPersonelsTable> {
 
         List<PersonelEntity> personels = [];
 
-        if (state is PersonelsByTripLoaded) {
-          personels = state.personel;
+        if (state is TripTicketLoaded) {
+          personels = state.trip.personels;
+          debugPrint('✅ Loaded ${personels.length} personnel from trip data');
         }
-
-        // // Filter personels based on search query
-        // if (_searchQuery.isNotEmpty) {
-        //   personels = personels.where((personel) {
-        //     final query = _searchQuery.toLowerCase();
-        //     return (personel.id?.toLowerCase().contains(query) ?? false) ||
-        //            (personel.name?.toLowerCase().contains(query) ?? false) ||
-        //            (personel.role?.toString().toLowerCase().contains(query) ?? false);
-        //   }).toList();
-        //}
 
         // Calculate total pages
         final int totalPages = (personels.length / _itemsPerPage).ceil();
@@ -113,7 +94,6 @@ class _TripPersonelsTableState extends State<TripPersonelsTable> {
 
         return DataTableLayout(
           title: 'Personnel',
-
           onCreatePressed: widget.onAddPersonel,
           createButtonText: 'Add Personnel',
           columns: const [
@@ -161,11 +141,14 @@ class _TripPersonelsTableState extends State<TripPersonelsTable> {
               _currentPage = page;
             });
           },
-          isLoading: state is PersonelLoading, onFiltered: () {  },
+          isLoading: state is TripLoading,
+          onFiltered: () {}, dataLength: '${personels.length}',
         );
       },
     );
   }
+
+  
 
   Widget _buildRoleChip(UserRole? role) {
     if (role == null) return const Text('N/A');
@@ -236,15 +219,23 @@ class _TripPersonelsTableState extends State<TripPersonelsTable> {
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                if (personel.id != null) {
-                  context.read<PersonelBloc>().add(
-                    DeletePersonelEvent(personel.id!),
-                  );
-                  // Refresh the list after deletion
-                  context.read<PersonelBloc>().add(
-                    LoadPersonelsByTripIdEvent(widget.tripId),
-                  );
-                }
+
+                // Instead of directly deleting the personnel,
+                // we would need to update the trip by removing this personnel
+                // For now, just show a snackbar indicating the action
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Personnel ${personel.name} would be removed from trip',
+                    ),
+                    action: SnackBarAction(label: 'OK', onPressed: () {}),
+                  ),
+                );
+
+                // Refresh the trip data after deletion
+                context.read<TripBloc>().add(
+                  GetTripTicketByIdEvent(widget.tripId),
+                );
               },
             ),
           ],

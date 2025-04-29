@@ -8,7 +8,6 @@ import 'package:desktop_app/core/common/widgets/app_structure/desktop_layout.dar
 import 'package:desktop_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:desktop_app/src/collection_data/tripricket_list/presentation/widgets/specific_tripticket_collection_widgets/collection_completed_customer_table.dart';
 import 'package:desktop_app/src/collection_data/tripricket_list/presentation/widgets/specific_tripticket_collection_widgets/collection_dashboard.dart';
-import 'package:desktop_app/src/collection_data/tripricket_list/presentation/widgets/specific_tripticket_collection_widgets/collection_trip_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -131,14 +130,14 @@ class _SpecificTripCollectionState extends State<SpecificTripCollection> {
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       // Trip Header
-                      CollectionTripHeaderWidget(
-                        trip: trip,
-                        onPrintReport: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Printing collection report...')),
-                          );
-                        },
-                      ),
+                      // CollectionTripHeaderWidget(
+                      //   trip: trip,
+                      //   onPrintReport: () {
+                      //     ScaffoldMessenger.of(context).showSnackBar(
+                      //       const SnackBar(content: Text('Printing collection report...')),
+                      //     );
+                      //   },
+                      // ),
 
                       const SizedBox(height: 16),
 

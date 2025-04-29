@@ -72,7 +72,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'X-Pro Delivery Admin App',
         theme: FlexThemeData.light(
-          scheme: FlexScheme.amber,
+          scheme: FlexScheme.blueWhale,
           // Add responsive typography
           typography: Typography.material2018(platform: TargetPlatform.windows),
         ),

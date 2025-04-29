@@ -163,6 +163,7 @@ class TripCustomersTable extends StatelessWidget {
       },
       isLoading: isLoading,
       onFiltered: () {},
+      dataLength: '${customers.length}',
     );
   }
 

@@ -110,7 +110,7 @@ class ChecklistDataTable extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Filter options coming soon')),
         );
-      },
+      }, dataLength: '${checklists.length}',
     );
   }
 

@@ -75,6 +75,7 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                   'Completed Customers Overview',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary
                   ),
                 ),
                 const SizedBox(height: 8),

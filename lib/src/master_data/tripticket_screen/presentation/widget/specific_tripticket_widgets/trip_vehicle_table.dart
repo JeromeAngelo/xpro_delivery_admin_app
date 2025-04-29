@@ -1,7 +1,7 @@
 import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/domain/entity/vehicle_entity.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_bloc.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_event.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_state.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
+import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_state.dart';
 import 'package:desktop_app/core/common/widgets/app_structure/data_table_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,15 +19,7 @@ class TripVehicleTable extends StatefulWidget {
 class _TripVehicleTableState extends State<TripVehicleTable> {
   int _currentPage = 1;
   final int _itemsPerPage = 5;
-  // String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    // Load vehicle for this trip
-    context.read<VehicleBloc>().add(LoadVehicleByTripIdEvent(widget.tripId));
-  }
 
   @override
   void dispose() {
@@ -37,35 +29,43 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<VehicleBloc, VehicleState>(
+    return BlocBuilder<TripBloc, TripState>(
       builder: (context, state) {
-        // Prepare variables for different states
-        bool isLoading = state is VehicleLoading;
-        String? errorMessage;
-        List<VehicleEntity> vehicles = [];
-
-        // Handle different states
-        if (state is VehicleError) {
-          errorMessage = state.message;
-        } else if (state is VehicleByTripLoaded) {
-          // This state returns a single vehicle, so we create a list with that vehicle
-          vehicles = [state.vehicle];
-                } else if (state is VehiclesLoaded) {
-          // If we have a list of vehicles, filter for this trip
-          vehicles =
-              state.vehicles.where((v) => v.trip?.id == widget.tripId).toList();
+        if (state is TripError) {
+          return SizedBox(
+            height: 300,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading vehicles: ${state.message}',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.read<TripBloc>().add(
+                        GetTripTicketByIdEvent(widget.tripId),
+                      );
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
-        // Filter vehicles based on search query
-        // if (_searchQuery.isNotEmpty) {
-        //   vehicles = vehicles.where((vehicle) {
-        //     final query = _searchQuery.toLowerCase();
-        //     return (vehicle.id?.toLowerCase().contains(query) ?? false) ||
-        //            (vehicle.vehicleName?.toLowerCase().contains(query) ?? false) ||
-        //            (vehicle.vehiclePlateNumber?.toLowerCase().contains(query) ?? false) ||
-        //            (vehicle.vehicleType?.toLowerCase().contains(query) ?? false);
-        //   }).toList();
-        // }
+        List<VehicleEntity> vehicles = [];
+
+        if (state is TripTicketLoaded) {
+          vehicles = state.trip.vehicle;
+          debugPrint('✅ Loaded ${vehicles.length} vehicles from trip data');
+        }
 
         // Calculate total pages
         final int totalPages = (vehicles.length / _itemsPerPage).ceil();
@@ -91,7 +91,7 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
                   DataCell(Text(vehicle.id ?? 'N/A')),
                   DataCell(Text(vehicle.vehicleName ?? 'N/A')),
                   DataCell(Text(vehicle.vehiclePlateNumber ?? 'N/A')),
-                  DataCell(_buildTypeChip(vehicle.vehicleType)),
+                  //   DataCell(_buildTypeChip(vehicle.vehicleType)),
                   DataCell(
                     Row(
                       children: [
@@ -120,39 +120,13 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
 
         return DataTableLayout(
           title: 'Vehicle',
-          // searchBar: TextField(
-          //   controller: _searchController,
-          //   decoration: InputDecoration(
-          //     hintText: 'Search vehicle...',
-          //     prefixIcon: const Icon(Icons.search),
-          //     suffixIcon: _searchQuery.isNotEmpty
-          //         ? IconButton(
-          //             icon: const Icon(Icons.clear),
-          //             onPressed: () {
-          //               setState(() {
-          //                 _searchController.clear();
-          //                 _searchQuery = '';
-          //               });
-          //             },
-          //           )
-          //         : null,
-          //     border: OutlineInputBorder(
-          //       borderRadius: BorderRadius.circular(8),
-          //     ),
-          //   ),
-          //   onChanged: (value) {
-          //     setState(() {
-          //       _searchQuery = value;
-          //     });
-          //   },
-          // ),
           onCreatePressed: widget.onAddVehicle,
           createButtonText: 'Add Vehicle',
           columns: const [
             DataColumn(label: Text('ID')),
             DataColumn(label: Text('Name')),
             DataColumn(label: Text('Plate Number')),
-            DataColumn(label: Text('Type')),
+            //   DataColumn(label: Text('Type')),
             DataColumn(label: Text('Actions')),
           ],
           rows: rows,
@@ -163,51 +137,52 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
               _currentPage = page;
             });
           },
-          isLoading: isLoading,
-          errorMessage: errorMessage,
+          isLoading: state is TripLoading,
+          errorMessage: state is TripError ? state.message : null,
           onRetry:
-              errorMessage != null
-                  ? () => context.read<VehicleBloc>().add(
-                    LoadVehicleByTripIdEvent(widget.tripId),
+              state is TripError
+                  ? () => context.read<TripBloc>().add(
+                    GetTripTicketByIdEvent(widget.tripId),
                   )
-                  : null, onFiltered: () {  },
+                  : null,
+          onFiltered: () {}, dataLength: '${vehicles.length}',
         );
       },
     );
   }
 
-  Widget _buildTypeChip(String? type) {
-    if (type == null || type.isEmpty) return const Text('N/A');
+  // Widget _buildTypeChip(String? type) {
+  //   if (type == null || type.isEmpty) return const Text('N/A');
 
-    Color chipColor;
+  //   Color chipColor;
 
-    switch (type.toLowerCase()) {
-      case 'truck':
-        chipColor = Colors.blue;
-        break;
-      case 'van':
-        chipColor = Colors.green;
-        break;
-      case 'motorcycle':
-        chipColor = Colors.orange;
-        break;
-      default:
-        chipColor = Colors.grey;
-    }
+  //   switch (type.toLowerCase()) {
+  //     case 'truck':
+  //       chipColor = Colors.blue;
+  //       break;
+  //     case 'van':
+  //       chipColor = Colors.green;
+  //       break;
+  //     case 'motorcycle':
+  //       chipColor = Colors.orange;
+  //       break;
+  //     default:
+  //       chipColor = Colors.grey;
+  //   }
 
-    return Chip(
-      label: Text(
-        type,
-        style: const TextStyle(
-          color: Color.fromARGB(255, 41, 40, 40),
-          fontSize: 12,
-        ),
-      ),
-      backgroundColor: chipColor,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-      visualDensity: VisualDensity.compact,
-    );
-  }
+  //   return Chip(
+  //     label: Text(
+  //       type,
+  //       style: const TextStyle(
+  //         color: Color.fromARGB(255, 41, 40, 40),
+  //         fontSize: 12,
+  //       ),
+  //     ),
+  //     backgroundColor: chipColor,
+  //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+  //     visualDensity: VisualDensity.compact,
+  //   );
+  // }
 
   void _showEditVehicleDialog(BuildContext context, VehicleEntity vehicle) {
     // This would be implemented to show a dialog for editing vehicle
@@ -250,15 +225,23 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                if (vehicle.id != null) {
-                  context.read<VehicleBloc>().add(
-                    DeleteVehicleEvent(vehicle.id!),
-                  );
-                  // Refresh the list after deletion
-                  context.read<VehicleBloc>().add(
-                    LoadVehicleByTripIdEvent(widget.tripId),
-                  );
-                }
+
+                // Instead of directly deleting the vehicle,
+                // we would need to update the trip by removing this vehicle
+                // For now, just show a snackbar indicating the action
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Vehicle ${vehicle.vehicleName} would be removed from trip',
+                    ),
+                    action: SnackBarAction(label: 'OK', onPressed: () {}),
+                  ),
+                );
+
+                // Refresh the trip data after deletion
+                context.read<TripBloc>().add(
+                  GetTripTicketByIdEvent(widget.tripId),
+                );
               },
             ),
           ],
