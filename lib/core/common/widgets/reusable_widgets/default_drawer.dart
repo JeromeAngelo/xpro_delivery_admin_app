@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
 import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:go_router/go_router.dart';
 
 class DefaultDrawer extends StatefulWidget {
   const DefaultDrawer({super.key});
@@ -17,8 +18,7 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-   //   backgroundColor: Theme.of(context).colorScheme.onSurface,
- 
+      //   backgroundColor: Theme.of(context).colorScheme.onSurface,
       elevation: 10,
       child: Column(
         children: [
@@ -58,8 +58,7 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
           leading: const Icon(Icons.dashboard),
           title: const Text('Main Dashboard'),
           onTap: () {
-            Navigator.pop(context);
-            Navigator.pushNamed(context, '/main-screen');
+            context.go('/main-screen');
           },
         ),
         const Divider(),

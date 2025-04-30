@@ -4,6 +4,7 @@ import 'package:desktop_app/src/collection_data/completed_customer_list/presenta
 import 'package:desktop_app/src/collection_data/completed_customer_list/presentation/view/specific_completed_customer_data.dart';
 import 'package:desktop_app/src/collection_data/tripricket_list/presentation/view/specific_trip_collection.dart';
 import 'package:desktop_app/src/collection_data/tripricket_list/presentation/view/tripticket_list_for_collection.dart';
+import 'package:desktop_app/src/delivery_monitoring/presentation/view/delivery_monitoring_screen.dart';
 import 'package:desktop_app/src/master_data/checklist_screen/presentation/view/checklist_screen_view.dart';
 import 'package:desktop_app/src/master_data/customer_screen/presentation/view/customer_list_screen_view.dart';
 import 'package:desktop_app/src/master_data/customer_screen/presentation/view/specific_customer_screen_view.dart';
@@ -30,7 +31,7 @@ final router = GoRouter(
       path: '/main-screen',
       builder: (context, state) => MainScreenView(),
     ),
-      GoRoute(
+    GoRoute(
       path: '/trip-overview',
       builder: (context, state) => TripTicketOverviewScreen(),
     ),
@@ -46,7 +47,7 @@ final router = GoRouter(
         return TripTicketSpecificTripView(tripId: tripId);
       },
     ),
-      // Add this new route for creating trip tickets
+    // Add this new route for creating trip tickets
     GoRoute(
       path: '/tripticket-create',
       builder: (context, state) => CreateTripTicketScreenView(),
@@ -58,11 +59,12 @@ final router = GoRouter(
     GoRoute(
       path: '/customer/:customerId',
       builder: (context, state) {
+        // Extract the customerId without any additional colons
         final customerId = state.pathParameters['customerId']!;
         return SpecificCustomerScreenView(customerId: customerId);
       },
     ),
-     GoRoute(
+    GoRoute(
       path: '/invoice-list',
       builder: (context, state) => InvoiceScreenListView(),
     ),
@@ -70,73 +72,75 @@ final router = GoRouter(
       path: '/invoice/:invoiceId',
       builder: (context, state) {
         final invoiceId = state.pathParameters['invoiceId']!;
-        return SpecificInvoiceScreenView(invoiceId: invoiceId,);
+        return SpecificInvoiceScreenView(invoiceId: invoiceId);
       },
     ),
     // Add this import
 
-// Inside the GoRouter routes list, add:
-GoRoute(
-  path: '/product-list',
-  builder: (context, state) => const ProductListScreenView(),
-),
-GoRoute(
-  path: '/vehicle-list',
-  builder: (context, state) => const VehicleListScreenView(),
-),
-GoRoute(
-  path: '/personnel-list',
-  builder: (context, state) => const PersonnelListScreenView(),
-),
-// Inside the GoRouter routes list, add:
+    // Inside the GoRouter routes list, add:
+    GoRoute(
+      path: '/product-list',
+      builder: (context, state) => const ProductListScreenView(),
+    ),
+    GoRoute(
+      path: '/vehicle-list',
+      builder: (context, state) => const VehicleListScreenView(),
+    ),
+    GoRoute(
+      path: '/personnel-list',
+      builder: (context, state) => const PersonnelListScreenView(),
+    ),
 
-GoRoute(
-  path: '/checklist',
-  builder: (context, state) => const ChecklistScreenView(),
-),
-GoRoute(
-  path: '/collections-overview',
-  builder: (context, state) => const CompletedCustomerOverview(),
-),
-GoRoute(
-  path: '/collections',
-  builder: (context, state) => const TripTicketListForCollection(),
-),
-GoRoute(
-  path: '/collections/:tripId',
-  builder: (context, state) {
-    final tripId = state.pathParameters['tripId']!;
-    return SpecificTripCollection(tripId: tripId);
-  },
-),
-GoRoute(
-  path: '/completed-customers',
-  builder: (context, state) => const CompletedCustomerListScreen(),
-),
-GoRoute(
-  path: '/completed-customers/:customerId',
-  builder: (context, state) {
-    final customerId = state.pathParameters['customerId']!;
-    return SpecificCompletedCustomerData(customerId: customerId);
-  },
-),
-GoRoute(
-  path: '/returns',
-  builder: (context, state) => const ReturnListView(),
-),
+    // Inside the GoRouter routes list, add:
+    GoRoute(
+      path: '/checklist',
+      builder: (context, state) => const ChecklistScreenView(),
+    ),
+    GoRoute(
+      path: '/collections-overview',
+      builder: (context, state) => const CompletedCustomerOverview(),
+    ),
+    GoRoute(
+      path: '/collections',
+      builder: (context, state) => const TripTicketListForCollection(),
+    ),
+    GoRoute(
+      path: '/collections/:tripId',
+      builder: (context, state) {
+        final tripId = state.pathParameters['tripId']!;
+        return SpecificTripCollection(tripId: tripId);
+      },
+    ),
+    GoRoute(
+      path: '/completed-customers',
+      builder: (context, state) => const CompletedCustomerListScreen(),
+    ),
+    GoRoute(
+      path: '/completed-customers/:customerId',
+      builder: (context, state) {
+        final customerId = state.pathParameters['customerId']!;
+        return SpecificCompletedCustomerData(customerId: customerId);
+      },
+    ),
+    GoRoute(
+      path: '/returns',
+      builder: (context, state) => const ReturnListView(),
+    ),
 
-GoRoute(
-  path: '/users',
-  builder: (context, state) => const UsersListView(),
-),
-GoRoute(
-  path: '/delivery-users',
-  builder: (context, state) => const DeliveryUsersListView(),
-),
-GoRoute(
-  path: '/undeliverable-customers',
-  builder: (context, state) => const UndeliveredCustomerListView(),
-),
+    GoRoute(path: '/users', builder: (context, state) => const UsersListView()),
+    GoRoute(
+      path: '/delivery-users',
+      builder: (context, state) => const DeliveryUsersListView(),
+    ),
+    GoRoute(
+      path: '/undeliverable-customers',
+      builder: (context, state) => const UndeliveredCustomerListView(),
+    ),
 
+    // Add this route to your router configuration
+    GoRoute(
+      path: '/delivery-monitoring',
+      builder: (context, state) => const DeliveryMonitoringScreen(),
+    ),
   ],
 );

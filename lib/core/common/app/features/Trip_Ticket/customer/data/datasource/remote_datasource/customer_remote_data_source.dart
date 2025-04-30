@@ -416,62 +416,145 @@ Future<CustomerModel> getCustomerLocation(String customerId) async {
   }
 
   @override
-  Future<List<CustomerModel>> getAllCustomers() async {
-    try {
-      debugPrint('🔄 Getting all customers');
+Future<List<CustomerModel>> getAllCustomers() async {
+  try {
+    debugPrint('🔄 Getting all customers with complete data');
 
-      final result = await _pocketBaseClient
-          .collection('customers')
-          .getFullList(
-            expand: 'deliveryStatus,invoices,trip',
-            sort: '-created',
-          );
+    final result = await _pocketBaseClient
+        .collection('customers')
+        .getFullList(
+          expand: 'deliveryStatus,invoices,trip',
+          sort: '-created',
+        );
 
-      debugPrint('✅ Retrieved ${result.length} customers from API');
+    debugPrint('✅ Retrieved ${result.length} customers from API');
 
-      List<CustomerModel> customers = [];
+    List<CustomerModel> customers = [];
 
-      for (var record in result) {
-        final mappedData = {
-          'id': record.id,
-          'collectionId': record.collectionId,
-          'collectionName': record.collectionName,
-          'deliveryNumber': record.data['deliveryNumber'] ?? '',
-          'storeName': record.data['storeName'] ?? '',
-          'ownerName': record.data['ownerName'] ?? '',
-          'contactNumber': record.data['contactNumber'] ?? '',
-          'address': record.data['address'] ?? '',
-          'municipality': record.data['municipality'] ?? '',
-          'province': record.data['province'] ?? '',
-          'modeOfPayment': record.data['modeOfPayment'] ?? '',
-          'latitude': record.data['latitude'],
-          'longitude': record.data['longitude'],
-          'remarks': record.data['remarks'] ?? '',
-          'notes': record.data['notes'] ?? '',
-          'totalTime': record.data['totalTime'] ?? '',
-          'trip': record.data['trip'] ?? '',
-          'hasNotes': record.data['hasNotes'] ?? false,
-          'confirmedTotalPayment': double.tryParse(
-            record.data['confirmedTotalPayment']?.toString() ?? '0',
-          ),
-          'expand': {
-            'deliveryStatus': record.expand['deliveryStatus'] ?? [],
-            'invoices': record.expand['invoices'] ?? [],
-          },
-        };
+    for (var record in result) {
+      // Process delivery status
+      final deliveryStatusList =
+          (record.expand['deliveryStatus'] as List?)?.map((status) {
+                final statusRecord = status as RecordModel;
+                return DeliveryUpdateModel.fromJson({
+                  'id': statusRecord.id,
+                  'collectionId': statusRecord.collectionId,
+                  'collectionName': statusRecord.collectionName,
+                  'title': statusRecord.data['title'],
+                  'subtitle': statusRecord.data['subtitle'],
+                  'time': statusRecord.data['time'],
+                  'customer': statusRecord.data['customer'],
+                  'isAssigned': statusRecord.data['isAssigned'],
+                  'created': statusRecord.created,
+                  'updated': statusRecord.updated
+                });
+              }).toList() ??
+              [];
 
-        customers.add(CustomerModel.fromJson(mappedData));
+      // Process invoices
+      final invoicesList =
+          (record.expand['invoices'] as List?)?.map((invoice) {
+                final invoiceRecord = invoice as RecordModel;
+                return InvoiceModel.fromJson({
+                  'id': invoiceRecord.id,
+                  'collectionId': invoiceRecord.collectionId,
+                  'collectionName': invoiceRecord.collectionName,
+                  'invoiceNumber': invoiceRecord.data['invoiceNumber'],
+                  'status': invoiceRecord.data['status'],
+                  'productList': invoiceRecord.data['productsList'] ?? [],
+                  'customer': invoiceRecord.data['customer'],
+                  'totalAmount': record.data['totalAmount'],
+                  'created': invoiceRecord.created,
+                  'updated': invoiceRecord.updated
+                });
+              }).toList() ??
+              [];
+
+      // Process trip data
+      TripModel? tripModel;
+      String? tripId;
+      String? tripNumberId;
+      
+      if (record.expand['trip'] != null) {
+        final tripData = record.expand['trip'];
+        if (tripData is List && tripData!.isNotEmpty) {
+          final tripRecord = tripData[0];
+          tripId = tripRecord.id;
+          tripNumberId = tripRecord.data['tripNumberId'];
+          tripModel = TripModel.fromJson({
+            'id': tripRecord.id,
+            'collectionId': tripRecord.collectionId,
+            'collectionName': tripRecord.collectionName,
+            'tripNumberId': tripRecord.data['tripNumberId'],
+            'qrCode': tripRecord.data['qrCode'],
+            'isAccepted': tripRecord.data['isAccepted'],
+            'isEndTrip': tripRecord.data['isEndTrip'],
+          });
+          debugPrint('✅ Found trip ID: $tripId (Number: $tripNumberId) for customer: ${record.id}');
+        }  else if (tripData is String) {
+          tripId = tripData as String?;
+          // If we only have the trip ID, try to fetch the trip details
+          try {
+            final tripRecord = await _pocketBaseClient
+                .collection('tripticket')
+                .getOne(tripId!);
+            tripNumberId = tripRecord.data['tripNumberId'];
+            tripModel = TripModel.fromJson({
+              'id': tripRecord.id,
+              'collectionId': tripRecord.collectionId,
+              'collectionName': tripRecord.collectionName,
+              'tripNumberId': tripRecord.data['tripNumberId'],
+              'qrCode': tripRecord.data['qrCode'],
+              'isAccepted': tripRecord.data['isAccepted'],
+              'isEndTrip': tripRecord.data['isEndTrip'],
+            });
+          } catch (e) {
+            debugPrint('⚠️ Could not fetch trip details: $e');
+          }
+        }
       }
 
-      return customers;
-    } catch (e) {
-      debugPrint('❌ Get All Customers failed: ${e.toString()}');
-      throw ServerException(
-        message: 'Failed to load all customers: ${e.toString()}',
-        statusCode: '500',
-      );
+      customers.add(CustomerModel(
+        id: record.id,
+        collectionId: record.collectionId,
+        collectionName: record.collectionName,
+        deliveryNumber: record.data['deliveryNumber'],
+        storeName: record.data['storeName'],
+        ownerName: record.data['ownerName'],
+        contactNumber: record.data['contactNumber'] is String
+            ? [record.data['contactNumber']]
+            : (record.data['contactNumber'] as List?)?.map((e) => e.toString()).toList() ?? [],
+        address: record.data['address'],
+        municipality: record.data['municipality'],
+        province: record.data['province'],
+        modeOfPayment: record.data['modeOfPayment'],
+        deliveryStatusList: deliveryStatusList,
+        invoicesList: invoicesList,
+        numberOfInvoices: invoicesList.length,
+        hasNotes: record.data['hasNotes'] ?? false,
+        confirmedTotalPayment: double.tryParse(
+          record.data['confirmedTotalPayment']?.toString() ?? '0',
+        ),
+        totalAmount: record.data['totalAmount'],
+        latitude: record.data['latitude'],
+        longitude: record.data['longitude'],
+        remarks: record.data['remarks'],
+        notes: record.data['notes'],
+        tripModel: tripModel,
+        tripId: tripId,
+      ));
     }
+
+    return customers;
+  } catch (e) {
+    debugPrint('❌ Get All Customers failed: ${e.toString()}');
+    throw ServerException(
+      message: 'Failed to load all customers: ${e.toString()}',
+      statusCode: '500',
+    );
   }
+}
+
 
   @override
   Future<CustomerModel> createCustomer({
@@ -513,8 +596,9 @@ Future<CustomerModel> getCustomerLocation(String customerId) async {
       if (notes != null) body['notes'] = notes;
       if (remarks != null) body['remarks'] = remarks;
       if (hasNotes != null) body['hasNotes'] = hasNotes.toString();
-      if (confirmedTotalPayment != null)
+      if (confirmedTotalPayment != null) {
         body['confirmedTotalPayment'] = confirmedTotalPayment.toString();
+      }
 
       final record = await _pocketBaseClient
           .collection('customers')

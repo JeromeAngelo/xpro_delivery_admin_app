@@ -12,8 +12,7 @@ class StatusIcons {
         return Icons.warning;
       case 'in transit':
         return Icons.local_shipping;
-      case 'delivered':
-        return Icons.check_circle;
+
       case 'pending':
         return Icons.pending;
       case 'mark as received':

@@ -2,7 +2,7 @@ import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth
 import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
 import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter/material.dart';
-import 'package:desktop_app/src/auth/presentation/widgets/default_drawer.dart';
+import 'package:desktop_app/core/common/widgets/reusable_widgets/default_drawer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -36,8 +36,11 @@ class _MainScreenViewState extends State<MainScreenView> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
         iconTheme: IconThemeData(
-    color: Theme.of(context).colorScheme.surface, // This sets the drawer icon color
-  ),
+          color:
+              Theme.of(
+                context,
+              ).colorScheme.surface, // This sets the drawer icon color
+        ),
         title: Text(
           'X-Pro Delivery Admin App',
           style: TextStyle(
@@ -297,6 +300,15 @@ class _MainScreenViewState extends State<MainScreenView> {
                       ),
                       _buildCategoryCard(
                         context,
+                        icon: Icons.monitor,
+                        title: 'Delivery Monitoring',
+                        subtitle: 'View customer\'s status',
+                        color: Colors.green,
+                        onTap: () => context.go('/delivery-monitoring'),
+                        iconSize: iconSize,
+                      ),
+                      _buildCategoryCard(
+                        context,
                         icon: Icons.receipt_long_outlined,
                         title: 'Collections',
                         subtitle: 'View and Manage transactions',
@@ -311,25 +323,6 @@ class _MainScreenViewState extends State<MainScreenView> {
                         subtitle: 'Process and track returned items',
                         color: Colors.orange,
                         onTap: () => context.go('/returns'),
-                        iconSize: iconSize,
-                      ),
-
-                      // _buildCategoryCard(
-                      //   context,
-                      //   icon: Icons.store,
-                      //   title: 'Customers',
-                      //   subtitle: 'View and manage customer information',
-                      //   color: Colors.green,
-                      //   onTap: () => Navigator.pushNamed(context, '/customers'),
-                      //   iconSize: iconSize,
-                      // ),
-                      _buildCategoryCard(
-                        context,
-                        icon: Icons.verified_user,
-                        title: 'Users',
-                        subtitle: 'Manage user accounts and access',
-                        color: Colors.redAccent,
-                        onTap: () => context.go('/users'),
                         iconSize: iconSize,
                       ),
                     ],
@@ -414,6 +407,16 @@ class _MainScreenViewState extends State<MainScreenView> {
             children: [
               _buildActivityCard(
                 context,
+                onTap: () => context.go('/users'),
+                icon: Icons.verified_user,
+                title: 'Users Management',
+                description: 'Manage User Account and Access',
+                color: Colors.red,
+                width: isLargeScreen ? 320 : 280,
+              ),
+              _buildActivityCard(
+                context,
+                onTap: () {},
                 icon: Icons.domain_verification,
                 title: 'View OTP',
                 description: 'OTP Code Viewer',
@@ -434,47 +437,51 @@ class _MainScreenViewState extends State<MainScreenView> {
     required String description,
     required Color color,
     required double width,
+    required VoidCallback onTap,
   }) {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(right: 16, bottom: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        width: width,
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          width: width,
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 24),
               ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: Theme.of(context).textTheme.bodySmall,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
