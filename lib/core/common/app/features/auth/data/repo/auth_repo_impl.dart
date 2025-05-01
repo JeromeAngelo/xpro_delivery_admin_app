@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
-import 'package:desktop_app/core/common/app/features/auth/data/datasources/auth_remote_datasource.dart';
-import 'package:desktop_app/core/common/app/features/auth/domain/entity/auth_entity.dart';
-import 'package:desktop_app/core/common/app/features/auth/domain/repo/auth_repo.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
-import 'package:desktop_app/core/errors/failures.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/data/datasources/auth_remote_datasource.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/entity/auth_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/repo/auth_repo.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/errors/failures.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 
 class AuthRepoImpl implements AuthRepo {
   final AuthRemoteDataSource _remoteDataSource;

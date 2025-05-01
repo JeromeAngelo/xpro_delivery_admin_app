@@ -1,6 +1,6 @@
-import 'package:desktop_app/core/common/app/features/Delivery_Team/delivery_team/data/models/delivery_team_model.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
-import 'package:desktop_app/core/common/app/features/users_roles/entity/user_role_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/delivery_team/data/models/delivery_team_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/users_roles/entity/user_role_entity.dart';
 import 'package:equatable/equatable.dart';
 
 class GeneralUserEntity extends Equatable {

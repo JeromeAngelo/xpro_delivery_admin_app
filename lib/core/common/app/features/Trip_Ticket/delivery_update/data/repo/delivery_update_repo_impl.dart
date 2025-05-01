@@ -1,14 +1,14 @@
 import 'package:dartz/dartz.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/delivery_update/data/datasource/remote_datasource/delivery_update_datasource.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/delivery_update/data/models/delivery_update_model.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/delivery_update/domain/entity/delivery_update_entity.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/delivery_update/domain/repo/delivery_update_repo.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/data/model/return_model.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/transaction/data/model/transaction_model.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
-import 'package:desktop_app/core/errors/failures.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/datasource/remote_datasource/delivery_update_datasource.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/models/delivery_update_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/domain/entity/delivery_update_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/domain/repo/delivery_update_repo.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/data/model/return_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/transaction/data/model/transaction_model.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/errors/failures.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:flutter/foundation.dart';
 
 class DeliveryUpdateRepoImpl extends DeliveryUpdateRepo {

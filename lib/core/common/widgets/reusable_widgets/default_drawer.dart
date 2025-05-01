@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
-import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:go_router/go_router.dart';
 
 class DefaultDrawer extends StatefulWidget {

@@ -1,11 +1,11 @@
 import 'package:dartz/dartz.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/data/datasource/remote_datasource/trip_remote_datasurce.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/repo/trip_repo.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
-import 'package:desktop_app/core/errors/failures.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/datasource/remote_datasource/trip_remote_datasurce.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/repo/trip_repo.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/errors/failures.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:flutter/material.dart';
 
 class TripRepoImpl implements TripRepo {

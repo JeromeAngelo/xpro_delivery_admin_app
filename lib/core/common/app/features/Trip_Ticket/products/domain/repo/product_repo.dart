@@ -1,8 +1,8 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/entity/product_entity.dart';
-import 'package:desktop_app/core/enums/product_return_reason.dart';
-import 'package:desktop_app/core/enums/product_unit.dart';
-import 'package:desktop_app/core/enums/products_status.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/entity/product_entity.dart';
+import 'package:xpro_delivery_admin_app/core/enums/product_return_reason.dart';
+import 'package:xpro_delivery_admin_app/core/enums/product_unit.dart';
+import 'package:xpro_delivery_admin_app/core/enums/products_status.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 
 abstract class ProductRepo {
   const ProductRepo();

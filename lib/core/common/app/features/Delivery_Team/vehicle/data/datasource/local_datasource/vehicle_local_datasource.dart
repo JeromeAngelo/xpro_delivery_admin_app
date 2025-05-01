@@ -1,6 +1,6 @@
-// import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/data/model/vehicle_model.dart';
-// import 'package:desktop_app/core/errors/exceptions.dart' show CacheException;
-// import 'package:desktop_app/objectbox.g.dart';
+// import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/data/model/vehicle_model.dart';
+// import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart' show CacheException;
+// import 'package:xpro_delivery_admin_app/objectbox.g.dart';
 // import 'package:flutter/material.dart';
 // import 'package:objectbox/objectbox.dart';
 

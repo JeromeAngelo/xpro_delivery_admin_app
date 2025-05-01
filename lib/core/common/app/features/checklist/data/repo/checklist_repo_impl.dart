@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
-import 'package:desktop_app/core/common/app/features/checklist/data/datasource/remote_datasource/checklist_datasource.dart';
-import 'package:desktop_app/core/common/app/features/checklist/domain/entity/checklist_entity.dart';
-import 'package:desktop_app/core/common/app/features/checklist/domain/repo/checklist_repo.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
-import 'package:desktop_app/core/errors/failures.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/data/datasource/remote_datasource/checklist_datasource.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/domain/entity/checklist_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/domain/repo/checklist_repo.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/errors/failures.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:flutter/material.dart';
 
 class ChecklistRepoImpl implements ChecklistRepo {

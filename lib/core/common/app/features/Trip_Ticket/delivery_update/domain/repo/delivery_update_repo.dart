@@ -1,9 +1,9 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/delivery_update/data/models/delivery_update_model.dart' show DeliveryUpdateModel;
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/delivery_update/domain/entity/delivery_update_entity.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/data/model/return_model.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/transaction/data/model/transaction_model.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/models/delivery_update_model.dart' show DeliveryUpdateModel;
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/domain/entity/delivery_update_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/data/model/return_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/transaction/data/model/transaction_model.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 
 abstract class DeliveryUpdateRepo {
   const DeliveryUpdateRepo();

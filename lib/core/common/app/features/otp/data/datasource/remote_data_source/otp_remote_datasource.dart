@@ -1,8 +1,8 @@
 
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
-import 'package:desktop_app/core/common/app/features/otp/data/models/otp_models.dart';
-import 'package:desktop_app/core/enums/otp_type.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/data/models/otp_models.dart';
+import 'package:xpro_delivery_admin_app/core/enums/otp_type.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
 

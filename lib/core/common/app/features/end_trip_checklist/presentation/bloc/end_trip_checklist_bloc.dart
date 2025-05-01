@@ -1,11 +1,11 @@
-import 'package:desktop_app/core/common/app/features/end_trip_checklist/domain/usecase/check_end_trip_checklist.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_checklist/domain/usecase/create_end_trip_checklist.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_checklist/domain/usecase/delete_all_end_trip_checklist.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_checklist/domain/usecase/delete_end_trip_checklist.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_checklist/domain/usecase/generate_end_trip_checklist.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_checklist/domain/usecase/get_all_end_trip_checklist.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_checklist/domain/usecase/load_end_trip_checklist.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_checklist/domain/usecase/update_end_trip_checklist.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/domain/usecase/check_end_trip_checklist.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/domain/usecase/create_end_trip_checklist.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/domain/usecase/delete_all_end_trip_checklist.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/domain/usecase/delete_end_trip_checklist.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/domain/usecase/generate_end_trip_checklist.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/domain/usecase/get_all_end_trip_checklist.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/domain/usecase/load_end_trip_checklist.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/domain/usecase/update_end_trip_checklist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

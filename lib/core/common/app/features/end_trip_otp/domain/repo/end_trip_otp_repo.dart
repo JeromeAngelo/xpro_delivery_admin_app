@@ -1,5 +1,5 @@
-import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/entity/end_trip_otp_entity.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/entity/end_trip_otp_entity.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 
 abstract class EndTripOtpRepo {
   // Existing functions to keep

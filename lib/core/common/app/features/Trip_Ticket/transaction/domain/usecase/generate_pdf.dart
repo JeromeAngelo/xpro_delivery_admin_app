@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/entity/invoice_entity.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/transaction/domain/repo/transaction_repo.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
-import 'package:desktop_app/core/usecases/usecase.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/entity/invoice_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/transaction/domain/repo/transaction_repo.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/usecases/usecase.dart';
 
 class GenerateTransactionPdf implements UsecaseWithParams<Uint8List, GeneratePdfParams> {
   const GenerateTransactionPdf(this._repo);

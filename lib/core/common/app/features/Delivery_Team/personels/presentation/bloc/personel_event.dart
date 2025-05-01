@@ -1,4 +1,4 @@
-import 'package:desktop_app/core/enums/user_role.dart';
+import 'package:xpro_delivery_admin_app/core/enums/user_role.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class PersonelEvent extends Equatable {

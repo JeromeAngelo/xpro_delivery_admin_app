@@ -1,13 +1,13 @@
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/domain/usecase/create_personels.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/domain/usecase/delete_all_personels.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/domain/usecase/delete_personels.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/domain/usecase/get_personels.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/domain/usecase/load_personels_by_delivery_team.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/domain/usecase/load_personels_by_trip_Id.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/domain/usecase/set_role.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/domain/usecase/update_personels.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_event.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/domain/usecase/create_personels.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/domain/usecase/delete_all_personels.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/domain/usecase/delete_personels.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/domain/usecase/get_personels.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/domain/usecase/load_personels_by_delivery_team.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/domain/usecase/load_personels_by_trip_Id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/domain/usecase/set_role.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/domain/usecase/update_personels.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

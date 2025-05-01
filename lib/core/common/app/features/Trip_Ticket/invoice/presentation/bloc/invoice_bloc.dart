@@ -1,19 +1,19 @@
 import 'package:bloc/bloc.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/entity/invoice_entity.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/create_invoice.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/delete_all_invoices.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/delete_invoice.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/get_invoice.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/get_invoice_by_id.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/get_invoice_per_customer.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/get_invoice_per_trip_id.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/get_invoices_by_completed_customer_id.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/update_invoice.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_state.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_bloc.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_event.dart';
-import 'package:desktop_app/core/enums/invoice_status.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/entity/invoice_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/create_invoice.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/delete_all_invoices.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/delete_invoice.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/get_invoice.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/get_invoice_by_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/get_invoice_per_customer.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/get_invoice_per_trip_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/get_invoices_by_completed_customer_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/usecase/update_invoice.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_event.dart';
+import 'package:xpro_delivery_admin_app/core/enums/invoice_status.dart';
 import 'package:flutter/material.dart';
 
 class InvoiceBloc extends Bloc<InvoiceEvent, InvoiceState> {

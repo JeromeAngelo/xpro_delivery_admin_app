@@ -1,11 +1,11 @@
 import 'package:dartz/dartz.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/data/datasource/remote_datasource/return_remote_datasource.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/entity/return_entity.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/repo/return_repo.dart';
-import 'package:desktop_app/core/enums/product_return_reason.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
-import 'package:desktop_app/core/errors/failures.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/data/datasource/remote_datasource/return_remote_datasource.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/entity/return_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/repo/return_repo.dart';
+import 'package:xpro_delivery_admin_app/core/enums/product_return_reason.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/errors/failures.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:flutter/foundation.dart';
 
 class ReturnRepoImpl extends ReturnRepo {

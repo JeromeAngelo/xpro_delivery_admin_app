@@ -1,4 +1,4 @@
-import 'package:desktop_app/core/enums/product_return_reason.dart';
+import 'package:xpro_delivery_admin_app/core/enums/product_return_reason.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class ReturnEvent extends Equatable { 

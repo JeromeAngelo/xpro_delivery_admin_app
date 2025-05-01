@@ -1,8 +1,8 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/entity/return_entity.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/repo/return_repo.dart';
-import 'package:desktop_app/core/enums/product_return_reason.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
-import 'package:desktop_app/core/usecases/usecase.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/entity/return_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/repo/return_repo.dart';
+import 'package:xpro_delivery_admin_app/core/enums/product_return_reason.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/usecases/usecase.dart';
 import 'package:equatable/equatable.dart';
 
 class UpdateReturn extends UsecaseWithParams<ReturnEntity, UpdateReturnParams> {

@@ -1,5 +1,5 @@
-import 'package:desktop_app/core/common/app/features/auth/domain/entity/auth_entity.dart';
-import 'package:desktop_app/core/enums/auth_roles_enum.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/entity/auth_entity.dart';
+import 'package:xpro_delivery_admin_app/core/enums/auth_roles_enum.dart';
 import 'package:flutter/material.dart';
 
 class UserRoleChip extends StatelessWidget {

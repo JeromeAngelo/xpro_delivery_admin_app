@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
-import 'package:desktop_app/core/common/widgets/app_structure/data_dashboard.dart';
-import 'package:desktop_app/core/common/widgets/app_structure/status_icons.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_dashboard.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/status_icons.dart';
 
 class CustomerDashboard extends StatelessWidget {
   final List<CustomerEntity> customers;

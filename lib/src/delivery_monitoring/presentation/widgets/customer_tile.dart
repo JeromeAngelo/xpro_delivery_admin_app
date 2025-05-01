@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
 
 class CustomerTile extends StatelessWidget {
   final CustomerEntity customer;

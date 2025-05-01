@@ -1,7 +1,7 @@
-import 'package:desktop_app/core/common/app/features/otp/domain/entity/otp_entity.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/repo/otp_repo.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
-import 'package:desktop_app/core/usecases/usecase.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/entity/otp_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/repo/otp_repo.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/usecases/usecase.dart';
 import 'package:equatable/equatable.dart';
 
 class CreateOtp implements UsecaseWithParams<OtpEntity, CreateOtpParams> {

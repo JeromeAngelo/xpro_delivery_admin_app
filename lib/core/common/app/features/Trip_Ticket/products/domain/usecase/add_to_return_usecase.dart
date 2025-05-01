@@ -1,8 +1,8 @@
 
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/repo/product_repo.dart';
-import 'package:desktop_app/core/enums/product_return_reason.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
-import 'package:desktop_app/core/usecases/usecase.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/repo/product_repo.dart';
+import 'package:xpro_delivery_admin_app/core/enums/product_return_reason.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/usecases/usecase.dart';
 
 class AddToReturnUsecase extends UsecaseWithParams<void, AddToReturnParams> {
   const AddToReturnUsecase(this._repo);

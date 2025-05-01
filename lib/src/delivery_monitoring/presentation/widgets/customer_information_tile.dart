@@ -1,5 +1,5 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
-import 'package:desktop_app/src/delivery_monitoring/presentation/widgets/delivery_status_icon.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
+import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/delivery_status_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 

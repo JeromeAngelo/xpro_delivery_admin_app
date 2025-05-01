@@ -1,9 +1,9 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/undeliverable_customer/domain/entity/undeliverable_customer_entity.dart';
-import 'package:desktop_app/core/enums/undeliverable_reason.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/undeliverable_customer/domain/entity/undeliverable_customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/enums/undeliverable_reason.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 

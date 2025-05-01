@@ -1,11 +1,11 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/create_trip_updates.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/delete_all_trip_updates.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/delete_trip_update.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/get_all_trip_updates.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/get_trip_updates.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/update_trip_update.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/presentation/bloc/trip_updates_event.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/presentation/bloc/trip_updates_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/create_trip_updates.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/delete_all_trip_updates.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/delete_trip_update.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/get_all_trip_updates.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/get_trip_updates.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/domain/usecases/update_trip_update.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/presentation/bloc/trip_updates_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/presentation/bloc/trip_updates_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

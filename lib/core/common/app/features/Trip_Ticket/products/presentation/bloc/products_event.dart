@@ -1,6 +1,6 @@
-import 'package:desktop_app/core/enums/product_return_reason.dart';
-import 'package:desktop_app/core/enums/product_unit.dart';
-import 'package:desktop_app/core/enums/products_status.dart';
+import 'package:xpro_delivery_admin_app/core/enums/product_return_reason.dart';
+import 'package:xpro_delivery_admin_app/core/enums/product_unit.dart';
+import 'package:xpro_delivery_admin_app/core/enums/products_status.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class ProductsEvent extends Equatable {

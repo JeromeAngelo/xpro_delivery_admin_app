@@ -1,6 +1,6 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/entity/return_entity.dart';
-import 'package:desktop_app/core/enums/product_return_reason.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/entity/return_entity.dart';
+import 'package:xpro_delivery_admin_app/core/enums/product_return_reason.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 
 abstract class ReturnRepo {
   const ReturnRepo();

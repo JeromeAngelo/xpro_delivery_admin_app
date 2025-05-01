@@ -1,12 +1,12 @@
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/create_vehicle.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/delete_all_vehicle.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/delete_vehicle.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/get_vehicle.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/load_vehicle_by_delivery_team_id.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/load_vehicle_by_trip_id.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/update_vehicle.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_event.dart';
-import 'package:desktop_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/create_vehicle.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/delete_all_vehicle.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/delete_vehicle.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/get_vehicle.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/load_vehicle_by_delivery_team_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/load_vehicle_by_trip_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/update_vehicle.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

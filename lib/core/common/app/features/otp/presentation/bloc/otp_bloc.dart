@@ -1,15 +1,15 @@
-import 'package:desktop_app/core/common/app/features/otp/domain/usecases/create_otp.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/usecases/delete_all_otp.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/usecases/delete_otp.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/usecases/get_all_otp.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/usecases/get_generated_otp.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/usecases/load_otp_by_id.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/usecases/load_otp_by_trip_id.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/usecases/update_otp.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/usecases/verify_in_transit.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/usecases/veryfy_in_end_delivery.dart';
-import 'package:desktop_app/core/common/app/features/otp/presentation/bloc/otp_event.dart';
-import 'package:desktop_app/core/common/app/features/otp/presentation/bloc/otp_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/usecases/create_otp.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/usecases/delete_all_otp.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/usecases/delete_otp.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/usecases/get_all_otp.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/usecases/get_generated_otp.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/usecases/load_otp_by_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/usecases/load_otp_by_trip_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/usecases/update_otp.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/usecases/verify_in_transit.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/usecases/veryfy_in_end_delivery.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/presentation/bloc/otp_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/presentation/bloc/otp_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

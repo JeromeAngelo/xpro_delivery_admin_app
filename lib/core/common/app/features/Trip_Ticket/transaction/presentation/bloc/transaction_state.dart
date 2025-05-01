@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/transaction/domain/entity/transaction_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/transaction/domain/entity/transaction_entity.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class TransactionState extends Equatable {

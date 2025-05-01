@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:desktop_app/core/common/app/features/end_trip_checklist/data/model/end_trip_checklist_model.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/data/model/end_trip_checklist_model.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
 

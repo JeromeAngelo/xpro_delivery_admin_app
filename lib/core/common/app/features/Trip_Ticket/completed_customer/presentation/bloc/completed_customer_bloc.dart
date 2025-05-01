@@ -1,14 +1,14 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/create_compeleted_customer.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/delete_all_completed_customer.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/delete_completed_customer.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/get_all_completed_customer.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/get_completed_customer.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/get_completed_customer_by_id_usecase.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/update_completed_customer.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_event.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_state.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_bloc.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/create_compeleted_customer.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/delete_all_completed_customer.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/delete_completed_customer.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/get_all_completed_customer.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/get_completed_customer.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/get_completed_customer_by_id_usecase.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/usecase/update_completed_customer.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

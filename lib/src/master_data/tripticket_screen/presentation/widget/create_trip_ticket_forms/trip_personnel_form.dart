@@ -1,9 +1,9 @@
-import 'package:desktop_app/core/common/widgets/create_screen_widgets/app_drop_down_fields.dart';
-import 'package:desktop_app/core/common/widgets/create_screen_widgets/app_textfield.dart';
-import 'package:desktop_app/core/common/widgets/create_screen_widgets/form_title.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/app_drop_down_fields.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/app_textfield.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/form_title.dart';
 import 'package:flutter/material.dart';
 
-import 'package:desktop_app/core/common/app/features/Delivery_Team/personels/data/models/personel_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/data/models/personel_models.dart';
 
 class PersonnelForm extends StatelessWidget {
   final List<PersonelModel> availablePersonnel;

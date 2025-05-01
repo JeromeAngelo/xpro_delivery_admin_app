@@ -1,4 +1,4 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/entity/return_entity.dart' show ReturnEntity;
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/entity/return_entity.dart' show ReturnEntity;
 import 'package:equatable/equatable.dart';
 
 abstract class ReturnState extends Equatable {

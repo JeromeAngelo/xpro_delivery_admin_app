@@ -1,6 +1,6 @@
-// import 'package:desktop_app/core/common/app/features/end_trip_otp/data/model/end_trip_model.dart';
-// import 'package:desktop_app/core/errors/exceptions.dart';
-// import 'package:desktop_app/objectbox.g.dart';
+// import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/data/model/end_trip_model.dart';
+// import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
+// import 'package:xpro_delivery_admin_app/objectbox.g.dart';
 // import 'package:flutter/material.dart';
 
 

@@ -1,5 +1,5 @@
-import 'package:desktop_app/core/common/app/features/otp/domain/entity/otp_entity.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/entity/otp_entity.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 
 abstract class OtpRepo {
   // Existing functions to keep

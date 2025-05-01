@@ -1,4 +1,4 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip_updates/domain/entity/trip_update_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/domain/entity/trip_update_entity.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class TripUpdatesState extends Equatable {

@@ -1,13 +1,13 @@
-import 'package:desktop_app/core/common/app/features/auth/domain/usecases/get_all_user.dart';
-import 'package:desktop_app/core/common/app/features/auth/domain/usecases/get_token.dart';
-import 'package:desktop_app/core/common/app/features/auth/domain/usecases/get_user_by_id.dart';
-import 'package:desktop_app/core/common/app/features/auth/domain/usecases/sign_in.dart';
-import 'package:desktop_app/core/common/app/features/auth/domain/usecases/sign_out.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/usecases/get_all_user.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/usecases/get_token.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/usecases/get_user_by_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/usecases/sign_in.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/usecases/sign_out.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
-import 'package:desktop_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SignInUsecase _signInUsecase;

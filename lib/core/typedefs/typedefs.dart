@@ -1,5 +1,5 @@
 import 'package:dartz/dartz.dart';
-import 'package:desktop_app/core/errors/failures.dart';
+import 'package:xpro_delivery_admin_app/core/errors/failures.dart';
 
 typedef ResultFuture<T> = Future<Either<Failure, T>>;
 

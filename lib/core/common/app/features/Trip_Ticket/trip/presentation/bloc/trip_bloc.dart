@@ -1,13 +1,13 @@
 
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/create_tripticket.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/delete_all_tripticket.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/delete_trip_ticket.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/get_all_tripticket.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/get_tripticket_by_id.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/search_tripticket.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/update_tripticket.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/create_tripticket.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/delete_all_tripticket.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/delete_trip_ticket.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/get_all_tripticket.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/get_tripticket_by_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/search_tripticket.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/update_tripticket.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

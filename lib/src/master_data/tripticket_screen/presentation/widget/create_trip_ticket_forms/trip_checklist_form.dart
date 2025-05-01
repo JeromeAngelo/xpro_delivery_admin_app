@@ -1,9 +1,9 @@
-import 'package:desktop_app/core/common/widgets/create_screen_widgets/app_drop_down_fields.dart';
-import 'package:desktop_app/core/common/widgets/create_screen_widgets/app_textfield.dart';
-import 'package:desktop_app/core/common/widgets/create_screen_widgets/form_title.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/app_drop_down_fields.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/app_textfield.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/form_title.dart';
 import 'package:flutter/material.dart';
 
-import 'package:desktop_app/core/common/app/features/checklist/data/model/checklist_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/data/model/checklist_model.dart';
 
 class ChecklistForm extends StatelessWidget {
   final List<ChecklistModel> availableChecklists;

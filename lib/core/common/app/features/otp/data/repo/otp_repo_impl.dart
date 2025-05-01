@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
-import 'package:desktop_app/core/common/app/features/otp/data/datasource/remote_data_source/otp_remote_datasource.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/entity/otp_entity.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/repo/otp_repo.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
-import 'package:desktop_app/core/errors/failures.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/data/datasource/remote_data_source/otp_remote_datasource.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/entity/otp_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/repo/otp_repo.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/errors/failures.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:flutter/material.dart';
 
 class OtpRepoImpl implements OtpRepo {

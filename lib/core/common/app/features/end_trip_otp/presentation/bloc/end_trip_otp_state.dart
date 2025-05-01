@@ -1,4 +1,4 @@
-import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/entity/end_trip_otp_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/entity/end_trip_otp_entity.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class EndTripOtpState extends Equatable {

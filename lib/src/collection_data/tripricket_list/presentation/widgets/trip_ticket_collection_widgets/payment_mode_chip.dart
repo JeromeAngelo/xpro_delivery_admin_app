@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:desktop_app/core/enums/mode_of_payment.dart';
+import 'package:xpro_delivery_admin_app/core/enums/mode_of_payment.dart';
 
 class PaymentModeChip extends StatelessWidget {
   final ModeOfPayment mode;

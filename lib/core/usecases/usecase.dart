@@ -1,4 +1,4 @@
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 
 abstract class UsecaseWithParams<Type, Params> {
   const UsecaseWithParams();

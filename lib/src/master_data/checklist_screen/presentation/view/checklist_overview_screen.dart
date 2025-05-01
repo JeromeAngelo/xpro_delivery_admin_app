@@ -1,5 +1,5 @@
-// import 'package:desktop_app/core/common/widgets/app_structure/desktop_layout.dart';
-// import 'package:desktop_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
+// import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
+// import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 // import 'package:flutter/material.dart';
 // import 'package:go_router/go_router.dart';
 

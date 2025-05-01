@@ -1,4 +1,4 @@
-import 'package:desktop_app/core/common/app/features/otp/domain/entity/otp_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/entity/otp_entity.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class OtpState extends Equatable {

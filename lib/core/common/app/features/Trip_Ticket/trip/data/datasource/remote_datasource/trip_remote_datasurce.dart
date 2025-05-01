@@ -1,8 +1,8 @@
 // ignore_for_file: unnecessary_null_comparison
 
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/data/models/auth_models.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/data/models/auth_models.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 

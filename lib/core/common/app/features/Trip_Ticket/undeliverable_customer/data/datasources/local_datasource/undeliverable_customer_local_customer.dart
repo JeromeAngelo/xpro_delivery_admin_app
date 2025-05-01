@@ -1,7 +1,7 @@
-// import 'package:desktop_app/core/common/app/features/Trip_Ticket/undeliverable_customer/data/model/undeliverable_customer_model.dart';
-// import 'package:desktop_app/core/enums/undeliverable_reason.dart';
-// import 'package:desktop_app/core/errors/exceptions.dart';
-// import 'package:desktop_app/objectbox.g.dart';
+// import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/undeliverable_customer/data/model/undeliverable_customer_model.dart';
+// import 'package:xpro_delivery_admin_app/core/enums/undeliverable_reason.dart';
+// import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
+// import 'package:xpro_delivery_admin_app/objectbox.g.dart';
 // import 'package:flutter/foundation.dart';
 
 

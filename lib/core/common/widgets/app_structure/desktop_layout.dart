@@ -1,5 +1,5 @@
-import 'package:desktop_app/core/common/widgets/app_structure/desktop_appbar.dart';
-import 'package:desktop_app/core/common/widgets/app_structure/navigation_item.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_appbar.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/navigation_item.dart';
 import 'package:flutter/material.dart';
 
 class DesktopLayout extends StatelessWidget {

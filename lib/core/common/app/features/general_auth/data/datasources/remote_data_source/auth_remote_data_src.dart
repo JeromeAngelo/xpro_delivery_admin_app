@@ -1,8 +1,8 @@
-import 'package:desktop_app/core/common/app/features/Delivery_Team/delivery_team/data/models/delivery_team_model.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/data/models/auth_models.dart';
-import 'package:desktop_app/core/common/app/features/users_roles/model/user_role_model.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/delivery_team/data/models/delivery_team_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/data/models/auth_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/users_roles/model/user_role_model.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
 

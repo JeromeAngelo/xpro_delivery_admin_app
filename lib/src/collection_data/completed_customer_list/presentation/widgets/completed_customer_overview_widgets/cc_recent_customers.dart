@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/completed_customer/domain/entity/completed_customer_entity.dart';
-import 'package:desktop_app/core/enums/mode_of_payment.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/entity/completed_customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/enums/mode_of_payment.dart';
 
 class RecentCompletedCustomers extends StatelessWidget {
   final List<CompletedCustomerEntity> customers;

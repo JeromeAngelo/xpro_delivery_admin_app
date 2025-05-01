@@ -1,14 +1,14 @@
-import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/usecases/create_end_trip_otp.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/usecases/delete_all_end_trip_otp.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/usecases/delete_end_trip_otp.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/usecases/end_otp_verify.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/usecases/get_all_end_trip_otp.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/usecases/get_end_trip_generated.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/usecases/load_end_trip_otp_by_id.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/usecases/load_end_trip_otp_by_trip_id.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_otp/domain/usecases/update_end_trip_otp.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_otp/presentation/bloc/end_trip_otp_event.dart';
-import 'package:desktop_app/core/common/app/features/end_trip_otp/presentation/bloc/end_trip_otp_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/usecases/create_end_trip_otp.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/usecases/delete_all_end_trip_otp.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/usecases/delete_end_trip_otp.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/usecases/end_otp_verify.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/usecases/get_all_end_trip_otp.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/usecases/get_end_trip_generated.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/usecases/load_end_trip_otp_by_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/usecases/load_end_trip_otp_by_trip_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/usecases/update_end_trip_otp.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/presentation/bloc/end_trip_otp_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/presentation/bloc/end_trip_otp_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

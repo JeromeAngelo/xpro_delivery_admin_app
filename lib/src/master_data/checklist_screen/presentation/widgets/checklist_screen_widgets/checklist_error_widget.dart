@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:desktop_app/core/common/app/features/checklist/presentation/bloc/checklist_bloc.dart';
-import 'package:desktop_app/core/common/app/features/checklist/presentation/bloc/checklist_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/presentation/bloc/checklist_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/presentation/bloc/checklist_event.dart';
 
 class ChecklistErrorWidget extends StatelessWidget {
   final String errorMessage;

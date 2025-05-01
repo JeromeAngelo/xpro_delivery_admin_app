@@ -1,6 +1,6 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
-import 'package:desktop_app/core/common/app/features/otp/domain/entity/otp_entity.dart';
-import 'package:desktop_app/core/enums/otp_type.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/entity/otp_entity.dart';
+import 'package:xpro_delivery_admin_app/core/enums/otp_type.dart';
 
 class OtpModel extends OtpEntity {
   String? tripId;

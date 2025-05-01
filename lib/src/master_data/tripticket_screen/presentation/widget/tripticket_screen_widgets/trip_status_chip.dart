@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
 
 class TripStatusChip extends StatelessWidget {
   final TripEntity trip;  // Changed from TripModel to TripEntity

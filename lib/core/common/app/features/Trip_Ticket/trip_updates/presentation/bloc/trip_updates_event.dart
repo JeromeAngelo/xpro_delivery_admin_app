@@ -1,4 +1,4 @@
-import 'package:desktop_app/core/enums/trip_update_status.dart';
+import 'package:xpro_delivery_admin_app/core/enums/trip_update_status.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class TripUpdatesEvent extends Equatable {

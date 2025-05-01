@@ -1,11 +1,11 @@
 import 'package:dartz/dartz.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/data/datasources/remote_data_source/auth_remote_data_src.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/data/models/auth_models.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/domain/entity/users_entity.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/domain/repo/auth_repo.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
-import 'package:desktop_app/core/errors/failures.dart';
-import 'package:desktop_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/data/datasources/remote_data_source/auth_remote_data_src.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/data/models/auth_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/entity/users_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/repo/auth_repo.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/errors/failures.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:flutter/material.dart';
 
 class GeneralUserRepoImpl implements GeneralUserRepo {

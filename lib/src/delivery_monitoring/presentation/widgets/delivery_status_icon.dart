@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:desktop_app/core/common/widgets/app_structure/status_icons.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/status_icons.dart';
 
 class DeliveryStatusData {
   final String name;

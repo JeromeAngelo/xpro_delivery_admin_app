@@ -1,17 +1,17 @@
 import 'package:bloc/bloc.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/usecase/add_to_return_usecase.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/usecase/confirm_delivery_products.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/usecase/create_product.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/usecase/delete_all_products.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/usecase/delete_product.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/usecase/get_product.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/usecase/get_products_by_invoice_id.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/usecase/update_product.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/usecase/update_product_quantities.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/usecase/update_return_reason_usecase.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/usecase/update_status_product.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_event.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/usecase/add_to_return_usecase.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/usecase/confirm_delivery_products.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/usecase/create_product.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/usecase/delete_all_products.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/usecase/delete_product.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/usecase/get_product.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/usecase/get_products_by_invoice_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/usecase/update_product.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/usecase/update_product_quantities.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/usecase/update_return_reason_usecase.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/usecase/update_status_product.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_state.dart';
 import 'package:flutter/material.dart';
 
 class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {

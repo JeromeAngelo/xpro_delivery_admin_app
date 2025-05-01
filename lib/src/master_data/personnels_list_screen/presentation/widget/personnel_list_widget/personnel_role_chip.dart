@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:desktop_app/core/enums/user_role.dart';
+import 'package:xpro_delivery_admin_app/core/enums/user_role.dart';
 
 class PersonnelRoleChip extends StatelessWidget {
   final UserRole? role;

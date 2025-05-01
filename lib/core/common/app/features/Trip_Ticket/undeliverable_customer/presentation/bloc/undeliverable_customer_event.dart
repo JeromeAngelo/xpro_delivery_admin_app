@@ -1,5 +1,5 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/undeliverable_customer/domain/entity/undeliverable_customer_entity.dart';
-import 'package:desktop_app/core/enums/undeliverable_reason.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/undeliverable_customer/domain/entity/undeliverable_customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/enums/undeliverable_reason.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class UndeliverableCustomerEvent extends Equatable {

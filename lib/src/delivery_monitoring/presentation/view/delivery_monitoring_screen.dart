@@ -1,12 +1,12 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_event.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_state.dart';
 
-import 'package:desktop_app/core/common/widgets/reusable_widgets/default_drawer.dart';
-import 'package:desktop_app/src/delivery_monitoring/presentation/widgets/customer_information_tile.dart';
-import 'package:desktop_app/src/delivery_monitoring/presentation/widgets/delivery_status_icon.dart';
-import 'package:desktop_app/src/delivery_monitoring/presentation/widgets/status_container.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/default_drawer.dart';
+import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/customer_information_tile.dart';
+import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/delivery_status_icon.dart';
+import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/status_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

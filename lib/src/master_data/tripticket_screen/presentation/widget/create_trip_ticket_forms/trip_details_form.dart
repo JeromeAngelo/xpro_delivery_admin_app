@@ -1,11 +1,11 @@
-import 'package:desktop_app/core/common/widgets/create_screen_widgets/app_drop_down_fields.dart';
-import 'package:desktop_app/core/common/widgets/create_screen_widgets/app_textfield.dart';
-import 'package:desktop_app/core/common/widgets/create_screen_widgets/form_title.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/app_drop_down_fields.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/app_textfield.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/form_title.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
 
 class TripDetailsForm extends StatelessWidget {
   final TextEditingController tripIdController;

@@ -1,9 +1,9 @@
-import 'package:desktop_app/src/auth/presentation/widgets/login_forms.dart';
+import 'package:xpro_delivery_admin_app/src/auth/presentation/widgets/login_forms.dart';
 import 'package:flutter/material.dart';
 
-import 'package:desktop_app/src/auth/presentation/widgets/auth_status_handler.dart';
-import 'package:desktop_app/src/auth/presentation/widgets/loading_indicator.dart';
-import 'package:desktop_app/src/auth/presentation/widgets/login_header.dart';
+import 'package:xpro_delivery_admin_app/src/auth/presentation/widgets/auth_status_handler.dart';
+import 'package:xpro_delivery_admin_app/src/auth/presentation/widgets/loading_indicator.dart';
+import 'package:xpro_delivery_admin_app/src/auth/presentation/widgets/login_header.dart';
 
 class AuthView extends StatefulWidget {
   const AuthView({super.key});

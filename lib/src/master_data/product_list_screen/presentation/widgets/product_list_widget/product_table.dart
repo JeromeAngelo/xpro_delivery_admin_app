@@ -1,10 +1,10 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/domain/entity/product_entity.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_bloc.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_event.dart';
-import 'package:desktop_app/core/common/widgets/app_structure/data_table_layout.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/entity/product_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 
-import 'package:desktop_app/src/master_data/product_list_screen/presentation/widgets/product_list_widget/product_search_bar_widget.dart';
-import 'package:desktop_app/src/master_data/product_list_screen/presentation/widgets/product_list_widget/product_status_chip_widget.dart';
+import 'package:xpro_delivery_admin_app/src/master_data/product_list_screen/presentation/widgets/product_list_widget/product_search_bar_widget.dart';
+import 'package:xpro_delivery_admin_app/src/master_data/product_list_screen/presentation/widgets/product_list_widget/product_status_chip_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';

@@ -1,11 +1,11 @@
 import 'package:bloc/bloc.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/domain/usecases/create_users.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/domain/usecases/delete_all_users.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/domain/usecases/delete_users.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/domain/usecases/get_all_users.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/domain/usecases/update_users.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
-import 'package:desktop_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/create_users.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/delete_all_users.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/delete_users.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/get_all_users.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/update_users.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
 import 'package:flutter/material.dart';
 
 class GeneralUserBloc extends Bloc<GeneralUserEvent, GeneralUserState> {

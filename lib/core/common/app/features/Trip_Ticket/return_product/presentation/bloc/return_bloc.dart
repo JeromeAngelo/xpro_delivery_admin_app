@@ -1,13 +1,13 @@
 import 'package:bloc/bloc.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/create_returns.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/delete_all_return.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/delete_return.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/get_all_returns.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/get_return_by_customerId.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/get_return_usecase.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/update_returns.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/presentation/bloc/return_event.dart';
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/return_product/presentation/bloc/return_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/create_returns.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/delete_all_return.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/delete_return.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/get_all_returns.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/get_return_by_customerId.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/get_return_usecase.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/usecase/update_returns.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/presentation/bloc/return_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/presentation/bloc/return_state.dart';
 import 'package:flutter/widgets.dart';
 
 class ReturnBloc extends Bloc<ReturnEvent, ReturnState> {

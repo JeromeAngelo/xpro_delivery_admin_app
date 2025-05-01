@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:desktop_app/core/common/app/features/auth/data/models/auth_model.dart';
-import 'package:desktop_app/core/errors/exceptions.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/auth/data/models/auth_model.dart';
+import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 
 abstract class AuthRemoteDataSource {
   Future<AuthModel> signIn({required String email, required String password});

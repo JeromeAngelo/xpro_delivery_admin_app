@@ -1,4 +1,4 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
 import 'package:equatable/equatable.dart';
 
 class DeliveryUpdateEntity extends Equatable {

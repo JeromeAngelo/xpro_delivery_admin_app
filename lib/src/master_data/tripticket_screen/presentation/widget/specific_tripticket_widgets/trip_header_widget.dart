@@ -1,5 +1,5 @@
-import 'package:desktop_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
-import 'package:desktop_app/core/common/widgets/app_structure/desktop_header.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_header.dart';
 import 'package:flutter/material.dart';
 
 class TripHeaderWidget extends StatelessWidget {
