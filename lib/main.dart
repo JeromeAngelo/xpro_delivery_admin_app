@@ -22,7 +22,6 @@ import 'package:xpro_delivery_admin_app/core/services/injection_container.dart';
 import 'package:xpro_delivery_admin_app/core/services/router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,7 +47,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => sl<AuthBloc>()),
         BlocProvider(create: (_) => sl<GeneralUserBloc>()),
         BlocProvider(create: (_) => sl<DeliveryTeamBloc>()),
         BlocProvider(create: (_) => sl<TripBloc>()),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';
+
 import 'package:go_router/go_router.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
 
 class DefaultDrawer extends StatefulWidget {
   const DefaultDrawer({super.key});
@@ -150,7 +151,7 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
   Widget _buildLogoutButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: BlocBuilder<AuthBloc, AuthState>(
+      child: BlocBuilder<GeneralUserBloc, GeneralUserState>(
         builder: (context, state) {
           return ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
@@ -170,7 +171,7 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
                         TextButton(
                           onPressed: () {
                             Navigator.pop(context); // Close dialog
-                            context.read<AuthBloc>().add(const SignOutEvent());
+                            context.read<GeneralUserBloc>().add(const UserSignOutEvent());
                           },
                           child: const Text('Logout'),
                         ),

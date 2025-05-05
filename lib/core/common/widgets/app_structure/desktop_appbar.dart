@@ -1,11 +1,11 @@
 // ignore_for_file: unused_local_variable
 
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
 
 class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -153,8 +153,8 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
                             if (value == 'profile') {
                               onProfileTap();
                             } else if (value == 'logout') {
-                              context.read<AuthBloc>().add(
-                                const SignOutEvent(),
+                              context.read<GeneralUserBloc>().add(
+                                 UserSignOutEvent(),
                               );
                               context.go('/');
                             }

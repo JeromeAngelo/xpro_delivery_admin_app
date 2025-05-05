@@ -171,15 +171,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/domai
 import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/domain/usecase/load_checklist_by_trip_id.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/domain/usecase/update_checklist.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/presentation/bloc/checklist_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/data/datasources/auth_remote_datasource.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/data/repo/auth_repo_impl.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/repo/auth_repo.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/usecases/get_all_user.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/usecases/get_token.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/usecases/get_user_by_id.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/usecases/sign_in.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/domain/usecases/sign_out.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
+
 import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/data/datasources/remote_datasource/end_trip_checklist_remote_data_src.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/data/repo/end_trip_checklist_repo_impl.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/domain/repo/end_trip_checklist_repo.dart';
@@ -238,7 +230,7 @@ final sl = GetIt.instance;
 final pb = PocketBase('http://192.168.1.118:8090');
 
 Future<void> init() async {
-  await initAuth();
+  
   await initGeneralAuth();
   await initVehicle();
   await initPersonels();
@@ -259,36 +251,7 @@ Future<void> init() async {
   await initTrip();
 }
 
-Future<void> initAuth() async {
-  //BLoC
-  sl.registerLazySingleton(
-    () => AuthBloc(
-      signInUsecase: sl(),
-      signOutUsecase: sl(),
-      getTokenUsecase: sl(),
-      getAllUsersUsecase: sl(),
-      getUserByIdUsecase: sl(),
-    ),
-  );
 
-  //usecase
-  sl.registerLazySingleton(() => SignInUsecase(sl()));
-  sl.registerLazySingleton(() => SignOutUsecase(sl()));
-  sl.registerLazySingleton(() => GetUserByIdUsecase(sl()));
-  sl.registerLazySingleton(() => GetAllUsersUsecase(sl()));
-  sl.registerLazySingleton(() => GetTokenUsecase(sl()));
-
-  // Repository
-  sl.registerLazySingleton<AuthRepo>(() => AuthRepoImpl(sl()));
-
-  // Data sources
-  sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSourceImpl(pocketBaseClient: sl()),
-  );
-
-  // External
-  sl.registerLazySingleton(() => pb);
-}
 
 Future<void> initGeneralAuth() async {
   //BLoC
