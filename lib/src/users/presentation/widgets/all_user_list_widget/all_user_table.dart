@@ -2,7 +2,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/do
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
-import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/delivery_user_list_widget/delivery_user_searchbar.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/all_user_list_widget/all_user_searchbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -172,7 +172,7 @@ Widget build(BuildContext context) {
     totalPages: totalPages,
     onPageChanged: onPageChanged,
     isLoading: isLoading,
-    onFiltered: () {}, dataLength: '${users.length}',
+    onFiltered: () {}, dataLength: '${users.length}', onDeleted: () {  },
   );
 }
 

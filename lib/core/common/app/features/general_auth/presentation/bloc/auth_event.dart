@@ -12,6 +12,28 @@ class GetAllUsersEvent extends GeneralUserEvent {
   List<Object?> get props => [];
 }
 
+class UserSignInEvent extends  GeneralUserEvent{
+  final String email;
+  final String password;
+
+  const UserSignInEvent({
+    required this.email,
+    required this.password,
+  });
+
+  @override
+  List<Object?> get props => [email, password];
+}
+
+class UserSignOutEvent extends GeneralUserEvent {
+  const UserSignOutEvent();
+  
+  @override
+  // TODO: implement props
+  List<Object?> get props => [];
+}
+
+
 class CreateUserEvent extends GeneralUserEvent {
   final GeneralUserEntity user;
   

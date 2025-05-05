@@ -145,7 +145,7 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
                     GetTripTicketByIdEvent(widget.tripId),
                   )
                   : null,
-          onFiltered: () {}, dataLength: '${vehicles.length}',
+          onFiltered: () {}, dataLength: '${vehicles.length}', onDeleted: () {  },
         );
       },
     );

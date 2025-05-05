@@ -150,7 +150,7 @@ class UserDataTable extends StatelessWidget {
       currentPage: currentPage,
       totalPages: totalPages,
       onPageChanged: onPageChanged,
-      isLoading: isLoading, onFiltered: () {  }, dataLength: '${users.length}',
+      isLoading: isLoading, onFiltered: () {  }, dataLength: '${users.length}', onDeleted: () {  },
     );
   }
 

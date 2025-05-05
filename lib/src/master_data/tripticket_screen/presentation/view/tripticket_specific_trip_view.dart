@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/entity/invoice_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
@@ -51,6 +53,13 @@ class TripTicketSpecificTripView extends StatefulWidget {
 
 class _TripTicketSpecificTripViewState
     extends State<TripTicketSpecificTripView> {
+         // Customer pagination state
+  int _customerCurrentPage = 1;
+  int _customerTotalPages = 1;
+  final int _customerItemsPerPage = 5; // Smaller number for embedded table
+  String _customerSearchQuery = '';
+  final TextEditingController _customerSearchController = TextEditingController();
+
   // OTP pagination state
   int _otpCurrentPage = 1;
   int _otpTotalPages = 1;
@@ -134,14 +143,16 @@ class _TripTicketSpecificTripViewState
     });
   }
 
-  @override
-  void dispose() {
-    _mapRefreshTimer?.cancel();
-    _otpSearchController.dispose();
-    _endTripOtpSearchController.dispose();
-    _invoiceSearchController.dispose();
-    super.dispose();
-  }
+ @override
+void dispose() {
+  _mapRefreshTimer?.cancel();
+  _otpSearchController.dispose();
+  _endTripOtpSearchController.dispose();
+  _invoiceSearchController.dispose();
+  _customerSearchController.dispose(); // Add this line
+  super.dispose();
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -267,20 +278,7 @@ class _TripTicketSpecificTripViewState
 
                       const SizedBox(height: 16),
 
-                      // Customers Table
-                      TripCustomersTable(
-                        tripId: widget.tripId,
-                        onAttachCustomer: () {
-                          // Navigate to attach customer screen
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Attach customer feature coming soon',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                     _buildCustomerTable(),
 
                       const SizedBox(height: 16),
 
@@ -343,6 +341,141 @@ class _TripTicketSpecificTripViewState
       ),
     );
   }
+
+ 
+  Widget _buildCustomerTable() {
+    return BlocBuilder<CustomerBloc, CustomerState>(
+      builder: (context, state) {
+        if (state is CustomerLoading) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+
+        if (state is CustomerError) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading customer data: ${state.message}',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.read<CustomerBloc>().add(
+                        GetCustomerEvent(widget.tripId),
+                      );
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (state is CustomerLoaded) {
+          // Get customers from the state
+          List<CustomerEntity> customers = List<CustomerEntity>.from(state.customer);
+
+          // Filter based on search query
+          if (_customerSearchQuery.isNotEmpty) {
+            final query = _customerSearchQuery.toLowerCase();
+            customers = customers
+                .where(
+                  (customer) =>
+                      (customer.storeName?.toLowerCase().contains(query) ?? false) ||
+                      (customer.address?.toLowerCase().contains(query) ?? false) ||
+                      (customer.deliveryNumber?.toLowerCase().contains(query) ?? false),
+                )
+                .toList();
+          }
+
+          // Calculate total pages
+          _customerTotalPages = (customers.length / _customerItemsPerPage).ceil();
+          if (_customerTotalPages == 0) _customerTotalPages = 1;
+
+          // Paginate customers
+          final startIndex = (_customerCurrentPage - 1) * _customerItemsPerPage;
+          final endIndex = startIndex + _customerItemsPerPage > customers.length
+              ? customers.length
+              : startIndex + _customerItemsPerPage;
+
+          final List<CustomerEntity> paginatedCustomers = startIndex < customers.length
+              ? List<CustomerEntity>.from(customers.sublist(startIndex, endIndex))
+              : <CustomerEntity>[];
+
+          return TripCustomersTable(
+            tripId: widget.tripId,
+            customers: paginatedCustomers,
+            isLoading: false,
+            currentPage: _customerCurrentPage,
+            totalPages: _customerTotalPages,
+            onPageChanged: (page) {
+              setState(() {
+                _customerCurrentPage = page;
+              });
+            },
+            searchController: _customerSearchController,
+            searchQuery: _customerSearchQuery,
+            onSearchChanged: (value) {
+              setState(() {
+                _customerSearchQuery = value;
+              });
+            },
+            onAttachCustomer: () {
+              // Navigate to attach customer screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Attach customer feature coming soon'),
+                ),
+              );
+            },
+          );
+        }
+
+        // Default case - no customers yet
+        return TripCustomersTable(
+          tripId: widget.tripId,
+          customers: [],
+          isLoading: false,
+          currentPage: _customerCurrentPage,
+          totalPages: _customerTotalPages,
+          onPageChanged: (page) {
+            setState(() {
+              _customerCurrentPage = page;
+            });
+          },
+          searchController: _customerSearchController,
+          searchQuery: _customerSearchQuery,
+          onSearchChanged: (value) {
+            setState(() {
+              _customerSearchQuery = value;
+            });
+          },
+          onAttachCustomer: () {
+            // Navigate to attach customer screen
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Attach customer feature coming soon'),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
 
   Widget _buildInvoiceTable() {
     return BlocConsumer<InvoiceBloc, InvoiceState>(
@@ -407,7 +540,7 @@ class _TripTicketSpecificTripViewState
           debugPrint(
             '📊 Using TripInvoicesLoaded state with ${state.invoices.length} invoices',
           );
-          invoices = state.invoices;
+          invoices = List<InvoiceEntity>.from(state.invoices);
         }
         // Handle AllInvoicesLoaded state as a fallback
         else if (state is AllInvoicesLoaded) {
@@ -484,13 +617,15 @@ class _TripTicketSpecificTripViewState
                 ? invoices.length
                 : startIndex + _invoiceItemsPerPage;
 
-        final paginatedInvoices =
+        final List<InvoiceEntity> paginatedInvoices =
             startIndex < invoices.length
-                ? invoices.sublist(startIndex, endIndex)
-                : [];
+                ? List<InvoiceEntity>.from(
+                  invoices.sublist(startIndex, endIndex),
+                )
+                : <InvoiceEntity>[];
 
         return TripInvoiceTable(
-          invoices: paginatedInvoices as List<InvoiceEntity>,
+          invoices: paginatedInvoices,
           isLoading: state is InvoiceLoading,
           currentPage: _invoiceCurrentPage,
           totalPages: _invoiceTotalPages,
@@ -511,6 +646,7 @@ class _TripTicketSpecificTripViewState
       },
     );
   }
+  
 
   // Add this method to your class
   Widget _buildTripMapWidget(TripEntity trip) {
@@ -615,33 +751,40 @@ class _TripTicketSpecificTripViewState
               state.otps.where((otp) => otp.trip?.id == widget.tripId).toList();
 
           // Filter based on search query
+          List<OtpEntity> filteredOtps = tripOtps;
           if (_otpSearchQuery.isNotEmpty) {
             final query = _otpSearchQuery.toLowerCase();
-            tripOtps.retainWhere(
-              (otp) =>
-                  (otp.otpCode.toLowerCase().contains(query)) ||
-                  (otp.generatedCode?.toLowerCase().contains(query) ?? false),
-            );
+            filteredOtps =
+                tripOtps
+                    .where(
+                      (otp) =>
+                          (otp.otpCode.toLowerCase().contains(query)) ||
+                          (otp.generatedCode?.toLowerCase().contains(query) ??
+                              false),
+                    )
+                    .toList();
           }
 
           // Calculate total pages
-          _otpTotalPages = (tripOtps.length / _otpItemsPerPage).ceil();
+          _otpTotalPages = (filteredOtps.length / _otpItemsPerPage).ceil();
           if (_otpTotalPages == 0) _otpTotalPages = 1;
 
           // Paginate OTPs
           final startIndex = (_otpCurrentPage - 1) * _otpItemsPerPage;
           final endIndex =
-              startIndex + _otpItemsPerPage > tripOtps.length
-                  ? tripOtps.length
+              startIndex + _otpItemsPerPage > filteredOtps.length
+                  ? filteredOtps.length
                   : startIndex + _otpItemsPerPage;
 
-          final paginatedOtps =
-              startIndex < tripOtps.length
-                  ? tripOtps.sublist(startIndex, endIndex)
-                  : [];
+          final List<OtpEntity> paginatedOtps =
+              startIndex < filteredOtps.length
+                  ? List<OtpEntity>.from(
+                    filteredOtps.sublist(startIndex, endIndex),
+                  )
+                  : <OtpEntity>[];
 
           return TripOtpTable(
-            otps: paginatedOtps as List<OtpEntity>,
+            otps: paginatedOtps,
             isLoading: false,
             currentPage: _otpCurrentPage,
             totalPages: _otpTotalPages,
@@ -754,35 +897,43 @@ class _TripTicketSpecificTripViewState
               state.otps.where((otp) => otp.trip?.id == widget.tripId).toList();
 
           // Filter based on search query
+          List<EndTripOtpEntity> filteredEndTripOtps = tripEndTripOtps;
           if (_endTripOtpSearchQuery.isNotEmpty) {
             final query = _endTripOtpSearchQuery.toLowerCase();
-            tripEndTripOtps.retainWhere(
-              (otp) =>
-                  (otp.otpCode.toLowerCase().contains(query)) ||
-                  (otp.generatedCode?.toLowerCase().contains(query) ?? false),
-            );
+            filteredEndTripOtps =
+                tripEndTripOtps
+                    .where(
+                      (otp) =>
+                          (otp.otpCode.toLowerCase().contains(query)) ||
+                          (otp.generatedCode?.toLowerCase().contains(query) ??
+                              false),
+                    )
+                    .toList();
           }
 
           // Calculate total pages
           _endTripOtpTotalPages =
-              (tripEndTripOtps.length / _endTripOtpItemsPerPage).ceil();
+              (filteredEndTripOtps.length / _endTripOtpItemsPerPage).ceil();
           if (_endTripOtpTotalPages == 0) _endTripOtpTotalPages = 1;
 
           // Paginate End Trip OTPs
           final startIndex =
               (_endTripOtpCurrentPage - 1) * _endTripOtpItemsPerPage;
           final endIndex =
-              startIndex + _endTripOtpItemsPerPage > tripEndTripOtps.length
-                  ? tripEndTripOtps.length
+              startIndex + _endTripOtpItemsPerPage > filteredEndTripOtps.length
+                  ? filteredEndTripOtps.length
                   : startIndex + _endTripOtpItemsPerPage;
 
-          final paginatedEndTripOtps =
-              startIndex < tripEndTripOtps.length
-                  ? tripEndTripOtps.sublist(startIndex, endIndex)
-                  : [];
+          // Use proper type casting with List.from() to avoid type errors
+          final List<EndTripOtpEntity> paginatedEndTripOtps =
+              startIndex < filteredEndTripOtps.length
+                  ? List<EndTripOtpEntity>.from(
+                    filteredEndTripOtps.sublist(startIndex, endIndex),
+                  )
+                  : <EndTripOtpEntity>[];
 
           return TripEndTripOtpTable(
-            endTripOtps: paginatedEndTripOtps as List<EndTripOtpEntity>,
+            endTripOtps: paginatedEndTripOtps,
             isLoading: false,
             currentPage: _endTripOtpCurrentPage,
             totalPages: _endTripOtpTotalPages,
@@ -823,4 +974,6 @@ class _TripTicketSpecificTripViewState
       },
     );
   }
+
+  
 }

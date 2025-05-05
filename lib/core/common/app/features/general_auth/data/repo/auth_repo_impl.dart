@@ -85,4 +85,49 @@ class GeneralUserRepoImpl implements GeneralUserRepo {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     }
   }
+  
+  @override
+  ResultFuture<GeneralUserEntity> getUserById(String userId) {
+    // TODO: implement getUserById
+    throw UnimplementedError();
+  }
+  
+ @override
+ResultFuture<GeneralUserEntity> signIn({
+  required String email,
+  required String password,
+}) async {
+  try {
+    debugPrint('🔄 Starting sign-in process');
+    
+    // Get user from remote
+    final remoteUser = await _remoteDataSource.signIn(
+      email: email,
+      password: password,
+    );
+    
+    debugPrint('✅ Remote authentication successful');
+    debugPrint('   👤 User: ${remoteUser.name}');
+    debugPrint('   📧 Email: ${remoteUser.email}');
+    
+    
+    return Right(remoteUser);
+  } on ServerException catch (e) {
+    debugPrint('⚠️ Remote authentication failed, checking local cache');
+    
+    return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+  }
+}
+  
+@override
+  ResultFuture<void> signOut() async {
+    try {
+      await _remoteDataSource.signOut();
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString(), statusCode: '500'));
+    }
+  }
 }

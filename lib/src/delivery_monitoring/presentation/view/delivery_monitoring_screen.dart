@@ -22,18 +22,27 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
   final List<DeliveryStatusData> statuses = getAllDeliveryStatuses();
 
   // void _fetchCustomerLocation(String customerId) {
-  //   context.read<CustomerBloc>().add(GetCustomerLocationEvent(customerId));
-  // }
+  //   // Ensure we're using the correct ID format (no colon)
+  //   final sanitizedId = customerId.startsWith(':')
+  //       ? customerId.substring(1)
+  //       : customerId;
 
-  void _fetchCustomerLocation(String customerId) {
-    context.read<CustomerBloc>().add(GetCustomerLocationEvent(customerId));
-  }
+  //   context.read<CustomerBloc>().add(GetCustomerLocationEvent(sanitizedId));
+  // }
 
   @override
   void initState() {
     super.initState();
-    // Load all customers when the screen initializes
-    context.read<CustomerBloc>().add(const GetAllCustomersEvent());
+    // Start watching all customers when the screen initializes
+    // This will provide real-time updates
+    context.read<CustomerBloc>().add(const WatchAllCustomersEvent());
+  }
+
+  @override
+  void dispose() {
+    // Stop watching when the screen is disposed
+    context.read<CustomerBloc>().add(const StopWatchingEvent());
+    super.dispose();
   }
 
   @override
@@ -41,12 +50,7 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
-        iconTheme: IconThemeData(
-          color:
-              Theme.of(
-                context,
-              ).colorScheme.surface, // This sets the drawer icon color
-        ),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.surface),
         title: Text(
           'Delivery Monitoring',
           style: TextStyle(color: Theme.of(context).colorScheme.surface),
@@ -54,11 +58,23 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
         actions: [
           IconButton(
             icon: Icon(
+              Icons.sort_outlined,
+              color: Theme.of(context).colorScheme.surface,
+            ),
+            tooltip: 'Filter',
+            onPressed: () {
+              // Manually refresh all customers if needed
+              // context.read<CustomerBloc>().add(const GetAllCustomersEvent());
+            },
+          ),
+          IconButton(
+            icon: Icon(
               Icons.refresh,
               color: Theme.of(context).colorScheme.surface,
             ),
             tooltip: 'Refresh',
             onPressed: () {
+              // Manually refresh all customers if needed
               context.read<CustomerBloc>().add(const GetAllCustomersEvent());
             },
           ),
@@ -68,11 +84,16 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
       drawer: const DefaultDrawer(),
       body: BlocBuilder<CustomerBloc, CustomerState>(
         builder: (context, state) {
-          if (state is CustomerLoading) {
+          if (state is CustomerLoading || state is AllCustomersWatching) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is CustomerError) {
+          if (state is CustomerError || state is CustomerStreamError) {
+            final errorMessage =
+                state is CustomerError
+                    ? state.message
+                    : (state as CustomerStreamError).message;
+
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -80,14 +101,15 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
                   Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
                   const SizedBox(height: 16),
                   Text(
-                    'Error loading customers: ${state.message}',
+                    'Error loading customers: $errorMessage',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () {
+                      // Try watching again
                       context.read<CustomerBloc>().add(
-                        const GetAllCustomersEvent(),
+                        const WatchAllCustomersEvent(),
                       );
                     },
                     icon: const Icon(Icons.refresh),
@@ -100,8 +122,11 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
 
           List<CustomerEntity> customers = [];
 
+          // Handle different loaded states
           if (state is AllCustomersLoaded) {
             customers = state.customers;
+          } else if (state is CustomerLoaded) {
+            customers = state.customer;
           }
 
           return CustomScrollView(
@@ -141,6 +166,16 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
             ],
           );
         },
+      ),
+      // Add a floating action button to manually refresh
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Restart the real-time subscription
+          context.read<CustomerBloc>().add(const StopWatchingEvent());
+          context.read<CustomerBloc>().add(const WatchAllCustomersEvent());
+        },
+        tooltip: 'Restart real-time updates',
+        child: const Icon(Icons.sync),
       ),
     );
   }
@@ -193,8 +228,12 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
   // Show customer details in a dialog
   void _showCustomerDetails(BuildContext context, CustomerEntity customer) {
     if (customer.id != null) {
-      _fetchCustomerLocation(customer.id!);
+      // Start watching this specific customer's location for real-time updates
+      context.read<CustomerBloc>().add(
+        WatchCustomerLocationEvent(customer.id!),
+      );
     }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -246,17 +285,57 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () {
+                            // Stop watching this customer when dialog is closed
+                            context.read<CustomerBloc>().add(
+                              const StopWatchingEvent(),
+                            );
+                            // Resume watching all customers
+                            context.read<CustomerBloc>().add(
+                              const WatchAllCustomersEvent(),
+                            );
+                            Navigator.pop(context);
+                          },
                           color: Theme.of(context).colorScheme.surface,
                         ),
                       ],
                     ),
                   ),
 
-                  // Customer information content
+                  // Customer information content with real-time updates
                   Flexible(
-                    child: SingleChildScrollView(
-                      child: CustomerInformationTile(customer: customer),
+                    child: BlocBuilder<CustomerBloc, CustomerState>(
+                      builder: (context, state) {
+                        // Show loading indicator when fetching location
+                        if (state is CustomerLocationLoading ||
+                            state is CustomerLocationWatching) {
+                          return const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 16),
+                                Text('Loading customer details...'),
+                              ],
+                            ),
+                          );
+                        }
+
+                        // Show updated customer data if available
+                        if (state is CustomerLocationLoaded &&
+                            state.customer.id == customer.id) {
+                          return SingleChildScrollView(
+                            child: CustomerInformationTile(
+                              customer: state.customer,
+                            ),
+                          );
+                        }
+
+                        // Fallback to original customer data
+                        return SingleChildScrollView(
+                          child: CustomerInformationTile(customer: customer),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -265,6 +344,11 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
           ),
         );
       },
-    );
+    ).then((_) {
+      // When dialog is closed, ensure we stop watching the specific customer
+      context.read<CustomerBloc>().add(const StopWatchingEvent());
+      // Resume watching all customers
+      context.read<CustomerBloc>().add(const WatchAllCustomersEvent());
+    });
   }
 }

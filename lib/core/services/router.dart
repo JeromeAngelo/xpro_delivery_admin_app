@@ -20,8 +20,7 @@ import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presen
 import 'package:xpro_delivery_admin_app/src/master_data/vehicle_list_screen/presentation/view/vehicle_list_screen_view.dart';
 import 'package:xpro_delivery_admin_app/src/return_data/return_list_screen/presentation/view/return_list_view.dart';
 import 'package:xpro_delivery_admin_app/src/return_data/undelivered_customer_data/presentation/view/undelivered_customer_list_view.dart';
-import 'package:xpro_delivery_admin_app/src/users/presentation/view/delivery_users_list_view.dart';
-import 'package:xpro_delivery_admin_app/src/users/presentation/view/users_list_view.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/view/all_users_view.dart';
 import 'package:go_router/go_router.dart';
 
 final router = GoRouter(
@@ -127,10 +126,10 @@ final router = GoRouter(
       builder: (context, state) => const ReturnListView(),
     ),
 
-    GoRoute(path: '/users', builder: (context, state) => const UsersListView()),
+    //GoRoute(path: '/users', builder: (context, state) => const UsersListView()),
     GoRoute(
-      path: '/delivery-users',
-      builder: (context, state) => const DeliveryUsersListView(),
+      path: '/all-users',
+      builder: (context, state) => const AllUsersView(),
     ),
     GoRoute(
       path: '/undeliverable-customers',

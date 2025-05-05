@@ -217,15 +217,11 @@ class AppNavigationItems {
         title: 'Master Data',
         icon: Icons.storage,
         children: [
+          
           NavigationItem(
-            title: 'Admin Users',
-            icon: Icons.admin_panel_settings,
-            route: '/users',
-          ),
-          NavigationItem(
-            title: 'Delivery Users',
+            title: 'All Users',
             icon: Icons.person,
-            route: '/delivery-users',
+            route: '/all-users',
           ),
         ],
       ),

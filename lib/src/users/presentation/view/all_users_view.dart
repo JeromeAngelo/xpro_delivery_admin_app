@@ -4,20 +4,20 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/pr
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
-import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/delivery_user_list_widget/delivery_user_error.dart';
-import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/delivery_user_list_widget/delivery_user_table.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/all_user_list_widget/all_user_error.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/all_user_list_widget/all_user_table.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-class DeliveryUsersListView extends StatefulWidget {
-  const DeliveryUsersListView({super.key});
+class AllUsersView extends StatefulWidget {
+  const AllUsersView({super.key});
 
   @override
-  State<DeliveryUsersListView> createState() => _DeliveryUsersListViewState();
+  State<AllUsersView> createState() => _DeliveryUsersListViewState();
 }
 
-class _DeliveryUsersListViewState extends State<DeliveryUsersListView> {
+class _DeliveryUsersListViewState extends State<AllUsersView> {
   int _currentPage = 1;
   int _totalPages = 1;
   final int _itemsPerPage = 25;
@@ -44,7 +44,7 @@ class _DeliveryUsersListViewState extends State<DeliveryUsersListView> {
 
     return DesktopLayout(
       navigationItems: navigationItems,
-      currentRoute: '/delivery-users',
+      currentRoute: '/all-users',
       onNavigate: (route) {
         // Handle navigation using GoRouter
         context.go(route);

@@ -178,7 +178,7 @@ class TripInvoiceTable extends StatelessWidget {
       onFiltered: () {
         // Show filter dialog
         _showFilterDialog(context);
-      }, dataLength: '${invoices.length}',
+      }, dataLength: '${invoices.length}', onDeleted: () {  },
     );
   }
 

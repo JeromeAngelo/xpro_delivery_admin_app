@@ -1,169 +1,148 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_state.dart';
-import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
-import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/status_icons.dart';
+// ignore_for_file: unused_local_variable
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/status_icons.dart';
 
 class TripCustomersTable extends StatelessWidget {
   final String tripId;
   final VoidCallback? onAttachCustomer;
+  final List<CustomerEntity> customers;
+  final bool isLoading;
+  final int currentPage;
+  final int totalPages;
+  final Function(int) onPageChanged;
+  final TextEditingController searchController;
+  final String searchQuery;
+  final Function(String) onSearchChanged;
 
   const TripCustomersTable({
     super.key,
     required this.tripId,
     this.onAttachCustomer,
+    required this.customers,
+    required this.isLoading,
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageChanged,
+    required this.searchController,
+    required this.searchQuery,
+    required this.onSearchChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Wrap with a SizedBox with defined height to ensure the widget has size
-    return BlocBuilder<CustomerBloc, CustomerState>(
-      builder: (context, state) {
-        if (state is CustomerLoading) {
-          return _buildCustomerTable(context, [], true);
-        }
-
-        if (state is CustomerError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-                const SizedBox(height: 16),
-                Text(
-                  'Error loading customers: ${state.message}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    context.read<CustomerBloc>().add(GetCustomerEvent(tripId));
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        List<CustomerEntity> customers = [];
-
-        if (state is CustomerLoaded) {
-          customers = state.customer;
-        }
-
-        return _buildCustomerTable(context, customers, false);
-      },
-    );
-  }
-
-  Widget _buildCustomerTable(
-    BuildContext context,
-    List<CustomerEntity> customers,
-    bool isLoading,
-  ) {
-    final headerStyle = TextStyle(
-      fontWeight: FontWeight.bold,
-      color: Colors.black,
-    );
-
-    // Ensure we have at least one row to prevent layout issues
-    final List<DataRow> rows =
-        customers.isEmpty && !isLoading
-            ? [
-              DataRow(
-                cells: [
-                  DataCell(Text('No data')),
-                  DataCell(Text('')),
-                  DataCell(Text('')),
-                  DataCell(Text('')),
-                  DataCell(Text('')),
-                  DataCell(Text('')),
-                ],
-              ),
-            ]
-            : customers.map((customer) {
-              return DataRow(
-                cells: [
-                  DataCell(
-                    Text(customer.id ?? 'N/A'),
-                    onTap: () => _navigateToCustomerDetails(context, customer),
-                  ),
-                  DataCell(
-                    Text(customer.storeName ?? 'N/A'),
-                    onTap: () => _navigateToCustomerDetails(context, customer),
-                  ),
-                  DataCell(
-                    Text(_formatAddress(customer)),
-                    onTap: () => _navigateToCustomerDetails(context, customer),
-                  ),
-                  DataCell(
-                    _buildCustomerStatusChip(customer),
-                    onTap: () => _navigateToCustomerDetails(context, customer),
-                  ),
-
-                  DataCell(Text(_formatCurrency(customer))),
-                  DataCell(
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.visibility,
-                            color: Colors.blue,
-                          ),
-                          tooltip: 'View Details',
-                          onPressed: () {
-                            // View customer details
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.orange),
-                          tooltip: 'Edit',
-                          onPressed: () {
-                            // Edit customer
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          tooltip: 'Delete',
-                          onPressed: () {
-                            _showDeleteCustomerDialog(context, customer);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }).toList();
-
     return DataTableLayout(
       title: 'Customers',
+      searchBar: TextField(
+        controller: searchController,
+        decoration: InputDecoration(
+          hintText: 'Search by name, address, or status...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon:
+              searchQuery.isNotEmpty
+                  ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      searchController.clear();
+                      onSearchChanged('');
+                    },
+                  )
+                  : null,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        onChanged: onSearchChanged,
+      ),
       onCreatePressed: onAttachCustomer,
       createButtonText: 'Attach Customer',
-      columns: [
-        DataColumn(label: Text('ID', style: headerStyle)),
-        DataColumn(label: Text('Customer Name', style: headerStyle)),
-        DataColumn(label: Text('Address', style: headerStyle)),
-        DataColumn(label: Text('Status', style: headerStyle)),
-
-        DataColumn(label: Text('Total Amount', style: headerStyle)),
-        DataColumn(label: Text('Actions', style: headerStyle)),
+      columns: const [
+        DataColumn(label: Text('ID')),
+        DataColumn(label: Text('Customer Name')),
+        DataColumn(label: Text('Address')),
+        DataColumn(label: Text('Status')),
+        DataColumn(label: Text('Total Amount')),
+        DataColumn(label: Text('Actions')),
       ],
-      rows: rows,
-      currentPage: 1, // Since we're not paginating this table
-      totalPages: 1,
-      onPageChanged: (page) {
-        // No pagination for this table
-      },
+      rows:
+          customers.map((customer) {
+            return DataRow(
+              cells: [
+                // ID
+                DataCell(
+                  Text(customer.id ?? 'N/A'),
+                  onTap: () => _navigateToCustomerDetails(context, customer),
+                ),
+
+                // Customer Name
+                DataCell(
+                  Text(customer.storeName ?? 'N/A'),
+                  onTap: () => _navigateToCustomerDetails(context, customer),
+                ),
+
+                // Address
+                DataCell(
+                  Text(_formatAddress(customer)),
+                  onTap: () => _navigateToCustomerDetails(context, customer),
+                ),
+
+                // Status
+                DataCell(
+                  _buildCustomerStatusChip(customer),
+                  onTap: () => _navigateToCustomerDetails(context, customer),
+                ),
+
+                // Total Amount
+                DataCell(
+                  Text(_formatCurrency(customer)),
+                  onTap: () => _navigateToCustomerDetails(context, customer),
+                ),
+
+                // Actions
+                DataCell(
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.visibility, color: Colors.blue),
+                        tooltip: 'View Details',
+                        onPressed: () {
+                          _navigateToCustomerDetails(context, customer);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.orange),
+                        tooltip: 'Edit',
+                        onPressed: () {
+                          // Navigate to edit customer screen
+                          context.go('/customer/edit/${customer.id}');
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        tooltip: 'Delete',
+                        onPressed: () {
+                          _showDeleteCustomerDialog(context, customer);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+      currentPage: currentPage,
+      totalPages: totalPages,
+      onPageChanged: onPageChanged,
       isLoading: isLoading,
-      onFiltered: () {},
-      dataLength: '${customers.length}',
+      onFiltered: () {
+        // Show filter dialog
+        _showFilterDialog(context);
+      },
+      dataLength: '${customers.length}', onDeleted: () {  },
     );
   }
 
@@ -321,8 +300,147 @@ class TripCustomersTable extends StatelessWidget {
   ) {
     if (customer.id != null) {
       context.read<CustomerBloc>().add(GetCustomerLocationEvent(customer.id!));
-
-      context.go('/customer/:{$customer.id}');
+      context.go('/customer/${customer.id}');
     }
+  }
+
+  Future<void> _showFilterDialog(BuildContext context) async {
+    String? selectedStatus;
+    double? minAmount;
+    double? maxAmount;
+
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Filter Customers'),
+              content: SizedBox(
+                width: 400,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Status Filter
+                    const Text('Status:'),
+                    DropdownButton<String?>(
+                      isExpanded: true,
+                      value: selectedStatus,
+                      hint: const Text('All Statuses'),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('All Statuses'),
+                        ),
+                        ...[
+                              'Pending',
+                              'In Transit',
+                              'Arrived',
+                              'Unloading',
+                              'Delivered',
+                              'Received',
+                              'Undelivered',
+                              'Completed',
+                            ]
+                            .map(
+                              (status) => DropdownMenuItem<String?>(
+                                value: status,
+                                child: Text(status),
+                              ),
+                            )
+                            .toList(),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedStatus = value;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Amount Range Filter
+                    const Text('Amount Range:'),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Min Amount',
+                              prefixText: '₱',
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              if (value.isNotEmpty) {
+                                setState(() {
+                                  minAmount = double.tryParse(value);
+                                });
+                              } else {
+                                setState(() {
+                                  minAmount = null;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Max Amount',
+                              prefixText: '₱',
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              if (value.isNotEmpty) {
+                                setState(() {
+                                  maxAmount = double.tryParse(value);
+                                });
+                              } else {
+                                setState(() {
+                                  maxAmount = null;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Reset'),
+                  onPressed: () {
+                    setState(() {
+                      selectedStatus = null;
+                      minAmount = null;
+                      maxAmount = null;
+                    });
+                  },
+                ),
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text('Apply'),
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    // Apply filters - this would need a custom event in the CustomerBloc
+                    // For now, we'll just refresh the list
+                    context.read<CustomerBloc>().add(GetCustomerEvent(tripId));
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }

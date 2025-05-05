@@ -186,7 +186,7 @@ class _CollectionCompletedCustomersTableState
         });
       },
       isLoading: widget.isLoading,
-      onFiltered: () {}, dataLength: '${filteredCustomers.length}',
+      onFiltered: () {}, dataLength: '${filteredCustomers.length}', onDeleted: () {  },
     );
   }
 

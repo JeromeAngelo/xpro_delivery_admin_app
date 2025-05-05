@@ -76,7 +76,7 @@ class _TripDataTableState extends State<TripDataTable> {
       isLoading: widget.isLoading,
       enableSelection: true,
       onFiltered: _handleFiltering,
-      onRowsSelected: _handleRowsSelected, dataLength: '${widget.trips.length}',
+      onRowsSelected: _handleRowsSelected, dataLength: '${widget.trips.length}', onDeleted: () {  },
     );
   }
 

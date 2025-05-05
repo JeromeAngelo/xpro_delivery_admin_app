@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
 
 class CustomerTile extends StatelessWidget {
@@ -104,6 +105,28 @@ class CustomerTile extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.timelapse,
+                    size: 16,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.7),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _formatDate(customer.deliveryStatus.last.time),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
 
               const SizedBox(height: 4),
 
@@ -141,6 +164,17 @@ class CustomerTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'N/A';
+    try {
+      // Change the format from "MMM dd, yyyy hh:mm a" to "MM/dd/yyyy hh:mm a"
+      return DateFormat('MM/dd/yyyy hh:mm a').format(date);
+    } catch (e) {
+      debugPrint('❌ Error formatting date: $e');
+      return 'Invalid Date';
+    }
   }
 
   String _formatAddress(CustomerEntity customer) {

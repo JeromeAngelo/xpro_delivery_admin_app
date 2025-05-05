@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
 
 abstract class CustomerEvent extends Equatable {
   const CustomerEvent();
@@ -181,4 +182,76 @@ class DeleteAllCustomersEvent extends CustomerEvent {
   
   @override
   List<Object?> get props => [ids];
+}
+
+// New watch events for real-time updates
+class WatchCustomersEvent extends CustomerEvent {
+  final String tripId;
+  
+  const WatchCustomersEvent(this.tripId);
+  
+  @override
+  List<Object?> get props => [tripId];
+}
+
+class WatchCustomerLocationEvent extends CustomerEvent {
+  final String customerId;
+  
+  const WatchCustomerLocationEvent(this.customerId);
+  
+  @override
+  List<Object?> get props => [customerId];
+}
+
+class WatchAllCustomersEvent extends CustomerEvent {
+  const WatchAllCustomersEvent();
+  
+  @override
+  List<Object?> get props => [];
+}
+
+// Events for handling stream updates
+class CustomerUpdatedEvent extends CustomerEvent {
+  final CustomerEntity customer;
+  
+  const CustomerUpdatedEvent(this.customer);
+  
+  @override
+  List<Object?> get props => [customer];
+}
+
+class CustomersUpdatedEvent extends CustomerEvent {
+  final List<CustomerEntity> customers;
+  
+  const CustomersUpdatedEvent(this.customers);
+  
+  @override
+  List<Object?> get props => [customers];
+}
+
+class AllCustomersUpdatedEvent extends CustomerEvent {
+  final List<CustomerEntity> customers;
+  
+  const AllCustomersUpdatedEvent(this.customers);
+  
+  @override
+  List<Object?> get props => [customers];
+}
+
+// Event for handling errors
+class CustomerErrorEvent extends CustomerEvent {
+  final String message;
+  
+  const CustomerErrorEvent(this.message);
+  
+  @override
+  List<Object?> get props => [message];
+}
+
+// Event to stop watching
+class StopWatchingEvent extends CustomerEvent {
+  const StopWatchingEvent();
+  
+  @override
+  List<Object?> get props => [];
 }

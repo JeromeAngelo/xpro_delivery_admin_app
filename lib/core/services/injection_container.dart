@@ -52,6 +52,9 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cus
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/usecases/get_customer.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/usecases/get_customersLocation.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/usecases/update_customer.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/usecases/watch_all_customers.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/usecases/watch_customer.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/usecases/watch_customer_location.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/datasource/remote_datasource/delivery_update_datasource.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/repo/delivery_update_repo_impl.dart';
@@ -209,6 +212,8 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/do
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/delete_all_users.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/delete_users.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/get_all_users.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/sign_in.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/sign_out.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/update_users.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/otp/data/datasource/remote_data_source/otp_remote_datasource.dart';
@@ -293,11 +298,13 @@ Future<void> initGeneralAuth() async {
       createUser: sl(),
       updateUser: sl(),
       deleteUser: sl(),
-      deleteAllUsers: sl(),
+      deleteAllUsers: sl(), signIn: sl(), signOut: sl(),
     ),
   );
 
   //usecases
+  sl.registerLazySingleton(() => SignIn(sl()));
+  sl.registerLazySingleton(() => SignOut(sl()));
   sl.registerLazySingleton(() => GetAllUsers(sl()));
   sl.registerLazySingleton(() => CreateUser(sl()));
   sl.registerLazySingleton(() => UpdateUser(sl()));
@@ -566,6 +573,9 @@ Future<void> initCustomer() async {
       updateCustomer: sl(),
       deleteCustomer: sl(),
       deleteAllCustomers: sl(),
+      watchCustomers: sl(),
+      watchCustomerLocation: sl(),
+      watchAllCustomers: sl(),
     ),
   );
 
@@ -578,7 +588,11 @@ Future<void> initCustomer() async {
   sl.registerLazySingleton(() => UpdateCustomer(sl()));
   sl.registerLazySingleton(() => DeleteCustomer(sl()));
   sl.registerLazySingleton(() => DeleteAllCustomers(sl()));
-
+ 
+  //watch usecase
+  sl.registerLazySingleton(() => WatchAllCustomers(sl()));
+  sl.registerLazySingleton(() => WatchCustomerLocation(sl()));
+  sl.registerLazySingleton(() => WatchCustomers(sl()));
   // Repository
   sl.registerLazySingleton<CustomerRepo>(() => CustomerRepoImpl(sl()));
 

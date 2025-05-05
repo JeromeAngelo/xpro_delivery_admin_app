@@ -193,4 +193,62 @@ class CustomerRepoImpl extends CustomerRepo {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     }
   }
+  
+ 
+  @override
+  Stream<Either<Failure, List<CustomerEntity>>> watchCustomers(String tripId) {
+    debugPrint('🔄 Setting up watch stream for customers in trip: $tripId');
+    
+    return _remoteDataSource.watchCustomers(tripId)
+      .map((customers) => Right<Failure, List<CustomerEntity>>(customers))
+      .handleError((error) {
+        debugPrint('⚠️ Error in customer watch stream: $error');
+        if (error is ServerException) {
+          return Left<Failure, List<CustomerEntity>>(
+            ServerFailure(message: error.message, statusCode: error.statusCode)
+          );
+        }
+        return Left<Failure, List<CustomerEntity>>(
+          ServerFailure(message: error.toString(), statusCode: '500')
+        );
+      });
+  }
+  
+  @override
+  Stream<Either<Failure, CustomerEntity>> watchCustomerLocation(String customerId) {
+    debugPrint('🔄 Setting up watch stream for customer location: $customerId');
+    
+    return _remoteDataSource.watchCustomerLocation(customerId)
+      .map((customer) => Right<Failure, CustomerEntity>(customer))
+      .handleError((error) {
+        debugPrint('⚠️ Error in customer location watch stream: $error');
+        if (error is ServerException) {
+          return Left<Failure, CustomerEntity>(
+            ServerFailure(message: error.message, statusCode: error.statusCode)
+          );
+        }
+        return Left<Failure, CustomerEntity>(
+          ServerFailure(message: error.toString(), statusCode: '500')
+        );
+      });
+  }
+  
+  @override
+  Stream<Either<Failure, List<CustomerEntity>>> watchAllCustomers() {
+    debugPrint('🔄 Setting up watch stream for all customers');
+    
+    return _remoteDataSource.watchAllCustomers()
+      .map((customers) => Right<Failure, List<CustomerEntity>>(customers))
+      .handleError((error) {
+        debugPrint('⚠️ Error in all customers watch stream: $error');
+        if (error is ServerException) {
+          return Left<Failure, List<CustomerEntity>>(
+            ServerFailure(message: error.message, statusCode: error.statusCode)
+          );
+        }
+        return Left<Failure, List<CustomerEntity>>(
+          ServerFailure(message: error.toString(), statusCode: '500')
+        );
+      });
+  }
 }

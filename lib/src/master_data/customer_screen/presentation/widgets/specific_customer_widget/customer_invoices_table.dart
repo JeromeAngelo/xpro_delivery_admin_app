@@ -220,7 +220,7 @@ class _CustomerInvoicesTableState extends State<CustomerInvoicesTable> {
         });
       },
       isLoading: false,
-      onFiltered: () {}, dataLength: '${filteredInvoices.length}',
+      onFiltered: () {}, dataLength: '${filteredInvoices.length}', onDeleted: () {  },
     );
   }
 

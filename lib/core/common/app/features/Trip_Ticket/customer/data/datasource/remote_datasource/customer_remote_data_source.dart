@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
@@ -35,6 +36,11 @@ abstract class CustomerRemoteDataSource {
   });
   Future<bool> deleteCustomer(String id);
   Future<bool> deleteAllCustomers(List<String> ids);
+  // New subscription methods
+  Stream<List<CustomerModel>> watchCustomers(String tripId);
+  Stream<CustomerModel> watchCustomerLocation(String customerId);
+  // Add watch all customers method
+  Stream<List<CustomerModel>> watchAllCustomers();
 }
 
 class CustomerRemoteDataSourceImpl implements CustomerRemoteDataSource {
@@ -684,6 +690,195 @@ Future<List<CustomerModel>> getAllCustomers() async {
         message: 'Failed to delete multiple customers: ${e.toString()}',
         statusCode: '500',
       );
+    }
+  }
+  
+  
+  @override
+  Stream<List<CustomerModel>> watchCustomers(String tripId) {
+    try {
+      // Extract trip ID if we received a JSON object
+      String actualTripId;
+      if (tripId.startsWith('{')) {
+        final tripData = jsonDecode(tripId);
+        actualTripId = tripData['id'];
+      } else {
+        actualTripId = tripId;
+      }
+
+      debugPrint('🔄 Setting up realtime subscription for customers with trip ID: $actualTripId');
+      
+      // First, get the initial data
+      return Stream.fromFuture(getCustomers(tripId))
+        .asyncExpand((initialCustomers) {
+          // Create a StreamController to manage the customer list updates
+          final controller = StreamController<List<CustomerModel>>();
+          
+          // Add initial data
+          controller.add(initialCustomers);
+          
+          // Set up the subscription
+          final subscription = _pocketBaseClient
+            .collection('customers')
+            .subscribe(
+              '*',
+              (data) {
+                debugPrint('📡 Received realtime update for customers: ${data.action}');
+                
+                // Handle different types of changes
+                if (data.action == 'create' || data.action == 'update') {
+                  // Check if the new/updated record belongs to our trip
+                  final record = data.record;
+                  if (record!.data['trip'] == actualTripId) {
+                    // Refresh the entire list to ensure we have all related data
+                    getCustomers(tripId).then((updatedCustomers) {
+                      controller.add(updatedCustomers);
+                    }).catchError((error) {
+                      debugPrint('❌ Error refreshing customers: $error');
+                    });
+                  }
+                } else if (data.action == 'delete') {
+                  // For deletions, we can just filter out the deleted customer
+                  getCustomers(tripId).then((updatedCustomers) {
+                    controller.add(updatedCustomers);
+                  }).catchError((error) {
+                    debugPrint('❌ Error refreshing customers after deletion: $error');
+                  });
+                }
+              },
+            );
+          
+          // Close the subscription when the stream is canceled
+          controller.onCancel = () {
+            debugPrint('🛑 Closing customers subscription');
+            subscription.ignore();
+          };
+          
+          return controller.stream;
+        });
+    } catch (e) {
+      debugPrint('❌ Error setting up customers subscription: ${e.toString()}');
+      return Stream.error(ServerException(
+        message: 'Failed to set up customers subscription: ${e.toString()}',
+        statusCode: '500',
+      ));
+    }
+  }
+
+  @override
+  Stream<CustomerModel> watchCustomerLocation(String customerId) {
+    try {
+      // Extract the actual ID if needed
+      String actualCustomerId = customerId;
+      if (customerId.contains('CustomerModel')) {
+        final idMatch = RegExp(r'CustomerModel\(([^,]+)').firstMatch(customerId);
+        if (idMatch != null && idMatch.groupCount >= 1) {
+          actualCustomerId = idMatch.group(1)!;
+        } else {
+          actualCustomerId = customerId.split(',').first.replaceAll('CustomerModel(', '').trim();
+        }
+      }
+      
+      debugPrint('🔄 Setting up realtime subscription for customer: $actualCustomerId');
+      
+      // First, get the initial data
+      return Stream.fromFuture(getCustomerLocation(actualCustomerId))
+        .asyncExpand((initialCustomer) {
+          // Create a StreamController to manage the customer updates
+          final controller = StreamController<CustomerModel>();
+          
+          // Add initial data
+          controller.add(initialCustomer);
+          
+          // Set up the subscription
+          final subscription = _pocketBaseClient
+            .collection('customers')
+            .subscribe(
+              actualCustomerId,
+              (data) {
+                debugPrint('📡 Received realtime update for customer: ${data.action}');
+                
+                // Handle different types of changes
+                if (data.action == 'update') {
+                  // Refresh the customer data to ensure we have all related data
+                  getCustomerLocation(actualCustomerId).then((updatedCustomer) {
+                    controller.add(updatedCustomer);
+                  }).catchError((error) {
+                    debugPrint('❌ Error refreshing customer: $error');
+                  });
+                } else if (data.action == 'delete') {
+                  // If the customer is deleted, emit an error
+                  controller.addError(ServerException(
+                    message: 'Customer has been deleted',
+                    statusCode: '404',
+                  ));
+                }
+              },
+            );
+          
+          // Close the subscription when the stream is canceled
+          controller.onCancel = () {
+            debugPrint('🛑 Closing customer subscription');
+            subscription.ignore();
+          };
+          
+          return controller.stream;
+        });
+    } catch (e) {
+      debugPrint('❌ Error setting up customer subscription: ${e.toString()}');
+      return Stream.error(ServerException(
+        message: 'Failed to set up customer subscription: ${e.toString()}',
+        statusCode: '500',
+      ));
+    }
+  }
+
+
+  @override
+  Stream<List<CustomerModel>> watchAllCustomers() {
+    try {
+      debugPrint('🔄 Setting up realtime subscription for all customers');
+      
+      // First, get the initial data
+      return Stream.fromFuture(getAllCustomers())
+        .asyncExpand((initialCustomers) {
+          // Create a StreamController to manage the customer list updates
+          final controller = StreamController<List<CustomerModel>>();
+          
+          // Add initial data
+          controller.add(initialCustomers);
+          
+          // Set up the subscription
+          final subscription = _pocketBaseClient
+            .collection('customers')
+            .subscribe(
+              '*',
+              (data) {
+                debugPrint('📡 Received realtime update for customers: ${data.action}');
+                
+                // For any change, refresh the entire list to ensure we have all related data
+                getAllCustomers().then((updatedCustomers) {
+                  controller.add(updatedCustomers);
+                }).catchError((error) {
+                  debugPrint('❌ Error refreshing customers: $error');
+                });
+              },
+            );
+          
+          // Close the subscription when the stream is canceled
+          controller.onCancel = () {
+            debugPrint('🛑 Closing all customers subscription');
+            subscription.ignore();
+          };
+          
+          return controller.stream;
+        });
+    } catch (e) {
+      debugPrint('❌ Error setting up all customers subscription: ${e.toString()}');
+      return Stream.error(ServerException(
+        message: 'Failed to set up all customers subscription: ${e.toString()}',
+        statusCode: '500',
+      ));
     }
   }
 }

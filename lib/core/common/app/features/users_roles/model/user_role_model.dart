@@ -41,7 +41,7 @@ class UserRoleModel extends UserRoleEntity {
       id: id ?? this.id,
       name: name ?? this.name,
       permissions: permissions ?? this.permissions,
-      pocketbaseId: id ?? this.pocketbaseId,
+      pocketbaseId: id ?? pocketbaseId,
     );
   }
 }

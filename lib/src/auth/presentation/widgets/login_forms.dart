@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/ifields.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/rounded_butn.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
+
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -33,8 +34,8 @@ class _LoginFormState extends State<LoginForm> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      context.read<AuthBloc>().add(
-            SignInEvent(
+      context.read<GeneralUserBloc>().add(
+            UserSignInEvent(
               email: _emailController.text.trim(),
               password: _passwordController.text,
             ),

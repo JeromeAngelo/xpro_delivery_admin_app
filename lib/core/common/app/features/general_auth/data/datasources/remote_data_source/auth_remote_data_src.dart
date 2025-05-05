@@ -1,3 +1,6 @@
+import 'dart:convert' show jsonDecode, jsonEncode;
+
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/delivery_team/data/models/delivery_team_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/data/models/auth_models.dart';
@@ -8,6 +11,11 @@ import 'package:pocketbase/pocketbase.dart';
 
 abstract class GeneralUserRemoteDataSource {
   const GeneralUserRemoteDataSource();
+
+  Future<GeneralUserModel> signIn({
+    required String email,
+    required String password,
+  });
 
   /// Get all users
   Future<List<GeneralUserModel>> getAllUsers();
@@ -23,6 +31,8 @@ abstract class GeneralUserRemoteDataSource {
 
   /// Delete all users
   Future<bool> deleteAllUsers();
+
+  Future<void> signOut();
 }
 
 class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
@@ -30,6 +40,157 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
     : _pocketBaseClient = pocketBaseClient;
 
   final PocketBase _pocketBaseClient;
+  static const String _authTokenKey = 'auth_token';
+  static const String _authUserKey = 'auth_user';
+
+  @override
+  Future<GeneralUserModel> signIn({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      debugPrint('🔐 Attempting sign in for: $email');
+
+      final authData = await _pocketBaseClient
+          .collection('users')
+          .authWithPassword(email, password);
+
+      if (authData.token.isEmpty) {
+        throw const ServerException(
+          message: 'Authentication failed',
+          statusCode: 'Auth Error',
+        );
+      }
+
+      // Get the user record with expanded role data
+      final userRecord = await _pocketBaseClient
+          .collection('users')
+          .getOne(
+            authData.record!.id,
+            expand:
+                'user_role', // Make sure this matches the field name in PocketBase
+          );
+
+      // Check if user has Team Leader role
+      final userRoleData = userRecord.expand['user_role'];
+      // bool isTeamLeader = false;
+      bool isSuperAdministrator = false;
+      bool isCollectionAdministator = false;
+      bool isReturnAdministrator = false;
+      Map<String, dynamic>? roleJson;
+
+      if (userRoleData != null) {
+        debugPrint('🔍 User role data type: ${userRoleData.runtimeType}');
+
+        // Handle the case where userRoleData is a List<RecordModel>
+        if (userRoleData.isNotEmpty) {
+          final roleRecord = userRoleData.first;
+          final roleName = roleRecord.data['name']?.toString() ?? '';
+          //  isTeamLeader = roleName == 'Team Leader';
+          isSuperAdministrator = roleName == 'Super Administrator';
+          isCollectionAdministator = roleName == 'Collection Administator';
+          isReturnAdministrator = roleName == 'Return Administrator';
+          debugPrint('👑 User role (from list): $roleName');
+
+          roleJson = {
+            'id': roleRecord.id,
+            'name': roleName,
+            'permissions': roleRecord.data['permissions'] ?? [],
+          };
+        }
+      } else {
+        debugPrint('⚠️ No role data found for user');
+      }
+
+      if (!isSuperAdministrator &&
+          !isCollectionAdministator &&
+          !isReturnAdministrator) {
+        throw const ServerException(
+          message:
+              'You don\'t have permission to sign in to this app. Please contact your admin support and try again.',
+          statusCode: 'Permission Error',
+        );
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      Map<String, dynamic> userData;
+
+      try {
+        // Prepare user data with role information
+        userData = {
+          'id': authData.record!.id,
+          'collectionId': authData.record!.collectionId,
+          'collectionName': authData.record!.collectionName,
+          'email': authData.record!.data['email'],
+          'name': authData.record!.data['name'],
+          'tripNumberId': authData.record!.data['tripNumberId'],
+          'tokenKey': authData.token,
+        };
+
+        // Add role data if available
+        if (roleJson != null) {
+          userData['expand'] = {'user_role': roleJson};
+        }
+
+        // Store properly formatted auth data
+        await prefs.setString('auth_token', authData.token);
+        await prefs.setString('user_data', jsonEncode(userData));
+
+        debugPrint('✅ Authentication successful');
+        debugPrint('💾 Stored user data: ${userData['name']}');
+        debugPrint('   🆔 User ID: ${userData['id']}');
+        debugPrint('   👑 Role: ${roleJson?['name'] ?? 'Unknown'}');
+        debugPrint('   🔑 Token: ${authData.token.substring(0, 10)}...');
+
+        return GeneralUserModel.fromJson(userData);
+      } catch (e) {
+        debugPrint('⚠️ Error formatting user data: ${e.toString()}');
+
+        // Fallback data formatting
+        final cleanedData = jsonEncode(authData.record!.data)
+            .replaceAll(RegExp(r':\s+'), '": "')
+            .replaceAll(RegExp(r',\s+'), '", "')
+            .replaceAll('{', '{"')
+            .replaceAll('}', '"}');
+
+        userData = jsonDecode(cleanedData);
+        userData['tokenKey'] = authData.token;
+
+        // Add role data if available
+        if (roleJson != null) {
+          userData['expand'] = {'user_role': roleJson};
+        }
+
+        return GeneralUserModel.fromJson(userData);
+      }
+    } catch (e) {
+      debugPrint('❌ Authentication error: ${e.toString()}');
+      throw ServerException(
+        message: e is ServerException ? e.message : e.toString(),
+        statusCode: e is ServerException ? e.statusCode : '500',
+      );
+    }
+  }
+
+  @override
+  Future<void> signOut() async {
+    try {
+      debugPrint('🚪 Signing out user');
+      _pocketBaseClient.authStore.clear();
+
+      // Clear saved auth data from shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_authTokenKey);
+      await prefs.remove(_authUserKey);
+
+      debugPrint('✅ User signed out successfully');
+      return;
+    } catch (e) {
+      debugPrint('❌ Sign out error: ${e.toString()}');
+      throw ServerException(message: e.toString(), statusCode: '500');
+    }
+  }
+
   @override
   Future<List<GeneralUserModel>> getAllUsers() async {
     try {

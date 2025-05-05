@@ -4,7 +4,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/pro
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 
 import 'package:xpro_delivery_admin_app/src/master_data/product_list_screen/presentation/widgets/product_list_widget/product_search_bar_widget.dart';
-import 'package:xpro_delivery_admin_app/src/master_data/product_list_screen/presentation/widgets/product_list_widget/product_status_chip_widget.dart';
+//import 'package:xpro_delivery_admin_app/src/master_data/product_list_screen/presentation/widgets/product_list_widget/product_status_chip_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -55,56 +55,59 @@ class ProductDataTable extends StatelessWidget {
         DataColumn(label: Text('Price Per Case')),
         DataColumn(label: Text('Price Per Pc')),
         DataColumn(label: Text('Total Amount')),
-        DataColumn(label: Text('Status')),
+        //  DataColumn(label: Text('Status')),
         DataColumn(label: Text('Actions')),
       ],
-      rows: products.map((product) {
-        return DataRow(
-          cells: [
-            DataCell(Text(product.id ?? 'N/A')),
-            DataCell(Text(product.name ?? 'N/A')),
-            DataCell(Text(product.description ?? 'N/A')),
-            DataCell(Text(_formatCurrency(product.pricePerCase))),
-            DataCell(Text(_formatCurrency(product.pricePerPc))),
-            DataCell(Text(_formatCurrency(product.totalAmount))),
-            DataCell(ProductStatusChip(product: product)),
-            DataCell(Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.visibility, color: Colors.blue),
-                  tooltip: 'View Details',
-                  onPressed: () {
-                    // View product details
-                    if (product.id != null) {
-                      // Navigate to product details screen
-                      context.go('/product/${product.id}');
-                    }
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.orange),
-                  tooltip: 'Edit',
-                  onPressed: () {
-                    // Edit product
-                    if (product.id != null) {
-                      // Navigate to edit screen with product data
-                      context.go('/product/edit/${product.id}');
-                    }
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  tooltip: 'Delete',
-                  onPressed: () {
-                    // Show confirmation dialog before deleting
-                    _showDeleteConfirmationDialog(context, product);
-                  },
+      rows:
+          products.map((product) {
+            return DataRow(
+              cells: [
+                DataCell(Text(product.id ?? 'N/A')),
+                DataCell(Text(product.name ?? 'N/A')),
+                DataCell(Text(product.description ?? 'N/A')),
+                DataCell(Text(_formatCurrency(product.pricePerCase))),
+                DataCell(Text(_formatCurrency(product.pricePerPc))),
+                DataCell(Text(_formatCurrency(product.totalAmount))),
+                //   DataCell(ProductStatusChip(product: product)),
+                DataCell(
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.visibility, color: Colors.blue),
+                        tooltip: 'View Details',
+                        onPressed: () {
+                          // View product details
+                          if (product.id != null) {
+                            // Navigate to product details screen
+                            context.go('/product/${product.id}');
+                          }
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.orange),
+                        tooltip: 'Edit',
+                        onPressed: () {
+                          // Edit product
+                          if (product.id != null) {
+                            // Navigate to edit screen with product data
+                            context.go('/product/edit/${product.id}');
+                          }
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        tooltip: 'Delete',
+                        onPressed: () {
+                          // Show confirmation dialog before deleting
+                          _showDeleteConfirmationDialog(context, product);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            )),
-          ],
-        );
-      }).toList(),
+            );
+          }).toList(),
       currentPage: currentPage,
       totalPages: totalPages,
       onPageChanged: onPageChanged,
@@ -114,13 +117,14 @@ class ProductDataTable extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Filter options coming soon')),
         );
-      }, dataLength: '${products.length}',
+      },
+      dataLength: '${products.length}', onDeleted: () {  },
     );
   }
 
   String _formatCurrency(dynamic amount) {
     if (amount == null) return 'N/A';
-    
+
     final formatter = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     if (amount is double) {
       return formatter.format(amount);
@@ -136,7 +140,10 @@ class ProductDataTable extends StatelessWidget {
     return amount.toString();
   }
 
-  Future<void> _showDeleteConfirmationDialog(BuildContext context, ProductEntity product) async {
+  Future<void> _showDeleteConfirmationDialog(
+    BuildContext context,
+    ProductEntity product,
+  ) async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -146,7 +153,9 @@ class ProductDataTable extends StatelessWidget {
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('Are you sure you want to delete product "${product.name}"?'),
+                Text(
+                  'Are you sure you want to delete product "${product.name}"?',
+                ),
                 const SizedBox(height: 10),
                 const Text('This action cannot be undone.'),
               ],
@@ -164,7 +173,9 @@ class ProductDataTable extends StatelessWidget {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 if (product.id != null) {
-                  context.read<ProductsBloc>().add(DeleteProductEvent(product.id!));
+                  context.read<ProductsBloc>().add(
+                    DeleteProductEvent(product.id!),
+                  );
                 }
               },
             ),

@@ -1,7 +1,8 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';
+
 import 'package:flutter/material.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/default_drawer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -68,9 +69,9 @@ class _MainScreenViewState extends State<MainScreenView> {
               );
             },
           ),
-          BlocBuilder<AuthBloc, AuthState>(
+          BlocBuilder<GeneralUserBloc, GeneralUserState>(
             builder: (context, state) {
-              if (state is Authenticated) {
+              if (state is UserAuthenticated) {
                 // Get the user's name or email
                 final userName = state.user.name ?? state.user.email ?? 'User';
                 final firstLetter =
@@ -172,8 +173,8 @@ class _MainScreenViewState extends State<MainScreenView> {
                                   TextButton(
                                     onPressed: () {
                                       Navigator.pop(context);
-                                      context.read<AuthBloc>().add(
-                                        const SignOutEvent(),
+                                      context.read<GeneralUserBloc>().add(
+                                         UserSignOutEvent(),
                                       );
                                       // Navigate to login screen
                                       context.go('/');
@@ -407,7 +408,7 @@ class _MainScreenViewState extends State<MainScreenView> {
             children: [
               _buildActivityCard(
                 context,
-                onTap: () => context.go('/users'),
+                onTap: () => context.go('/all-users'),
                 icon: Icons.verified_user,
                 title: 'Users Management',
                 description: 'Manage User Account and Access',

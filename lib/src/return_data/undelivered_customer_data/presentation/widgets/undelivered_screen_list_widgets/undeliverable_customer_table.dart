@@ -138,7 +138,7 @@ class UndeliveredCustomerTable extends StatelessWidget {
       onFiltered: () {
         // Show filter dialog
         _showFilterDialog(context);
-      }, dataLength: '${undeliveredCustomers.length}',
+      }, dataLength: '${undeliveredCustomers.length}', onDeleted: () {  },
     );
   }
 

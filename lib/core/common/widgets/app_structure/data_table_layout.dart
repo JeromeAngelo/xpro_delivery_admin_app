@@ -16,6 +16,7 @@ class DataTableLayout extends StatefulWidget {
   final String? errorMessage; // New parameter for error message
   final VoidCallback? onRetry; // New parameter for retry callback
   final VoidCallback? onFiltered;
+  final VoidCallback? onDeleted;
   final Function(List<int>)? onRowsSelected; // Callback for selected rows
   final String dataLength;
 
@@ -26,6 +27,7 @@ class DataTableLayout extends StatefulWidget {
     this.onCreatePressed,
     this.createButtonText = 'Create New',
     required this.onFiltered,
+    required this.onDeleted,
     required this.columns,
     required this.rows,
     required this.currentPage,
@@ -47,6 +49,8 @@ class _DataTableLayoutState extends State<DataTableLayout> {
   // Create explicit ScrollController for horizontal scrolling
   final ScrollController _horizontalScrollController = ScrollController();
   final GlobalKey _checkboxColumnKey = GlobalKey();
+  final GlobalKey _showDeletekey = GlobalKey();
+   final GlobalKey _showFilterKey = GlobalKey();
   final headerStyle = TextStyle(
     fontWeight: FontWeight.bold,
     color: Colors.black, // or any color you prefer
@@ -140,26 +144,115 @@ class _DataTableLayoutState extends State<DataTableLayout> {
     );
   }
 
+  void _showDeleteMenu(BuildContext context) {
+    final RenderBox? renderBox =
+        _showDeletekey.currentContext?.findRenderObject() as RenderBox?;
+
+    if (renderBox == null) return;
+
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        renderBox.localToGlobal(Offset.zero),
+        renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero)),
+      ),
+      Offset.zero &
+          (Overlay.of(context).context.findRenderObject() as RenderBox).size,
+    );
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      items: [
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Text('Delete (${_selectedRows.length})'),
+            ],
+          ),
+        ),
+      ],
+    ).then((String? value) {
+      if (value == 'delete') {
+        _showDeleteConfirmationDialog(context);
+      }
+    });
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Confirm Delete'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(
+                  'Are you sure you want to delete ${_selectedRows.length} selected item${_selectedRows.length > 1 ? 's' : ''}?',
+                ),
+                const SizedBox(height: 10),
+                const Text('This action cannot be undone.'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                // Call the onDeleted callback
+                if (widget.onDeleted != null) {
+                  widget.onDeleted!();
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool hasSelectedRows = _selectedRows.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Title and Create Button in the same row
+        // Title row
         Padding(
           padding: const EdgeInsets.all(16.0),
+          child: Text(
+            widget.title,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+
+        // Search bar and Create button in the same row
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Title
-              Text(
-                widget.title,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              // Search bar (expanded to take available space)
+              if (widget.searchBar != null) Expanded(child: widget.searchBar!),
+
+              // Add some spacing between search and button
+              if (widget.searchBar != null && widget.onCreatePressed != null)
+                const Spacer(),
 
               // Create button
               if (widget.onCreatePressed != null)
@@ -187,16 +280,6 @@ class _DataTableLayoutState extends State<DataTableLayout> {
             ],
           ),
         ),
-
-        // Search bar row
-        if (widget.searchBar != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            child: widget.searchBar!,
-          ),
 
         // Error message if present
         if (widget.errorMessage != null)
@@ -242,22 +325,56 @@ class _DataTableLayoutState extends State<DataTableLayout> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Horizontal scroll hint
-                GestureDetector(
-                  onLongPress: widget.onFiltered,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Icon(Icons.filter_alt_rounded),
-                        Icon(Icons.arrow_drop_down),
-                      ],
+                // Horizontal scroll hint with conditional visibility for delete button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    GestureDetector(
+                      onLongPress: widget.onFiltered,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Icon(Icons.filter_alt_rounded),
+                            Icon(Icons.arrow_drop_down),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                    // Only show delete button when rows are selected
+                    Visibility(
+                      visible: hasSelectedRows,
+                      child: GestureDetector(
+                        onLongPress: () => _showDeleteMenu(context),
+                        key: _showDeletekey,
+                        onTap:
+                            () => _showDeleteMenu(
+                              context,
+                            ), // Also allow regular tap for better UX
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Icon(
+                                Icons.delete,
+                                color:
+                                    hasSelectedRows
+                                        ? Theme.of(context).colorScheme.primary
+                                        : null,
+                              ),
+                              Icon(Icons.arrow_drop_down),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
 
                 // Table with horizontal scrolling - Always show the structure
@@ -330,112 +447,160 @@ class _DataTableLayoutState extends State<DataTableLayout> {
     if (widget.isLoading) {
       return _buildShimmerTable();
     } else if (widget.rows.isEmpty) {
+      // This handles both empty initial data and empty search results
       return _buildTableWithMessage(
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.table_rows_outlined, size: 48, color: Colors.grey[400]),
+            Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
-              'No data available',
+              widget.searchBar != null
+                  ? 'No matching data found for your search'
+                  : 'No data available',
               style: TextStyle(color: Colors.grey[600]),
             ),
+            if (widget.searchBar != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  'Try adjusting your search criteria',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                ),
+              ),
           ],
         ),
       );
     } else {
-      // Create a new list of columns with a checkbox column at the beginning
-      final List<DataColumn> columnsWithCheckbox = [
-        DataColumn(
-          label:
-              widget.enableSelection
-                  ? // Replace the existing GestureDetector with this:
-                  GestureDetector(
-                    onTap: () => _showSelectionMenu(context),
-                    key: _checkboxColumnKey,
-                    child: Row(
-                      children: [
-                        Checkbox(
-                          value: _selectAll,
-                          onChanged: (bool? value) {
-                            setState(() {
-                              _selectAll = value ?? false;
-                              _selectedRows.clear();
+      try {
+        // Create a new list of columns with a checkbox column at the beginning
+        final List<DataColumn> columnsWithCheckbox = [
+          DataColumn(
+            label:
+                widget.enableSelection
+                    ? GestureDetector(
+                      onTap: () => _showSelectionMenu(context),
+                      key: _checkboxColumnKey,
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: _selectAll,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                _selectAll = value ?? false;
+                                _selectedRows.clear();
 
-                              if (_selectAll) {
-                                // Add all row indices to selected rows
-                                for (int i = 0; i < widget.rows.length; i++) {
-                                  _selectedRows.add(i);
+                                if (_selectAll) {
+                                  // Add all row indices to selected rows
+                                  for (int i = 0; i < widget.rows.length; i++) {
+                                    _selectedRows.add(i);
+                                  }
                                 }
-                              }
 
-                              // Notify parent about selection change
-                              if (widget.onRowsSelected != null) {
-                                widget.onRowsSelected!(_selectedRows);
-                              }
-                            });
-                          },
-                        ),
-                        Icon(Icons.arrow_drop_down),
-                      ],
-                    ),
-                  )
-                  : const SizedBox.shrink(),
-        ),
-        ...widget.columns,
-      ];
+                                // Notify parent about selection change
+                                if (widget.onRowsSelected != null) {
+                                  widget.onRowsSelected!(_selectedRows);
+                                }
+                              });
+                            },
+                          ),
+                          const Icon(Icons.arrow_drop_down),
+                        ],
+                      ),
+                    )
+                    : const SizedBox.shrink(),
+          ),
+          ...widget.columns,
+        ];
 
-      // Create a new list of rows with a checkbox cell at the beginning of each row
-      final List<DataRow> rowsWithCheckbox = List.generate(widget.rows.length, (
-        index,
-      ) {
-        final isSelected = _selectedRows.contains(index);
+        // Create a new list of rows with a checkbox cell at the beginning of each row
+        final List<DataRow> rowsWithCheckbox = List.generate(
+          widget.rows.length,
+          (index) {
+            final isSelected = _selectedRows.contains(index);
 
-        return DataRow(
-          selected: isSelected,
-          cells: [
-            DataCell(
-              widget.enableSelection
-                  ? Checkbox(
-                    value: isSelected,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        if (value == true) {
-                          _selectedRows.add(index);
-                        } else {
-                          _selectedRows.remove(index);
-                        }
+            return DataRow(
+              selected: isSelected,
+              cells: [
+                DataCell(
+                  widget.enableSelection
+                      ? Checkbox(
+                        value: isSelected,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedRows.add(index);
+                            } else {
+                              _selectedRows.remove(index);
+                            }
 
-                        // Update selectAll checkbox
-                        _selectAll = _selectedRows.length == widget.rows.length;
+                            // Update selectAll checkbox
+                            _selectAll =
+                                _selectedRows.length == widget.rows.length;
 
-                        // Notify parent about selection change
-                        if (widget.onRowsSelected != null) {
-                          widget.onRowsSelected!(_selectedRows);
-                        }
-                      });
-                    },
-                  )
-                  : const SizedBox.shrink(),
-            ),
-            ...widget.rows[index].cells,
-          ],
+                            // Notify parent about selection change
+                            if (widget.onRowsSelected != null) {
+                              widget.onRowsSelected!(_selectedRows);
+                            }
+                          });
+                        },
+                      )
+                      : const SizedBox.shrink(),
+                ),
+                ...widget.rows[index].cells,
+              ],
+            );
+          },
         );
-      });
 
-      return DataTable(
-        columns: columnsWithCheckbox,
-        rows: rowsWithCheckbox,
-        headingRowColor: MaterialStateProperty.all(Colors.grey[100]),
-        headingTextStyle: headerStyle,
-        dataRowMinHeight: 48,
-        dataRowMaxHeight: 64,
-        horizontalMargin: 16,
-        columnSpacing: 24,
-        border: TableBorder(
-          horizontalInside: BorderSide(color: Colors.grey[300]!, width: 1),
-        ),
-      );
+        return DataTable(
+          columns: columnsWithCheckbox,
+          rows: rowsWithCheckbox,
+          headingRowColor: MaterialStateProperty.all(Colors.grey[100]),
+          headingTextStyle: headerStyle,
+          dataRowMinHeight: 48,
+          dataRowMaxHeight: 64,
+          horizontalMargin: 16,
+          columnSpacing: 24,
+          border: TableBorder(
+            horizontalInside: BorderSide(color: Colors.grey[300]!, width: 1),
+          ),
+        );
+      } catch (e) {
+        // If there's an error processing the data (like type mismatch),
+        // show an error message instead of crashing
+        debugPrint('Error rendering table data: $e');
+        return _buildTableWithMessage(
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+              const SizedBox(height: 16),
+              Text(
+                'Error displaying data',
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'There was a problem with the data format',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              if (widget.onRetry != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: ElevatedButton.icon(
+                    onPressed: widget.onRetry,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ),
+            ],
+          ),
+        );
+      }
     }
   }
 

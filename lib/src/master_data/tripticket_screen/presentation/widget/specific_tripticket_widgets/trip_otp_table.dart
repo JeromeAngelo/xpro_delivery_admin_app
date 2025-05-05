@@ -173,7 +173,7 @@ class TripOtpTable extends StatelessWidget {
       onFiltered: () {
         // Show filter dialog
         _showFilterDialog(context);
-      }, dataLength: '${otps.length}',
+      }, dataLength: '${otps.length}', onDeleted: () {  },
     );
   }
 

@@ -110,3 +110,19 @@ class AllCustomersDeleted extends CustomerState {
   @override
   List<Object> get props => [ids];
 }
+
+// New states for real-time updates
+class CustomerWatching extends CustomerState {}
+
+class CustomerLocationWatching extends CustomerState {}
+
+class AllCustomersWatching extends CustomerState {}
+
+class CustomerStreamError extends CustomerState {
+  final String message;
+  
+  const CustomerStreamError(this.message);
+  
+  @override
+  List<Object> get props => [message];
+}

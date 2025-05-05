@@ -105,7 +105,7 @@ class PersonnelDataTable extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Filter options coming soon')),
         );
-      }, dataLength: '${personnel.length}',
+      }, dataLength: '${personnel.length}', onDeleted: () {  },
     );
   }
 

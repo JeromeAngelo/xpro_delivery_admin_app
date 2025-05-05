@@ -3,6 +3,8 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/do
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/delete_all_users.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/delete_users.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/get_all_users.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/sign_in.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/sign_out.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/update_users.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
@@ -14,6 +16,8 @@ class GeneralUserBloc extends Bloc<GeneralUserEvent, GeneralUserState> {
   final UpdateUser _updateUser;
   final DeleteUser _deleteUser;
   final DeleteAllUsers _deleteAllUsers;
+  final SignIn _signIn;
+  final SignOut _signOut;
 
   GeneralUserBloc({
     required GetAllUsers getAllUsers,
@@ -21,17 +25,68 @@ class GeneralUserBloc extends Bloc<GeneralUserEvent, GeneralUserState> {
     required UpdateUser updateUser,
     required DeleteUser deleteUser,
     required DeleteAllUsers deleteAllUsers,
-  })  : _getAllUsers = getAllUsers,
-        _createUser = createUser,
-        _updateUser = updateUser,
-        _deleteUser = deleteUser,
-        _deleteAllUsers = deleteAllUsers,
-        super(GeneralUserInitial()) {
+    required SignIn signIn,
+    required SignOut signOut,
+  }) : _getAllUsers = getAllUsers,
+       _signIn = signIn,
+       _signOut = signOut,
+       _createUser = createUser,
+       _updateUser = updateUser,
+       _deleteUser = deleteUser,
+       _deleteAllUsers = deleteAllUsers,
+       super(GeneralUserInitial()) {
+    on<UserSignInEvent>(_onSignIn);
+    on<UserSignOutEvent>(_onSignOut);
     on<GetAllUsersEvent>(_onGetAllUsers);
     on<CreateUserEvent>(_onCreateUser);
     on<UpdateUserEvent>(_onUpdateUser);
     on<DeleteUserEvent>(_onDeleteUser);
     on<DeleteAllUsersEvent>(_onDeleteAllUsers);
+  }
+
+  Future<void> _onSignIn(
+    UserSignInEvent event,
+    Emitter<GeneralUserState> emit,
+  ) async {
+    emit(GeneralUserLoading());
+    debugPrint('🔐 Processing sign in for: ${event.email}');
+
+    final result = await _signIn(
+      SignInParams(email: event.email, password: event.password),
+    );
+
+    result.fold(
+      (failure) {
+        debugPrint('❌ Sign in failed: ${failure.message}');
+        emit(GeneralUserError(failure.message));
+      },
+      (user) {
+        debugPrint('✅ Sign in successful for: ${user.email}');
+        emit(UserAuthenticated(user));
+      },
+    );
+  }
+
+  Future<void> _onSignOut(
+    UserSignOutEvent event,
+    Emitter<GeneralUserState> emit,
+  ) async {
+    emit(GeneralUserLoading());
+    debugPrint('🚪 Processing sign out');
+
+    final result = await _signOut();
+
+    result.fold(
+      (failure) {
+        debugPrint('❌ Sign out failed: ${failure.message}');
+        emit(GeneralUserError(failure.message));
+      },
+      (_) {
+        debugPrint('✅ Sign out successful');
+        emit(const UserSignOutSuccess());
+        emit(const UserUnauthenticated());
+      },
+    );
   }
 
   Future<void> _onGetAllUsers(

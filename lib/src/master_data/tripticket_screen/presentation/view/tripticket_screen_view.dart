@@ -126,13 +126,13 @@ class _TripTicketScreenViewState extends State<TripTicketScreenView> {
                     ? trips.length
                     : startIndex + _itemsPerPage;
 
-            final paginatedTrips =
+            final List<TripEntity> paginatedTrips =
                 startIndex < trips.length
-                    ? trips.sublist(startIndex, endIndex)
-                    : [];
+                    ? List<TripEntity>.from(trips.sublist(startIndex, endIndex))
+                    : <TripEntity>[];
 
             return TripDataTable(
-              trips: paginatedTrips as List<TripEntity>,
+              trips: paginatedTrips,
               isLoading: false,
               currentPage: _currentPage,
               totalPages: _totalPages,

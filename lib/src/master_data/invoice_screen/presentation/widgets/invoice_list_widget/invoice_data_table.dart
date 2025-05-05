@@ -145,7 +145,7 @@ class InvoiceDataTable extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Filter options coming soon')),
         );
-      }, dataLength: '${invoices.length}',
+      }, dataLength: '${invoices.length}', onDeleted: () {  },
     );
   }
 

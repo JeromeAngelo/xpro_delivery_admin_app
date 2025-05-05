@@ -103,7 +103,7 @@ class VehicleDataTable extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Filter options coming soon')),
         );
-      }, dataLength: '${vehicles.length}',
+      }, dataLength: '${vehicles.length}', onDeleted: () {  },
     );
   }
 

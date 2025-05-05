@@ -2,10 +2,11 @@
 
 import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
 
 class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onThemeToggle;
@@ -21,7 +22,7 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocBuilder<GeneralUserBloc, GeneralUserState>(
       builder: (context, state) {
         // Default username if not authenticated or loading
         String userName = 'User';
@@ -30,12 +31,12 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
         bool isAuthenticated = false;
 
         // Check the state and update user information
-        if (state is Authenticated) {
+        if (state is UserAuthenticated) {
           userName = state.user.name ?? 'User';
           userEmail = state.user.email;
           userAvatar = state.user.profilePic;
           isAuthenticated = true;
-        } else if (state is UserLoaded) {
+        } else if (state is GeneralUserLoaded) {
           userName = state.user.name ?? 'User';
           userEmail = state.user.email;
           userAvatar = state.user.profilePic;
