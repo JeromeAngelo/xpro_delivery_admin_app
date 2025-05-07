@@ -11,10 +11,10 @@ import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/deskto
 import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/form_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:xpro_delivery_admin_app/core/enums/user_status_enum.dart';
-import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/create_user_widgets/user_forms_button.dart';
-import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/create_user_widgets/user_info_fields.dart';
-import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/create_user_widgets/user_role_drop_down.dart';
-import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/create_user_widgets/user_status_drop_down.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/create_&_update_user_widgets/user_forms_button.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/create_&_update_user_widgets/user_info_fields.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/create_&_update_user_widgets/user_role_drop_down.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/create_&_update_user_widgets/user_status_drop_down.dart';
 
 class CreateUserView extends StatefulWidget {
   const CreateUserView({super.key});
@@ -157,7 +157,7 @@ final user = GeneralUserModel(
       },
       child: DesktopLayout(
         navigationItems: navigationItems,
-        currentRoute: '/users/create',
+        currentRoute: '/all-users',
         onNavigate: (route) {
           // Handle navigation
           context.go(route);

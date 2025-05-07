@@ -32,7 +32,7 @@ import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presen
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_dashboard_widget.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_end_trip_otp_table.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_invoice_table.dart';
-import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_map_place_widget.dart';
+import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_map_widget.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_otp_table.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_personels_table.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/specific_tripticket_widgets/trip_vehicle_table.dart';

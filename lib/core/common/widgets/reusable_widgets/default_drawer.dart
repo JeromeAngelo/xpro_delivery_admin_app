@@ -14,8 +14,6 @@ class DefaultDrawer extends StatefulWidget {
 }
 
 class _DefaultDrawerState extends State<DefaultDrawer> {
-  bool _isResourcesExpanded = false;
-
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -64,50 +62,6 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
         ),
         const Divider(),
 
-        // Resources Expandable Section
-        ListTile(
-          leading: const Icon(Icons.inventory),
-          title: const Text('Resources'),
-          trailing: Icon(
-            _isResourcesExpanded ? Icons.expand_less : Icons.expand_more,
-          ),
-          onTap: () {
-            setState(() {
-              _isResourcesExpanded = !_isResourcesExpanded;
-            });
-          },
-        ),
-
-        // Expandable Resources Items
-        if (_isResourcesExpanded) ...[
-          _buildSubListTile(
-            context,
-            icon: Icons.people,
-            title: 'Users',
-            route: '/users',
-          ),
-          _buildSubListTile(
-            context,
-            icon: Icons.receipt_long,
-            title: 'Trip Tickets',
-            route: '/trip-tickets',
-          ),
-          _buildSubListTile(
-            context,
-            icon: Icons.store,
-            title: 'Customers',
-            route: '/customers',
-          ),
-          _buildSubListTile(
-            context,
-            icon: Icons.assignment_return,
-            title: 'Returns',
-            route: '/returns',
-          ),
-        ],
-
-        const Divider(),
-
         // Reports
         ListTile(
           leading: const Icon(Icons.bar_chart),
@@ -128,23 +82,6 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildSubListTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String route,
-  }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.only(left: 32.0, right: 16.0),
-      leading: Icon(icon, size: 20),
-      title: Text(title),
-      onTap: () {
-        Navigator.pop(context);
-        Navigator.pushNamed(context, route);
-      },
     );
   }
 
@@ -171,7 +108,9 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
                         TextButton(
                           onPressed: () {
                             Navigator.pop(context); // Close dialog
-                            context.read<GeneralUserBloc>().add(const UserSignOutEvent());
+                            context.read<GeneralUserBloc>().add(
+                              const UserSignOutEvent(),
+                            );
                           },
                           child: const Text('Logout'),
                         ),

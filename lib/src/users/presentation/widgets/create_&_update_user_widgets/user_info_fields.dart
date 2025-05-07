@@ -11,6 +11,7 @@ class UserInfoFormFields extends StatefulWidget {
   final GlobalKey<FormState> formKey;
   final Function(File?)? onProfilePicSelected;
   final String? initialProfilePic;
+  final Function(String)? onPasswordChanged; // Add this parameter
 
   const UserInfoFormFields({
     super.key,
@@ -21,6 +22,7 @@ class UserInfoFormFields extends StatefulWidget {
     required this.formKey,
     this.onProfilePicSelected,
     this.initialProfilePic,
+    this.onPasswordChanged, // Add this parameter
   });
 
   @override
@@ -44,9 +46,9 @@ class _UserInfoFormFieldsState extends State<UserInfoFormFields> {
             padding: const EdgeInsets.only(bottom: 16.0),
             child: Text(
               'User Information',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
 
@@ -96,7 +98,7 @@ class _UserInfoFormFieldsState extends State<UserInfoFormFields> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
 
           // Name field
@@ -160,6 +162,12 @@ class _UserInfoFormFieldsState extends State<UserInfoFormFields> {
               return null;
             },
             helperText: 'Password must be at least 8 characters long',
+            onChanged: (value) {
+              // Notify parent widget when password changes
+              if (widget.onPasswordChanged != null) {
+                widget.onPasswordChanged!(value);
+              }
+            },
           ),
 
           // Confirm Password field
@@ -171,7 +179,9 @@ class _UserInfoFormFieldsState extends State<UserInfoFormFields> {
             required: true,
             suffix: IconButton(
               icon: Icon(
-                _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                _obscureConfirmPassword
+                    ? Icons.visibility
+                    : Icons.visibility_off,
               ),
               onPressed: () {
                 setState(() {
@@ -197,7 +207,7 @@ class _UserInfoFormFieldsState extends State<UserInfoFormFields> {
   // Method to pick an image from gallery or camera
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    
+
     // Show a dialog to choose between camera and gallery
     await showDialog(
       context: context,
@@ -265,7 +275,7 @@ class _UserInfoFormFieldsState extends State<UserInfoFormFields> {
       setState(() {
         _selectedImage = File(image.path);
       });
-      
+
       // Notify parent widget about the selected image
       if (widget.onProfilePicSelected != null) {
         widget.onProfilePicSelected!(_selectedImage);
@@ -277,7 +287,7 @@ class _UserInfoFormFieldsState extends State<UserInfoFormFields> {
     setState(() {
       _selectedImage = null;
     });
-    
+
     // Notify parent widget that image was cleared
     if (widget.onProfilePicSelected != null) {
       widget.onProfilePicSelected!(null);
@@ -288,7 +298,8 @@ class _UserInfoFormFieldsState extends State<UserInfoFormFields> {
   ImageProvider? _getProfileImage() {
     if (_selectedImage != null) {
       return FileImage(_selectedImage!);
-    } else if (widget.initialProfilePic != null && widget.initialProfilePic!.isNotEmpty) {
+    } else if (widget.initialProfilePic != null &&
+        widget.initialProfilePic!.isNotEmpty) {
       return NetworkImage(widget.initialProfilePic!);
     }
     return null;
@@ -296,12 +307,10 @@ class _UserInfoFormFieldsState extends State<UserInfoFormFields> {
 
   // Helper method to get the placeholder when no image is selected
   Widget? _getProfileImagePlaceholder() {
-    if (_selectedImage == null && (widget.initialProfilePic == null || widget.initialProfilePic!.isEmpty)) {
-      return const Icon(
-        Icons.person,
-        size: 50,
-        color: Colors.grey,
-      );
+    if (_selectedImage == null &&
+        (widget.initialProfilePic == null ||
+            widget.initialProfilePic!.isEmpty)) {
+      return const Icon(Icons.person, size: 50, color: Colors.grey);
     }
     return null;
   }

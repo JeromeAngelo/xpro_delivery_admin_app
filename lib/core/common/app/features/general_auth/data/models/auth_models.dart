@@ -15,7 +15,7 @@ class GeneralUserModel extends GeneralUserEntity {
   String? deliveryTeamId;
   String? roleId;
   List<String>? tripCollectionIds;
-
+String? oldPassword;
   GeneralUserModel({
     super.id,
     super.collectionId,
@@ -37,6 +37,7 @@ class GeneralUserModel extends GeneralUserEntity {
     super.token,
     this.tripId,
     this.deliveryTeamId,
+    this.oldPassword,
     String? roleId,
     this.tripCollectionIds,
   }) : 
@@ -230,7 +231,9 @@ class GeneralUserModel extends GeneralUserEntity {
     'token': token,
     'password': password,
     'passwordConfirm': passwordConfirm,
+    'oldPassword': oldPassword,
     'status': status?.toString().split('.').last,
+
     'hasTrip': hasTrip,
     'created': created?.toIso8601String(),
     'updated': updated?.toIso8601String(),
@@ -247,6 +250,7 @@ class GeneralUserModel extends GeneralUserEntity {
     String? tripNumberId,
     String? password,
     String? passwordConfirm,
+     String? oldPassword,
     DeliveryTeamModel? deliveryTeamModel,
     TripModel? tripModel,
     UserRoleModel? roleModel,
@@ -271,6 +275,7 @@ class GeneralUserModel extends GeneralUserEntity {
       tripNumberId: tripNumberId ?? this.tripNumberId,
       password: password ?? this.password,
       passwordConfirm: passwordConfirm ?? this.passwordConfirm,
+      oldPassword: oldPassword ?? this.oldPassword,
       status: status ?? this.status,
       hasTrip: hasTrip ?? this.hasTrip,
       created: created ?? this.created,

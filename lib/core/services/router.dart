@@ -24,6 +24,7 @@ import 'package:xpro_delivery_admin_app/src/users/presentation/view/all_users_vi
 import 'package:go_router/go_router.dart';
 import 'package:xpro_delivery_admin_app/src/users/presentation/view/create_user_view.dart';
 import 'package:xpro_delivery_admin_app/src/users/presentation/view/specific_user_view.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/view/update_user_view.dart';
 
 final router = GoRouter(
   routes: [
@@ -145,6 +146,16 @@ GoRoute(
     return SpecificUserView(userId: userId);
   },
 ),
+
+// Add the new route for updating users
+GoRoute(
+  path: '/update-user/:userId',
+  builder: (context, state) {
+    final userId = state.pathParameters['userId']!;
+    return UpdateUserView(userId: userId);
+  },
+),
+
 
     GoRoute(
       path: '/undeliverable-customers',

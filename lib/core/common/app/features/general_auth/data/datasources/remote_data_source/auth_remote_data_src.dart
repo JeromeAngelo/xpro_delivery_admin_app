@@ -92,6 +92,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
       bool isSuperAdministrator = false;
       bool isCollectionAdministator = false;
       bool isReturnAdministrator = false;
+      bool isOtpCodeViewer = false;
       Map<String, dynamic>? roleJson;
 
       if (userRoleData != null) {
@@ -105,6 +106,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
           isSuperAdministrator = roleName == 'Super Administrator';
           isCollectionAdministator = roleName == 'Collection Administator';
           isReturnAdministrator = roleName == 'Return Administrator';
+          isOtpCodeViewer = roleName == 'OTP Code Viewer';
           debugPrint('👑 User role (from list): $roleName');
 
           roleJson = {
@@ -119,6 +121,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
 
       if (!isSuperAdministrator &&
           !isCollectionAdministator &&
+          !isOtpCodeViewer &&
           !isReturnAdministrator) {
         throw const ServerException(
           message:
@@ -577,12 +580,44 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
       userData.remove('collectionId');
       userData.remove('collectionName');
 
-      // Remove password if it's empty (to avoid changing it)
-      if (userData.containsKey('password') &&
-          (userData['password'] == null || userData['password'].isEmpty)) {
+      // Check if password is being updated
+      bool isUpdatingPassword =
+          userData.containsKey('password') &&
+          userData['password'] != null &&
+          userData['password'].isNotEmpty;
+
+      // If updating password, ensure oldPassword is provided
+      if (isUpdatingPassword) {
+        if (!userData.containsKey('oldPassword') ||
+            userData['oldPassword'] == null ||
+            userData['oldPassword'].isEmpty) {
+          throw const ServerException(
+            message: 'Old password is required to change password',
+            statusCode: '400',
+          );
+        }
+
+        // Log that we're updating password with oldPassword
+        debugPrint('🔑 Updating password with oldPassword provided');
+      } else {
+        // If not updating password, remove password-related fields
         userData.remove('password');
+        userData.remove('passwordConfirm');
+        userData.remove('oldPassword');
       }
 
+      // Log the update data (excluding sensitive information)
+      final logData = Map<String, dynamic>.from(userData);
+      if (logData.containsKey('password')) logData['password'] = '********';
+      if (logData.containsKey('passwordConfirm')) {
+        logData['passwordConfirm'] = '********';
+      }
+      if (logData.containsKey('oldPassword')) {
+        logData['oldPassword'] = '********';
+      }
+      debugPrint('📝 Update data: $logData');
+
+      // Perform the update
       await _pocketBaseClient
           .collection('users')
           .update(user.id!, body: userData);

@@ -166,7 +166,7 @@ class DeliveryUserDataTable extends StatelessWidget {
                         onPressed: () {
                           // Edit user
                           if (user.id != null) {
-                            context.go('/delivery-users/edit/${user.id}');
+                            context.go('/update-user/${user.id}');
                           }
                         },
                       ),
