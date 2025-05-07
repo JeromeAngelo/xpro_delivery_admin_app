@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_event.dart';
@@ -21,14 +23,10 @@ class DeliveryMonitoringScreen extends StatefulWidget {
 class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
   final List<DeliveryStatusData> statuses = getAllDeliveryStatuses();
 
-  // void _fetchCustomerLocation(String customerId) {
-  //   // Ensure we're using the correct ID format (no colon)
-  //   final sanitizedId = customerId.startsWith(':')
-  //       ? customerId.substring(1)
-  //       : customerId;
+  Timer? _autoRefreshTimer;
 
-  //   context.read<CustomerBloc>().add(GetCustomerLocationEvent(sanitizedId));
-  // }
+  // Auto-refresh duration - 5 minutes
+  static const Duration autoRefreshDuration = Duration(minutes: 2);
 
   @override
   void initState() {
@@ -36,13 +34,50 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
     // Start watching all customers when the screen initializes
     // This will provide real-time updates
     context.read<CustomerBloc>().add(const WatchAllCustomersEvent());
+
+    // Set up auto-refresh timer
+    _setupAutoRefreshTimer();
   }
 
   @override
   void dispose() {
     // Stop watching when the screen is disposed
     context.read<CustomerBloc>().add(const StopWatchingEvent());
+
+    // Cancel the timer when disposing the widget
+    _autoRefreshTimer?.cancel();
+
     super.dispose();
+  }
+
+  // Set up the auto-refresh timer
+  void _setupAutoRefreshTimer() {
+    // Cancel any existing timer
+    _autoRefreshTimer?.cancel();
+
+    // Create a new timer that fires every 5 minutes
+    _autoRefreshTimer = Timer.periodic(
+      autoRefreshDuration,
+      (_) => _refreshData(),
+    );
+  }
+
+  // Refresh the data
+  void _refreshData() {
+    if (mounted) {
+      // Show a snackbar to indicate refresh is happening
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Auto-refreshing delivery data...'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      // Restart the real-time subscription
+      context.read<CustomerBloc>().add(const StopWatchingEvent());
+      context.read<CustomerBloc>().add(const WatchAllCustomersEvent());
+    }
   }
 
   @override
@@ -56,6 +91,32 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
           style: TextStyle(color: Theme.of(context).colorScheme.surface),
         ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Center(
+              child: StreamBuilder<int>(
+                stream: Stream.periodic(
+                  const Duration(seconds: 1),
+                  (count) =>
+                      autoRefreshDuration.inSeconds -
+                      (count % autoRefreshDuration.inSeconds),
+                ),
+                builder: (context, snapshot) {
+                  final remainingSeconds =
+                      snapshot.data ?? autoRefreshDuration.inSeconds;
+                  final minutes = remainingSeconds ~/ 60;
+                  final seconds = remainingSeconds % 60;
+                  return Text(
+                    'Auto-refresh in: ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.surface,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
           IconButton(
             icon: Icon(
               Icons.sort_outlined,

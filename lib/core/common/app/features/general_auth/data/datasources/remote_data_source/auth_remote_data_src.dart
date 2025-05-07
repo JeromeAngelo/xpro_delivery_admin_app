@@ -47,7 +47,6 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
   final PocketBase _pocketBaseClient;
   static const String _authTokenKey = 'auth_token';
   static const String _authUserKey = 'auth_user';
-
   @override
   Future<GeneralUserModel> signIn({
     required String email,
@@ -75,6 +74,17 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
             expand:
                 'user_role', // Make sure this matches the field name in PocketBase
           );
+
+      // Check user status
+      final userStatus =
+          userRecord.data['status']?.toString().toLowerCase() ?? '';
+      if (userStatus == 'suspended') {
+        throw const ServerException(
+          message:
+              'Your account has been suspended. Please contact the administrator.',
+          statusCode: 'Account Suspended',
+        );
+      }
 
       // Check if user has Team Leader role
       final userRoleData = userRecord.expand['user_role'];
@@ -269,7 +279,6 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
             'trip': record.data['trip'],
             'deliveryTeam': record.data['deliveryTeam'],
             'status': record.data['status'],
-            
           };
 
           // Debug the extracted email
@@ -348,7 +357,6 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
             roleModel: roleModel,
             status: status, // Use the converted enum value
             hasTrip: hasTrip, // Set the hasTrip field
-            
           );
 
           // Debug the created model
@@ -683,13 +691,13 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
 
       try {
         createdDate = record.created as DateTime?;
-            } catch (e) {
+      } catch (e) {
         debugPrint('⚠️ Error parsing created date: $e');
       }
 
       try {
         updatedDate = record.updated as DateTime?;
-            } catch (e) {
+      } catch (e) {
         debugPrint('⚠️ Error parsing updated date: $e');
       }
 
