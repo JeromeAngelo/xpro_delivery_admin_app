@@ -204,6 +204,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/do
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/delete_all_users.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/delete_users.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/get_all_users.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/get_user_by_id.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/sign_in.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/sign_out.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/update_users.dart';
@@ -225,13 +226,19 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/usec
 import 'package:xpro_delivery_admin_app/core/common/app/features/otp/presentation/bloc/otp_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:pocketbase/pocketbase.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/users_roles/presentation/bloc/bloc/user_roles_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/users_roles/data/datasources/remote_datasource/user_roles_remote_datasource.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/users_roles/data/repo_imple/user_roles_repo_impl.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/users_roles/domain/repo/user_role_repo.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/users_roles/domain/usecases/get_all_roles_usecase.dart';
 
 final sl = GetIt.instance;
 final pb = PocketBase('http://192.168.1.118:8090');
 
 Future<void> init() async {
-  
+  // await initAuth();
   await initGeneralAuth();
+  await initUserRoles();
   await initVehicle();
   await initPersonels();
   await initDeliveryTeam();
@@ -251,7 +258,36 @@ Future<void> init() async {
   await initTrip();
 }
 
+// Future<void> initAuth() async {
+//   //BLoC
+//   sl.registerLazySingleton(
+//     () => AuthBloc(
+//       signInUsecase: sl(),
+//       signOutUsecase: sl(),
+//       getTokenUsecase: sl(),
+//       getAllUsersUsecase: sl(),
+//       getUserByIdUsecase: sl(),
+//     ),
+//   );
 
+//   //usecase
+//   sl.registerLazySingleton(() => SignInUsecase(sl()));
+//   sl.registerLazySingleton(() => SignOutUsecase(sl()));
+//   sl.registerLazySingleton(() => GetUserByIdUsecase(sl()));
+//   sl.registerLazySingleton(() => GetAllUsersUsecase(sl()));
+//   sl.registerLazySingleton(() => GetTokenUsecase(sl()));
+
+//   // Repository
+//   sl.registerLazySingleton<AuthRepo>(() => AuthRepoImpl(sl()));
+
+//   // Data sources
+//   sl.registerLazySingleton<AuthRemoteDataSource>(
+//     () => AuthRemoteDataSourceImpl(pocketBaseClient: sl()),
+//   );
+
+//   // External
+//   sl.registerLazySingleton(() => pb);
+// }
 
 Future<void> initGeneralAuth() async {
   //BLoC
@@ -261,7 +297,10 @@ Future<void> initGeneralAuth() async {
       createUser: sl(),
       updateUser: sl(),
       deleteUser: sl(),
-      deleteAllUsers: sl(), signIn: sl(), signOut: sl(),
+      deleteAllUsers: sl(),
+      signIn: sl(),
+      signOut: sl(),
+      getUserById: sl(),
     ),
   );
 
@@ -269,6 +308,7 @@ Future<void> initGeneralAuth() async {
   sl.registerLazySingleton(() => SignIn(sl()));
   sl.registerLazySingleton(() => SignOut(sl()));
   sl.registerLazySingleton(() => GetAllUsers(sl()));
+  sl.registerLazySingleton(() => GetUserById(sl()));
   sl.registerLazySingleton(() => CreateUser(sl()));
   sl.registerLazySingleton(() => UpdateUser(sl()));
   sl.registerLazySingleton(() => DeleteUser(sl()));
@@ -277,6 +317,21 @@ Future<void> initGeneralAuth() async {
   sl.registerLazySingleton<GeneralUserRepo>(() => GeneralUserRepoImpl(sl()));
   sl.registerLazySingleton<GeneralUserRemoteDataSource>(
     () => GeneralUserRemoteDataSourceImpl(pocketBaseClient: sl()),
+  );
+
+  // External
+  sl.registerLazySingleton(() => pb);
+}
+
+Future<void> initUserRoles() async {
+  sl.registerLazySingleton(() => UserRolesBloc(getAllUserRoles: sl()));
+
+  sl.registerLazySingleton(() => GetAllRolesUsecase(sl()));
+
+  sl.registerLazySingleton<UserRoleRepo>(() => UserRolesRepoImpl(sl()));
+
+  sl.registerLazySingleton<UserRolesRemoteDatasource>(
+    () => UserRolesRemoteDatasourceImpl(pocketBaseClient: sl()),
   );
 }
 
@@ -551,7 +606,7 @@ Future<void> initCustomer() async {
   sl.registerLazySingleton(() => UpdateCustomer(sl()));
   sl.registerLazySingleton(() => DeleteCustomer(sl()));
   sl.registerLazySingleton(() => DeleteAllCustomers(sl()));
- 
+
   //watch usecase
   sl.registerLazySingleton(() => WatchAllCustomers(sl()));
   sl.registerLazySingleton(() => WatchCustomerLocation(sl()));

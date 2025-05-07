@@ -86,11 +86,24 @@ class GeneralUserRepoImpl implements GeneralUserRepo {
     }
   }
   
-  @override
-  ResultFuture<GeneralUserEntity> getUserById(String userId) {
-    // TODO: implement getUserById
-    throw UnimplementedError();
+    @override
+  ResultFuture<GeneralUserEntity> getUserById(String userId) async {
+    try {
+      debugPrint('🔄 REPO: Fetching user by ID: $userId');
+      
+      final remoteUser = await _remoteDataSource.getUserById(userId);
+      
+      debugPrint('✅ REPO: Successfully retrieved user: ${remoteUser.name}');
+      return Right(remoteUser);
+    } on ServerException catch (e) {
+      debugPrint('❌ REPO: Server error: ${e.message}');
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      debugPrint('❌ REPO: Unexpected error: ${e.toString()}');
+      return Left(ServerFailure(message: e.toString(), statusCode: '500'));
+    }
   }
+
   
  @override
 ResultFuture<GeneralUserEntity> signIn({

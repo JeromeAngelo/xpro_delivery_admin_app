@@ -1,0 +1,3 @@
+enum UserStatusEnum {
+  active, suspended
+}

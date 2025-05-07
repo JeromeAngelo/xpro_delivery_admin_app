@@ -32,6 +32,7 @@ class TripEntity extends Equatable {
   final List<TransactionModel> transactions;
   final List<EndTripChecklistModel> endTripChecklist;
   final List<TripUpdateModel> tripUpdates;
+  
   final OtpModel? otp;
   final EndTripOtpModel? endTripOtp;
   final GeneralUserModel? user;

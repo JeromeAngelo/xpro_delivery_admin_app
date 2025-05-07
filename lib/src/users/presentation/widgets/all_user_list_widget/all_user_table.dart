@@ -6,6 +6,7 @@ import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/all_user_
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/widgets/all_user_list_widget/all_user_status_chip.dart';
 
 class DeliveryUserDataTable extends StatelessWidget {
   final List<GeneralUserEntity> users;
@@ -46,7 +47,7 @@ class DeliveryUserDataTable extends StatelessWidget {
       ),
       onCreatePressed: () {
         // Navigate to create delivery user screen
-        context.go('/delivery-users/create');
+        context.go('/create-users');
       },
       createButtonText: 'Create User',
       columns: const [
@@ -54,6 +55,8 @@ class DeliveryUserDataTable extends StatelessWidget {
         DataColumn(label: Text('Email')),
         //  DataColumn(label: Text('Current Trip')),
         DataColumn(label: Text('User Role')), // Added User Role column
+        DataColumn(label: Text('Status')), // Added User Role column
+
         DataColumn(label: Text('Actions')),
       ],
       rows:
@@ -93,9 +96,13 @@ class DeliveryUserDataTable extends StatelessWidget {
                       Expanded(child: Text(user.name ?? 'N/A')),
                     ],
                   ),
+                  onTap: () => _navigateToUserDetails(context, user),
                 ),
                 // Email cell
-                DataCell(Text(user.email != null ? user.email! : 'No Email')),
+                DataCell(
+                  Text(user.email != null ? user.email! : 'No Email'),
+                  onTap: () => _navigateToUserDetails(context, user),
+                ),
 
                 // Trip cell
                 // DataCell(
@@ -136,8 +143,9 @@ class DeliveryUserDataTable extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                       )
                       : const Text('No Role Assigned'),
+                  onTap: () => _navigateToUserDetails(context, user),
                 ),
-
+                DataCell(AllUserStatusChip(user: user)),
                 // Actions cell
                 DataCell(
                   Row(
@@ -148,7 +156,7 @@ class DeliveryUserDataTable extends StatelessWidget {
                         onPressed: () {
                           // View user details
                           if (user.id != null) {
-                            context.go('/delivery-users/${user.id}');
+                            _navigateToUserDetails(context, user);
                           }
                         },
                       ),
@@ -201,6 +209,17 @@ class DeliveryUserDataTable extends StatelessWidget {
         return Colors.green;
       default:
         return Colors.grey;
+    }
+  }
+
+  // Helper method to navigate to trip details
+  void _navigateToUserDetails(BuildContext context, GeneralUserEntity user) {
+    if (user.id != null) {
+      // First load the trip data
+      context.read<GeneralUserBloc>().add(GetUserByIdEvent(user.id!));
+
+      // Then navigate to the specific trip view
+      context.go('/user/${user.id}');
     }
   }
 

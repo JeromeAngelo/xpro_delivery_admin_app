@@ -3,6 +3,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/do
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/delete_all_users.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/delete_users.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/get_all_users.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/get_user_by_id.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/sign_in.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/sign_out.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/domain/usecases/update_users.dart';
@@ -12,6 +13,8 @@ import 'package:flutter/material.dart';
 
 class GeneralUserBloc extends Bloc<GeneralUserEvent, GeneralUserState> {
   final GetAllUsers _getAllUsers;
+  final GetUserById _getUserById;
+
   final CreateUser _createUser;
   final UpdateUser _updateUser;
   final DeleteUser _deleteUser;
@@ -21,6 +24,7 @@ class GeneralUserBloc extends Bloc<GeneralUserEvent, GeneralUserState> {
 
   GeneralUserBloc({
     required GetAllUsers getAllUsers,
+    required GetUserById getUserById,
     required CreateUser createUser,
     required UpdateUser updateUser,
     required DeleteUser deleteUser,
@@ -28,6 +32,7 @@ class GeneralUserBloc extends Bloc<GeneralUserEvent, GeneralUserState> {
     required SignIn signIn,
     required SignOut signOut,
   }) : _getAllUsers = getAllUsers,
+   _getUserById = getUserById,
        _signIn = signIn,
        _signOut = signOut,
        _createUser = createUser,
@@ -38,6 +43,8 @@ class GeneralUserBloc extends Bloc<GeneralUserEvent, GeneralUserState> {
     on<UserSignInEvent>(_onSignIn);
     on<UserSignOutEvent>(_onSignOut);
     on<GetAllUsersEvent>(_onGetAllUsers);
+    on<GetUserByIdEvent>(_onGetUserById);
+
     on<CreateUserEvent>(_onCreateUser);
     on<UpdateUserEvent>(_onUpdateUser);
     on<DeleteUserEvent>(_onDeleteUser);
@@ -108,6 +115,27 @@ class GeneralUserBloc extends Bloc<GeneralUserEvent, GeneralUserState> {
       },
     );
   }
+
+  Future<void> _onGetUserById(
+  GetUserByIdEvent event,
+  Emitter<GeneralUserState> emit,
+) async {
+  debugPrint('🔄 BLOC: Fetching user by ID: ${event.userId}');
+  emit(GeneralUserLoading());
+
+  final result = await _getUserById(event.userId);
+  result.fold(
+    (failure) {
+      debugPrint('❌ BLOC: Failed to get user: ${failure.message}');
+      emit(GeneralUserError(failure.message));
+    },
+    (user) {
+      debugPrint('✅ BLOC: Successfully retrieved user: ${user.name}');
+      emit(UserByIdLoaded(user));
+    },
+  );
+}
+
 
   Future<void> _onCreateUser(
     CreateUserEvent event,

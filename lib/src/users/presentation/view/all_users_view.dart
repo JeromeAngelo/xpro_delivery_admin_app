@@ -117,13 +117,15 @@ class _DeliveryUsersListViewState extends State<AllUsersView> {
                     ? users.length
                     : startIndex + _itemsPerPage;
 
-            final paginatedUsers =
+            final List<GeneralUserEntity> paginatedUsers =
                 startIndex < users.length
-                    ? users.sublist(startIndex, endIndex)
-                    : [];
+                    ? List<GeneralUserEntity>.from(
+                      users.sublist(startIndex, endIndex),
+                    )
+                    : <GeneralUserEntity>[];
 
             return DeliveryUserDataTable(
-              users: paginatedUsers as List<GeneralUserEntity>,
+              users: paginatedUsers,
               isLoading: false,
               currentPage: _currentPage,
               totalPages: _totalPages,

@@ -22,6 +22,8 @@ import 'package:xpro_delivery_admin_app/src/return_data/return_list_screen/prese
 import 'package:xpro_delivery_admin_app/src/return_data/undelivered_customer_data/presentation/view/undelivered_customer_list_view.dart';
 import 'package:xpro_delivery_admin_app/src/users/presentation/view/all_users_view.dart';
 import 'package:go_router/go_router.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/view/create_user_view.dart';
+import 'package:xpro_delivery_admin_app/src/users/presentation/view/specific_user_view.dart';
 
 final router = GoRouter(
   routes: [
@@ -131,6 +133,19 @@ final router = GoRouter(
       path: '/all-users',
       builder: (context, state) => const AllUsersView(),
     ),
+    GoRoute(
+      path: '/create-users',
+      builder: (context, state) => const CreateUserView(),
+    ),
+    // Add this route to your router configuration
+GoRoute(
+  path: '/user/:userId',
+  builder: (context, state) {
+    final userId = state.pathParameters['userId']!;
+    return SpecificUserView(userId: userId);
+  },
+),
+
     GoRoute(
       path: '/undeliverable-customers',
       builder: (context, state) => const UndeliveredCustomerListView(),

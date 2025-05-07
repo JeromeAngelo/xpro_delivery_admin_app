@@ -18,6 +18,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/pr
 import 'package:xpro_delivery_admin_app/core/common/app/features/otp/presentation/bloc/otp_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/users_roles/presentation/bloc/bloc/user_roles_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/services/injection_container.dart';
 import 'package:xpro_delivery_admin_app/core/services/router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -49,6 +50,8 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => sl<GeneralUserBloc>()),
         BlocProvider(create: (_) => sl<DeliveryTeamBloc>()),
+        BlocProvider(create: (_) => sl<UserRolesBloc>()),
+
         BlocProvider(create: (_) => sl<TripBloc>()),
         BlocProvider(create: (_) => sl<CustomerBloc>()),
         BlocProvider(create: (_) => sl<InvoiceBloc>()),

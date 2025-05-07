@@ -44,6 +44,15 @@ class GeneralUserLoaded extends GeneralUserState {
   List<Object> get props => [user];
 }
 
+class UserByIdLoaded extends GeneralUserState {
+  final GeneralUserEntity user;
+
+  const UserByIdLoaded(this.user);
+
+  @override
+  List<Object> get props => [user];
+}
+
 class UserCreated extends GeneralUserState {
   final GeneralUserEntity user;
 
