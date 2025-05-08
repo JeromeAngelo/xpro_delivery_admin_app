@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/provider/theme_provider.dart';
 
 class DefaultDrawer extends StatefulWidget {
   const DefaultDrawer({super.key});
@@ -14,10 +15,11 @@ class DefaultDrawer extends StatefulWidget {
 }
 
 class _DefaultDrawerState extends State<DefaultDrawer> {
+  bool _isThemeExpanded = false;
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      //   backgroundColor: Theme.of(context).colorScheme.onSurface,
       elevation: 10,
       child: Column(
         children: [
@@ -80,6 +82,103 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
             Navigator.pop(context);
             Navigator.pushNamed(context, '/settings');
           },
+        ),
+
+        // Theme Settings - Collapsible
+        ExpansionTile(
+          leading: const Icon(Icons.color_lens),
+          title: const Text('Theme'),
+          initiallyExpanded: _isThemeExpanded,
+          onExpansionChanged: (expanded) {
+            setState(() {
+              _isThemeExpanded = expanded;
+            });
+          },
+          children: [_buildThemeOptions(context)],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThemeOptions(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return Column(
+      children: [
+        RadioListTile<ThemeMode>(
+          title: Row(
+            children: [
+              Icon(
+                Icons.brightness_auto,
+                size: 20,
+                color:
+                    themeProvider.themeMode == ThemeMode.system
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+              ),
+              const SizedBox(width: 12),
+              const Text('System'),
+            ],
+          ),
+          value: ThemeMode.system,
+          groupValue: themeProvider.themeMode,
+          onChanged: (ThemeMode? value) {
+            if (value != null) {
+              themeProvider.setThemeMode(value);
+            }
+          },
+          activeColor: Theme.of(context).colorScheme.primary,
+          dense: true,
+        ),
+        RadioListTile<ThemeMode>(
+          title: Row(
+            children: [
+              Icon(
+                Icons.light_mode,
+                size: 20,
+                color:
+                    themeProvider.themeMode == ThemeMode.light
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+              ),
+              const SizedBox(width: 12),
+              const Text('Light'),
+            ],
+          ),
+          value: ThemeMode.light,
+          groupValue: themeProvider.themeMode,
+          onChanged: (ThemeMode? value) {
+            if (value != null) {
+              themeProvider.setThemeMode(value);
+            }
+          },
+          activeColor: Theme.of(context).colorScheme.primary,
+          dense: true,
+        ),
+        RadioListTile<ThemeMode>(
+          title: Row(
+            children: [
+              Icon(
+                Icons.dark_mode,
+                size: 20,
+                color:
+                    themeProvider.themeMode == ThemeMode.dark
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+              ),
+              const SizedBox(width: 12),
+              const Text('Dark'),
+            ],
+          ),
+          value: ThemeMode.dark,
+          groupValue: themeProvider.themeMode,
+          onChanged: (ThemeMode? value) {
+            if (value != null) {
+              themeProvider.setThemeMode(value);
+            }
+          },
+          activeColor: Theme.of(context).colorScheme.primary,
+          dense: true,
         ),
       ],
     );

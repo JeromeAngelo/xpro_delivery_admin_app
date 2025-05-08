@@ -1,3 +1,4 @@
+import 'package:provider/provider.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/delivery_team/presentation/bloc/delivery_team_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_bloc.dart';
@@ -20,6 +21,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/otp/presentatio
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/users_roles/presentation/bloc/bloc/user_roles_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/provider/theme_provider.dart';
 import 'package:xpro_delivery_admin_app/core/services/injection_container.dart';
 import 'package:xpro_delivery_admin_app/core/services/router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -39,7 +41,12 @@ Future<void> main() async {
   // Initialize dependencies
   await init();
 
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -47,59 +54,63 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => sl<GeneralUserBloc>()),
-        BlocProvider(create: (_) => sl<DeliveryTeamBloc>()),
-        BlocProvider(create: (_) => sl<UserRolesBloc>()),
-
-        BlocProvider(create: (_) => sl<TripBloc>()),
-        BlocProvider(create: (_) => sl<CustomerBloc>()),
-        BlocProvider(create: (_) => sl<InvoiceBloc>()),
-        BlocProvider(create: (_) => sl<ProductsBloc>()),
-        BlocProvider(create: (_) => sl<TripUpdatesBloc>()),
-        BlocProvider(create: (_) => sl<UndeliverableCustomerBloc>()),
-        BlocProvider(create: (_) => sl<ReturnBloc>()),
-        BlocProvider(create: (_) => sl<DeliveryUpdateBloc>()),
-        BlocProvider(create: (_) => sl<CompletedCustomerBloc>()),
-        BlocProvider(create: (_) => sl<TransactionBloc>()),
-        BlocProvider(create: (_) => sl<ChecklistBloc>()),
-        BlocProvider(create: (_) => sl<EndTripChecklistBloc>()),
-        BlocProvider(create: (_) => sl<OtpBloc>()),
-        BlocProvider(create: (_) => sl<EndTripOtpBloc>()),
-        BlocProvider(create: (_) => sl<VehicleBloc>()),
-        BlocProvider(create: (_) => sl<PersonelBloc>()),
-        BlocProvider(create: (_) => sl<TripCoordinatesUpdateBloc>()),
-      ],
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        title: 'X-Pro Delivery Admin App',
-        theme: FlexThemeData.light(
-          scheme: FlexScheme.blueWhale,
-          // Add responsive typography
-          typography: Typography.material2018(platform: TargetPlatform.windows),
-        ),
-        // darkTheme: FlexThemeData.dark(
-        //   scheme: FlexScheme.amber,
-        //   // Add responsive typography
-        //   typography: Typography.material2018(platform: TargetPlatform.windows),
-        // ),
-        themeMode: ThemeMode.system,
-        routerConfig: router,
-        builder: (context, child) {
-          // Apply minimum constraints to the entire app
-          return MediaQuery(
-            // Set minimum width and height
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(1.0), // Prevent text scaling
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => sl<GeneralUserBloc>()),
+            BlocProvider(create: (_) => sl<DeliveryTeamBloc>()),
+            BlocProvider(create: (_) => sl<UserRolesBloc>()),
+            
+            BlocProvider(create: (_) => sl<TripBloc>()),
+            BlocProvider(create: (_) => sl<CustomerBloc>()),
+            BlocProvider(create: (_) => sl<InvoiceBloc>()),
+            BlocProvider(create: (_) => sl<ProductsBloc>()),
+            BlocProvider(create: (_) => sl<TripUpdatesBloc>()),
+            BlocProvider(create: (_) => sl<UndeliverableCustomerBloc>()),
+            BlocProvider(create: (_) => sl<ReturnBloc>()),
+            BlocProvider(create: (_) => sl<DeliveryUpdateBloc>()),
+            BlocProvider(create: (_) => sl<CompletedCustomerBloc>()),
+            BlocProvider(create: (_) => sl<TransactionBloc>()),
+            BlocProvider(create: (_) => sl<ChecklistBloc>()),
+            BlocProvider(create: (_) => sl<EndTripChecklistBloc>()),
+            BlocProvider(create: (_) => sl<OtpBloc>()),
+            BlocProvider(create: (_) => sl<EndTripOtpBloc>()),
+            BlocProvider(create: (_) => sl<VehicleBloc>()),
+            BlocProvider(create: (_) => sl<PersonelBloc>()),
+            BlocProvider(create: (_) => sl<TripCoordinatesUpdateBloc>()),
+          ],
+          child: MaterialApp.router(
+            debugShowCheckedModeBanner: false,
+            title: 'X-Pro Delivery Admin App',
+            theme: FlexThemeData.light(
+              scheme: FlexScheme.blueWhale,
+              // Add responsive typography
+              typography: Typography.material2018(platform: TargetPlatform.windows),
             ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 600, minHeight: 400),
-              child: child!,
+            darkTheme: FlexThemeData.dark(
+              scheme: FlexScheme.blueWhale,
+              // Add responsive typography
+              typography: Typography.material2018(platform: TargetPlatform.windows),
             ),
-          );
-        },
-      ),
+            themeMode: themeProvider.themeMode,
+            routerConfig: router,
+            builder: (context, child) {
+              // Apply minimum constraints to the entire app
+              return MediaQuery(
+                // Set minimum width and height
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: const TextScaler.linear(1.0), // Prevent text scaling
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 600, minHeight: 400),
+                  child: child!,
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

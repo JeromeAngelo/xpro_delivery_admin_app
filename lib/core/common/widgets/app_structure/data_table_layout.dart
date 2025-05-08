@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:xpro_delivery_admin_app/core/common/widgets/filter_widgets/filter_option.dart';
 
 class DataTableLayout extends StatefulWidget {
   final String title;
@@ -19,6 +20,8 @@ class DataTableLayout extends StatefulWidget {
   final VoidCallback? onDeleted;
   final Function(List<int>)? onRowsSelected; // Callback for selected rows
   final String dataLength;
+  final List<FilterCategory>? filterCategories;
+  final Function(Map<String, List<dynamic>>)? onFilterApplied;
 
   const DataTableLayout({
     super.key,
@@ -26,19 +29,21 @@ class DataTableLayout extends StatefulWidget {
     this.searchBar,
     this.onCreatePressed,
     this.createButtonText = 'Create New',
-    required this.onFiltered,
-    required this.onDeleted,
     required this.columns,
     required this.rows,
     required this.currentPage,
     required this.totalPages,
     required this.onPageChanged,
     this.isLoading = false,
-    this.enableSelection = true, // Changed default to true
-    this.errorMessage, // Add this parameter
-    this.onRetry, // Add this parameter
-    this.onRowsSelected, // Add this parameter
+    this.enableSelection = true,
+    this.errorMessage,
+    this.onRetry,
+    this.onRowsSelected,
     required this.dataLength,
+    required this.onFiltered,
+    required this.onDeleted,
+    this.filterCategories,
+    this.onFilterApplied,
   });
 
   @override
@@ -50,7 +55,8 @@ class _DataTableLayoutState extends State<DataTableLayout> {
   final ScrollController _horizontalScrollController = ScrollController();
   final GlobalKey _checkboxColumnKey = GlobalKey();
   final GlobalKey _showDeletekey = GlobalKey();
-   final GlobalKey _showFilterKey = GlobalKey();
+  final GlobalKey _showFilterKey = GlobalKey();
+
   final headerStyle = TextStyle(
     fontWeight: FontWeight.bold,
     color: Colors.black, // or any color you prefer
@@ -65,6 +71,232 @@ class _DataTableLayoutState extends State<DataTableLayout> {
     // Dispose controllers when the widget is removed
     _horizontalScrollController.dispose();
     super.dispose();
+  }
+
+  void _showFilterMenu(BuildContext context) {
+    final RenderBox? renderBox =
+        _showFilterKey.currentContext?.findRenderObject() as RenderBox?;
+
+    if (renderBox == null) return;
+
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        renderBox.localToGlobal(Offset.zero),
+        renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero)),
+      ),
+      Offset.zero &
+          (Overlay.of(context).context.findRenderObject() as RenderBox).size,
+    );
+
+    // If no filter categories are provided, show a default menu
+    if (widget.filterCategories == null || widget.filterCategories!.isEmpty) {
+      showMenu<String>(
+        context: context,
+        position: position,
+        items: [
+          PopupMenuItem<String>(
+            value: 'no_filters',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                const Text('No filters available'),
+              ],
+            ),
+          ),
+        ],
+      );
+      return;
+    }
+
+    // Show menu with provided filter categories
+    showMenu<String>(
+      context: context,
+      position: position,
+      items: [
+        ...widget.filterCategories!
+            .map(
+              (category) => PopupMenuItem<String>(
+                value: category.id,
+                child: Row(
+                  children: [
+                    Icon(
+                      category.icon,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text('Filter by ${category.title}'),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'clear',
+          child: Row(
+            children: [
+              Icon(Icons.clear_all, color: Colors.red),
+              const SizedBox(width: 8),
+              Text('Clear All Filters', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
+    ).then((String? value) {
+      if (value == null) return;
+
+      if (value == 'clear') {
+        // Clear all filters
+        if (widget.onFiltered != null) {
+          widget.onFiltered!();
+        }
+        return;
+      }
+
+      // Find the selected category
+      final selectedCategory = widget.filterCategories!.firstWhere(
+        (category) => category.id == value,
+        orElse: () => widget.filterCategories!.first,
+      );
+
+      // Show filter dialog for the selected category
+      _showFilterDialog(context, selectedCategory);
+    });
+  }
+
+  void _showFilterDialog(BuildContext context, FilterCategory category) {
+    // Create a local copy of options to track selection state
+    final options =
+        category.options
+            .map(
+              (option) => FilterOption(
+                id: option.id,
+                label: option.label,
+                value: option.value,
+                isSelected: option.isSelected,
+              ),
+            )
+            .toList();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Filter by ${category.title}'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (category.allowMultiple)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                for (var option in options) {
+                                  option.isSelected = true;
+                                }
+                              });
+                            },
+                            child: const Text('Select All'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                for (var option in options) {
+                                  option.isSelected = false;
+                                }
+                              });
+                            },
+                            child: const Text('Clear All'),
+                          ),
+                        ],
+                      ),
+                    const Divider(),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (context, index) {
+                          return CheckboxListTile(
+                            title: Text(options[index].label),
+                            value: options[index].isSelected,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                if (category.allowMultiple) {
+                                  options[index].isSelected = value ?? false;
+                                } else {
+                                  // Single selection mode
+                                  for (int i = 0; i < options.length; i++) {
+                                    options[i].isSelected =
+                                        (i == index) ? (value ?? false) : false;
+                                  }
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    // Update original options
+                    for (int i = 0; i < category.options.length; i++) {
+                      category.options[i].isSelected = options[i].isSelected;
+                    }
+
+                    // Collect all selected filters across all categories
+                    final Map<String, List<dynamic>> selectedFilters = {};
+                    for (var cat in widget.filterCategories!) {
+                      final selectedValues =
+                          cat.options
+                              .where((option) => option.isSelected)
+                              .map((option) => option.value)
+                              .toList();
+
+                      if (selectedValues.isNotEmpty) {
+                        selectedFilters[cat.id] = selectedValues;
+                      }
+                    }
+
+                    // Notify parent about filter changes
+                    if (widget.onFilterApplied != null) {
+                      widget.onFilterApplied!(selectedFilters);
+                    }
+
+                    // Call the general onFiltered callback
+                    if (widget.onFiltered != null) {
+                      widget.onFiltered!();
+                    }
+
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text('Apply'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showSelectionMenu(BuildContext context) {
@@ -225,6 +457,16 @@ class _DataTableLayoutState extends State<DataTableLayout> {
   @override
   Widget build(BuildContext context) {
     final bool hasSelectedRows = _selectedRows.isNotEmpty;
+    bool hasActiveFilters() {
+      if (widget.filterCategories == null) return false;
+
+      for (var category in widget.filterCategories!) {
+        for (var option in category.options) {
+          if (option.isSelected) return true;
+        }
+      }
+      return false;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,19 +575,48 @@ class _DataTableLayoutState extends State<DataTableLayout> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    // Replace the existing filter icon code with this
                     GestureDetector(
-                      onLongPress: widget.onFiltered,
+                      onTap: () => _showFilterMenu(context),
+                      key: _showFilterKey,
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            Icon(Icons.filter_alt_rounded),
+                            Icon(
+                              Icons.filter_alt_rounded,
+                              color:
+                                  hasActiveFilters()
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                            ),
+                            const SizedBox(width: 4),
+                            if (hasActiveFilters())
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  _getActiveFilterCount().toString(),
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onPrimary,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             Icon(Icons.arrow_drop_down),
                           ],
                         ),
                       ),
                     ),
+
+                    // Add this helper method to count active filters
+
                     // Only show delete button when rows are selected
                     Visibility(
                       visible: hasSelectedRows,
@@ -440,6 +711,18 @@ class _DataTableLayoutState extends State<DataTableLayout> {
         ),
       ],
     );
+  }
+
+  int _getActiveFilterCount() {
+    if (widget.filterCategories == null) return 0;
+
+    int count = 0;
+    for (var category in widget.filterCategories!) {
+      for (var option in category.options) {
+        if (option.isSelected) count++;
+      }
+    }
+    return count;
   }
 
   // Build the appropriate table content based on state

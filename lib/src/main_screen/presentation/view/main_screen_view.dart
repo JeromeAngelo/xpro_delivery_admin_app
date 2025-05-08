@@ -1,5 +1,6 @@
-
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:provider/provider.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
@@ -15,6 +16,18 @@ class MainScreenView extends StatefulWidget {
 }
 
 class _MainScreenViewState extends State<MainScreenView> {
+  // Theme mode state
+ 
+  final GlobalKey _themeSelection = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  // Load saved theme mode preference
+ 
+
   @override
   Widget build(BuildContext context) {
     // Get screen size for responsive design
@@ -50,13 +63,9 @@ class _MainScreenViewState extends State<MainScreenView> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(
-              Icons.desktop_windows,
-              color: Theme.of(context).colorScheme.surface,
-            ),
-            onPressed: () {},
-          ),
+          // Replace the existing desktop icon button with this:
+          
+
           IconButton(
             icon: Icon(
               Icons.notifications,
@@ -174,7 +183,7 @@ class _MainScreenViewState extends State<MainScreenView> {
                                     onPressed: () {
                                       Navigator.pop(context);
                                       context.read<GeneralUserBloc>().add(
-                                         UserSignOutEvent(),
+                                        UserSignOutEvent(),
                                       );
                                       // Navigate to login screen
                                       context.go('/');
