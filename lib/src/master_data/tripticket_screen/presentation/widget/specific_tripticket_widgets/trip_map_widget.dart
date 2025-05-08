@@ -1,4 +1,5 @@
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_coordinates_update/domain/entity/trip_coordinates_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/domain/entity/trip_update_entity.dart';
 import 'package:xpro_delivery_admin_app/core/enums/trip_update_status.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ class TripMapWidget extends StatefulWidget {
   final String tripId;
   final TripEntity? trip;
   final List<TripUpdateEntity> tripUpdates;
+  final List<TripCoordinatesEntity> tripCoordinates; // Add this line
   final bool isLoading;
   final String? errorMessage;
   final VoidCallback onRefresh;
@@ -20,6 +22,7 @@ class TripMapWidget extends StatefulWidget {
     required this.tripId,
     this.trip,
     required this.tripUpdates,
+    required this.tripCoordinates, // Add this line
     required this.isLoading,
     this.errorMessage,
     required this.onRefresh,
@@ -39,6 +42,27 @@ class _TripMapWidgetState extends State<TripMapWidget>
   bool isActivityLogExpanded = false;
   final ScrollController _horizontalScrollController = ScrollController();
   bool _isSatelliteView = false; // Add this line
+
+  List<Marker> _createCoordinateMarkers() {
+    return widget.tripCoordinates
+        .where((coord) => coord.latitude != null && coord.longitude != null)
+        .map((coord) {
+          return Marker(
+            point: LatLng(coord.latitude!, coord.longitude!),
+            width: 15,
+            height: 15,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.7),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          );
+        })
+        .toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -139,8 +163,11 @@ class _TripMapWidgetState extends State<TripMapWidget>
             .whereType<Marker>() // Filter out null markers
             .toList();
 
+    // Add markers for trip coordinates
+    final coordinateMarkers = _createCoordinateMarkers();
+
     // Add current trip location marker if valid
-    final allMarkers = [...updateMarkers];
+    final allMarkers = [...updateMarkers, ...coordinateMarkers];
     if (hasValidCoordinates) {
       allMarkers.add(
         Marker(
@@ -254,6 +281,21 @@ class _TripMapWidgetState extends State<TripMapWidget>
                 ),
               ),
 
+            if (coordinateMarkers.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.timeline, size: 16, color: Colors.blue[400]),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Map shows ${coordinateMarkers.length} location history points',
+                      style: TextStyle(fontSize: 13, color: Colors.blue[700]),
+                    ),
+                  ],
+                ),
+              ),
+
             AnimatedBuilder(
               animation: _heightAnimation,
               builder: (context, child) {
@@ -282,6 +324,7 @@ class _TripMapWidgetState extends State<TripMapWidget>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Map legend
+                    // Map legend
                     Row(
                       children: [
                         Row(
@@ -309,6 +352,28 @@ class _TripMapWidgetState extends State<TripMapWidget>
                             const SizedBox(width: 4),
                             const Text(
                               'Location Updates',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 16),
+                        Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.7),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Location History',
                               style: TextStyle(fontSize: 12),
                             ),
                           ],
@@ -427,52 +492,62 @@ class _TripMapWidgetState extends State<TripMapWidget>
   }
 
   Widget _buildMap(LatLng center, List<Marker> markers) {
-    try {
-      return FlutterMap(
-        mapController: mapController,
-        options: MapOptions(
-          initialCenter: center,
-          initialZoom: 14,
-          minZoom: 5,
-          maxZoom: 25,
-          // Enable drag with mouse
-          interactionOptions: const InteractionOptions(
-            flags: InteractiveFlag.all,
-            // The following settings make dragging with mouse primary behavior
-            pinchMoveWinGestures: 10,
-          ),
+     try {
+    return FlutterMap(
+      mapController: mapController,
+      options: MapOptions(
+        initialCenter: center,
+        initialZoom: 14,
+        minZoom: 5,
+        maxZoom: 25,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all,
+          pinchMoveWinGestures: 10,
         ),
-        children: [
-          TileLayer(
-            // Change the URL template based on the view type
-            urlTemplate:
-                _isSatelliteView
-                    ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}' // Satellite view
-                    : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', // Default view
-            userAgentPackageName: 'com.example.desktop_app',
-          ),
-          // Add polyline to connect markers in chronological order
-          if (markers.length > 1)
-            PolylineLayer(
-              polylines: [
-                Polyline(
-                  points: markers.map((marker) => marker.point).toList(),
-                  color: Colors.blue.withOpacity(0.7),
-                  strokeWidth: 3.0,
-                ),
-              ],
-            ),
-          MarkerLayer(markers: markers),
-          // Add a custom mouse cursor layer
-          RichAttributionWidget(
-            attributions: [
-              TextSourceAttribution('Drag to move map', onTap: () {}),
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: _isSatelliteView
+              ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+              : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+          userAgentPackageName: 'com.example.desktop_app',
+        ),
+        // Add polyline for trip updates
+        if (markers.length > 1)
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: markers.map((marker) => marker.point).toList(),
+                color: Colors.blue.withOpacity(0.7),
+                strokeWidth: 3.0,
+              ),
             ],
-            alignment: AttributionAlignment.bottomRight,
           ),
-        ],
-      );
-    } catch (e) {
+        // Add polyline for coordinates history
+        if (widget.tripCoordinates.length > 1)
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: widget.tripCoordinates
+                    .where((coord) => coord.latitude != null && coord.longitude != null)
+                    .map((coord) => LatLng(coord.latitude!, coord.longitude!))
+                    .toList(),
+                color: Colors.green.withOpacity(0.5),
+                strokeWidth: 2.0,
+               
+              ),
+            ],
+          ),
+        MarkerLayer(markers: markers),
+        RichAttributionWidget(
+          attributions: [
+            TextSourceAttribution('Drag to move map', onTap: () {}),
+          ],
+          alignment: AttributionAlignment.bottomRight,
+        ),
+      ],
+    );
+  } catch (e) {
       debugPrint('❌ Error building map: $e');
       return SizedBox(
         height: widget.height,

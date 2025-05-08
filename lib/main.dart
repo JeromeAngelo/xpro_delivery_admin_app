@@ -9,6 +9,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/pro
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/presentation/bloc/return_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/transaction/presentation/bloc/transaction_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_coordinates_update/presentation/bloc/trip_coordinates_update_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/presentation/bloc/trip_updates_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/undeliverable_customer/presentation/bloc/undeliverable_customer_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/presentation/bloc/checklist_bloc.dart';
@@ -68,6 +69,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => sl<EndTripOtpBloc>()),
         BlocProvider(create: (_) => sl<VehicleBloc>()),
         BlocProvider(create: (_) => sl<PersonelBloc>()),
+        BlocProvider(create: (_) => sl<TripCoordinatesUpdateBloc>()),
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,

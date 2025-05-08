@@ -14,6 +14,10 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/tri
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_coordinates_update/domain/entity/trip_coordinates_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_coordinates_update/presentation/bloc/trip_coordinates_update_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_coordinates_update/presentation/bloc/trip_coordinates_update_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_coordinates_update/presentation/bloc/trip_coordinates_update_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/domain/entity/trip_update_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/presentation/bloc/trip_updates_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/presentation/bloc/trip_updates_event.dart';
@@ -53,6 +57,11 @@ class TripTicketSpecificTripView extends StatefulWidget {
 
 class _TripTicketSpecificTripViewState
     extends State<TripTicketSpecificTripView> {
+
+      List<TripCoordinatesEntity> _tripCoordinates = [];
+bool _isCoordinatesLoading = true;
+String? _coordinatesErrorMessage;
+
          // Customer pagination state
   int _customerCurrentPage = 1;
   int _customerTotalPages = 1;
@@ -88,33 +97,41 @@ class _TripTicketSpecificTripViewState
   bool _isMapLoading = true;
   String? _mapErrorMessage;
 
+  void _loadTripCoordinatesForMap() {
+  debugPrint('🔄 Loading trip coordinates for map...');
+  setState(() {
+    _isCoordinatesLoading = true;
+    _coordinatesErrorMessage = null;
+  });
+
+  // Load trip coordinates
+  context.read<TripCoordinatesUpdateBloc>().add(GetTripCoordinatesByTripIdEvent(widget.tripId));
+}
+
+
   @override
-  void initState() {
-    super.initState();
-    // Load trip details
-    context.read<TripBloc>().add(GetTripTicketByIdEvent(widget.tripId));
-    // Load customers for this trip
-    context.read<CustomerBloc>().add(GetCustomerEvent(widget.tripId));
-    // Load personnel for this trip
-    context.read<PersonelBloc>().add(LoadPersonelsByTripIdEvent(widget.tripId));
-    // Load OTPs for this trip
-    context.read<OtpBloc>().add(LoadOtpByTripIdEvent(widget.tripId));
+void initState() {
+  super.initState();
+  // Load trip details
+  context.read<TripBloc>().add(GetTripTicketByIdEvent(widget.tripId));
+  // Load customers for this trip
+  context.read<CustomerBloc>().add(GetCustomerEvent(widget.tripId));
+  // Load personnel for this trip
+  context.read<PersonelBloc>().add(LoadPersonelsByTripIdEvent(widget.tripId));
+  // Load OTPs for this trip
+  context.read<OtpBloc>().add(LoadOtpByTripIdEvent(widget.tripId));
+  // Load End Trip OTPs for this trip
+  context.read<EndTripOtpBloc>().add(LoadEndTripOtpByTripIdEvent(widget.tripId));
+  // Load invoices for this trip
+  context.read<InvoiceBloc>().add(GetInvoicesByTripEvent(widget.tripId));
+  // Load trip updates for map
+  _loadTripUpdatesForMap();
+  // Load trip coordinates for map
+  _loadTripCoordinatesForMap();
+  // Start auto-refresh timer for map data
+  _startMapRefreshTimer();
+}
 
-    // Load End Trip OTPs for this trip
-    context.read<EndTripOtpBloc>().add(
-      LoadEndTripOtpByTripIdEvent(widget.tripId),
-    );
-
-    debugPrint(
-      '🔄 Dispatching GetInvoicesByTripEvent for trip: ${widget.tripId}',
-    );
-    context.read<InvoiceBloc>().add(GetInvoicesByTripEvent(widget.tripId));
-
-    _loadTripUpdatesForMap();
-
-    // Start auto-refresh timer for map data
-    _startMapRefreshTimer();
-  }
 
   // Update the _loadTripUpdatesForMap method
   void _loadTripUpdatesForMap() {
@@ -129,19 +146,21 @@ class _TripTicketSpecificTripViewState
   }
 
   // Update the _startMapRefreshTimer method
-  void _startMapRefreshTimer() {
-    // Cancel any existing timer
-    _mapRefreshTimer?.cancel();
+ void _startMapRefreshTimer() {
+  // Cancel any existing timer
+  _mapRefreshTimer?.cancel();
 
-    // Create a new timer that refreshes the data every minute
-    _mapRefreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      if (mounted) {
-        debugPrint('🔄 Auto-refreshing trip map data');
-        // Don't set loading state for auto-refresh to avoid flickering
-        context.read<TripUpdatesBloc>().add(GetTripUpdatesEvent(widget.tripId));
-      }
-    });
-  }
+  // Create a new timer that refreshes the data every minute
+  _mapRefreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+    if (mounted) {
+      debugPrint('🔄 Auto-refreshing trip map data');
+      // Don't set loading state for auto-refresh to avoid flickering
+      context.read<TripUpdatesBloc>().add(GetTripUpdatesEvent(widget.tripId));
+      context.read<TripCoordinatesUpdateBloc>().add(GetTripCoordinatesByTripIdEvent(widget.tripId));
+    }
+  });
+}
+
 
  @override
 void dispose() {
@@ -650,36 +669,69 @@ void dispose() {
 
   // Add this method to your class
   Widget _buildTripMapWidget(TripEntity trip) {
-    return BlocConsumer<TripUpdatesBloc, TripUpdatesState>(
-      listener: (context, state) {
-        if (state is TripUpdatesError) {
-          setState(() {
-            _mapErrorMessage = state.message;
-            _isMapLoading = false;
-          });
-          debugPrint('❌ Error loading trip updates: ${state.message}');
-        } else if (state is TripUpdatesLoaded) {
-          setState(() {
-            _tripUpdates = state.updates;
-            _isMapLoading = false;
-          });
-          debugPrint('✅ Loaded ${_tripUpdates.length} trip updates');
-        }
-      },
-      builder: (context, state) {
-        // Always show the map widget, but pass the loading state
-        return TripMapWidget(
-          tripId: widget.tripId,
-          trip: trip,
-          tripUpdates: _tripUpdates,
-          isLoading: state is TripUpdatesLoading || _isMapLoading,
-          errorMessage: _mapErrorMessage,
-          onRefresh: _loadTripUpdatesForMap,
-          height: 400, // You can adjust this height as needed
-        );
-      },
-    );
-  }
+  return BlocConsumer<TripUpdatesBloc, TripUpdatesState>(
+    listener: (context, state) {
+      if (state is TripUpdatesError) {
+        setState(() {
+          _mapErrorMessage = state.message;
+          _isMapLoading = false;
+        });
+        debugPrint('❌ Error loading trip updates: ${state.message}');
+      } else if (state is TripUpdatesLoaded) {
+        setState(() {
+          _tripUpdates = state.updates;
+          _isMapLoading = false;
+        });
+        debugPrint('✅ Loaded ${_tripUpdates.length} trip updates');
+      }
+    },
+    builder: (context, updatesState) {
+      return BlocConsumer<TripCoordinatesUpdateBloc, TripCoordinatesUpdateState>(
+        listener: (context, state) {
+          if (state is TripCoordinatesUpdateError) {
+            setState(() {
+              _coordinatesErrorMessage = state.message;
+              _isCoordinatesLoading = false;
+            });
+            debugPrint('❌ Error loading trip coordinates: ${state.message}');
+          } else if (state is TripCoordinatesUpdateLoaded) {
+            setState(() {
+              _tripCoordinates = state.coordinates;
+              _isCoordinatesLoading = false;
+            });
+            debugPrint('✅ Loaded ${_tripCoordinates.length} trip coordinates');
+          } else if (state is TripCoordinatesUpdateEmpty) {
+            setState(() {
+              _tripCoordinates = [];
+              _isCoordinatesLoading = false;
+            });
+            debugPrint('ℹ️ No trip coordinates found');
+          }
+        },
+        builder: (context, coordinatesState) {
+          // Always show the map widget, but pass the loading state
+          return TripMapWidget(
+            tripId: widget.tripId,
+            trip: trip,
+            tripUpdates: _tripUpdates,
+            tripCoordinates: _tripCoordinates,
+            isLoading: updatesState is TripUpdatesLoading || 
+                      _isMapLoading || 
+                      coordinatesState is TripCoordinatesUpdateLoading || 
+                      _isCoordinatesLoading,
+            errorMessage: _mapErrorMessage ?? _coordinatesErrorMessage,
+            onRefresh: () {
+              _loadTripUpdatesForMap();
+              _loadTripCoordinatesForMap();
+            },
+            height: 400, // You can adjust this height as needed
+          );
+        },
+      );
+    },
+  );
+}
+
 
   Widget _buildOtpTable() {
     return BlocBuilder<OtpBloc, OtpState>(

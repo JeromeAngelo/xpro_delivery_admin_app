@@ -138,6 +138,11 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/tri
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/search_tripticket.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/usecase/update_tripticket.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_coordinates_update/data/datasources/remote_datasource/trip_coordinates_remote_datasource.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_coordinates_update/data/repo/trip_coordinates_repo_impl.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_coordinates_update/domain/repo/trip_coordinates_repo.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_coordinates_update/domain/usecase/get_trip_coordinates_by_trip_id_usecase.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_coordinates_update/presentation/bloc/trip_coordinates_update_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/data/datasources/remote_datasource/trip_update_remote_datasource.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/data/repo/trip_update_repo_impl.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/domain/repo/trip_update_repo.dart';
@@ -256,6 +261,7 @@ Future<void> init() async {
   await initTripUpdate();
   await initUndeliveredCustomer();
   await initTrip();
+  await initTripCoordinatesUpdate();
 }
 
 // Future<void> initAuth() async {
@@ -949,5 +955,21 @@ Future<void> initTrip() async {
   // Data sources
   sl.registerLazySingleton<TripRemoteDatasurce>(
     () => TripRemoteDatasurceImpl(pocketBaseClient: sl()),
+  );
+}
+
+Future<void> initTripCoordinatesUpdate() async {
+  sl.registerLazySingleton(
+    () => TripCoordinatesUpdateBloc(getTripCoordinatesByTripId: sl()),
+  );
+
+  sl.registerLazySingleton(() => GetTripCoordinatesByTripId(sl()));
+
+  sl.registerLazySingleton<TripCoordinatesRemoteDataSource>(
+    () => TripCoordinatesRemoteDataSourceImpl(pocketBaseClient: sl()),
+  );
+
+  sl.registerLazySingleton<TripCoordinatesRepo>(
+    () => TripCoordinatesRepoImpl(sl()),
   );
 }
