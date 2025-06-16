@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_items/presentation/bloc/invoice_items_bloc.dart';
+
+import '../../../../../../core/common/app/features/Trip_Ticket/invoice_items/presentation/bloc/invoice_items_event.dart';
 
 class ProductErrorWidget extends StatelessWidget {
   final String errorMessage;
@@ -27,7 +28,7 @@ class ProductErrorWidget extends StatelessWidget {
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () {
-              context.read<ProductsBloc>().add(const GetProductsEvent());
+              context.read<InvoiceItemsBloc>().add(const GetAllInvoiceItemsEvent());
             },
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),

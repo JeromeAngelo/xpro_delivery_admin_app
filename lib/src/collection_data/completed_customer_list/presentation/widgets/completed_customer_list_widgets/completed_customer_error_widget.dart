@@ -1,7 +1,7 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_event.dart';
 
 class CompletedCustomerErrorWidget extends StatelessWidget {
   final String errorMessage;
@@ -27,8 +27,8 @@ class CompletedCustomerErrorWidget extends StatelessWidget {
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () {
-              context.read<CompletedCustomerBloc>().add(
-                const GetAllCompletedCustomersEvent(),
+              context.read<CollectionsBloc>().add(
+                const GetAllCollectionsEvent(),
               );
             },
             icon: const Icon(Icons.refresh),

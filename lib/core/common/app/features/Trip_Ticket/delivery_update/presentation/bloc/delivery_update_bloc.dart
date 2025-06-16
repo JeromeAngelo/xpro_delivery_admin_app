@@ -1,5 +1,4 @@
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/domain/usecase/check_end_delivery_status.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/domain/usecase/complete_delivery_usecase.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/domain/usecase/create_delivery_status.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/domain/usecase/create_delivery_update.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/domain/usecase/delete_all_delivery_update.dart';
@@ -19,7 +18,6 @@ import './delivery_update_state.dart';
 class DeliveryUpdateBloc extends Bloc<DeliveryUpdateEvent, DeliveryUpdateState> {
    final GetDeliveryStatusChoices _getDeliveryStatusChoices;
   final UpdateDeliveryStatus _updateDeliveryStatus;
-  final CompleteDelivery _completeDelivery;
   final CheckEndDeliverStatus _checkEndDeliverStatus;
   final InitializePendingStatus _initializePendingStatus;
   final CreateDeliveryStatus _createDeliveryStatus;
@@ -36,7 +34,6 @@ class DeliveryUpdateBloc extends Bloc<DeliveryUpdateEvent, DeliveryUpdateState> 
   DeliveryUpdateBloc({
     required GetDeliveryStatusChoices getDeliveryStatusChoices,
     required UpdateDeliveryStatus updateDeliveryStatus,
-    required CompleteDelivery completeDelivery,
     required CheckEndDeliverStatus checkEndDeliverStatus,
     required InitializePendingStatus initializePendingStatus,
     required CreateDeliveryStatus createDeliveryStatus,
@@ -48,7 +45,6 @@ class DeliveryUpdateBloc extends Bloc<DeliveryUpdateEvent, DeliveryUpdateState> 
     required DeleteAllDeliveryUpdates deleteAllDeliveryUpdates,
   }) : _getDeliveryStatusChoices = getDeliveryStatusChoices,
        _updateDeliveryStatus = updateDeliveryStatus,
-       _completeDelivery = completeDelivery,
        _checkEndDeliverStatus = checkEndDeliverStatus,
        _initializePendingStatus = initializePendingStatus,
        _createDeliveryStatus = createDeliveryStatus,
@@ -61,7 +57,6 @@ class DeliveryUpdateBloc extends Bloc<DeliveryUpdateEvent, DeliveryUpdateState> 
        super(DeliveryUpdateInitial()) {
     on<GetDeliveryStatusChoicesEvent>(_onGetDeliveryStatusChoices);
     on<UpdateDeliveryStatusEvent>(_onUpdateDeliveryStatus);
-    on<CompleteDeliveryEvent>(_onCompleteDelivery);
     on<CheckEndDeliveryStatusEvent>(_onCheckEndDeliveryStatus);
     on<InitializePendingStatusEvent>(_onInitializePendingStatus);
     on<CreateDeliveryStatusEvent>(_onCreateDeliveryStatus);
@@ -146,27 +141,6 @@ Future<void> _onGetDeliveryStatusChoices(
 }
 
 
-  Future<void> _onCompleteDelivery(
-    CompleteDeliveryEvent event,
-    Emitter<DeliveryUpdateState> emit,
-  ) async {
-    emit(DeliveryUpdateLoading());
-
-    final result = await _completeDelivery(
-      CompleteDeliveryParams(
-        customerId: event.customerId,
-        invoices: event.invoices,
-        transactions: event.transactions,
-        returns: event.returns,
-        deliveryStatus: event.deliveryStatus,
-      ),
-    );
-
-    result.fold(
-      (failure) => emit(DeliveryUpdateError(failure.message)),
-      (_) => emit(DeliveryCompletionSuccess(event.customerId)),
-    );
-  }
 
   Future<void> _onCheckEndDeliveryStatus(
   CheckEndDeliveryStatusEvent event,

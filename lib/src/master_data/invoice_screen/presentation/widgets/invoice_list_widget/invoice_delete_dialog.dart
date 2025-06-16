@@ -1,12 +1,10 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/entity/invoice_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/domain/entity/invoice_data_entity.dart';
 
 Future<void> showInvoiceDeleteDialog(
   BuildContext context,
-  InvoiceEntity invoice,
+  InvoiceDataEntity invoice,
 ) async {
   return showDialog<void>(
     context: context,
@@ -17,7 +15,7 @@ Future<void> showInvoiceDeleteDialog(
         content: SingleChildScrollView(
           child: ListBody(
             children: <Widget>[
-              Text('Are you sure you want to delete Invoice ${invoice.invoiceNumber}?'),
+              Text('Are you sure you want to delete Invoice ${invoice.name}?'),
               const SizedBox(height: 10),
               const Text('This action cannot be undone.'),
             ],
@@ -35,7 +33,7 @@ Future<void> showInvoiceDeleteDialog(
             onPressed: () {
               Navigator.of(dialogContext).pop();
               if (invoice.id != null) {
-                context.read<InvoiceBloc>().add(DeleteInvoiceEvent(invoice.id!));
+           //     context.read<InvoiceDataBloc>().add(DeleteInvoi(invoice.id!));
               }
             },
           ),

@@ -468,248 +468,261 @@ class _DataTableLayoutState extends State<DataTableLayout> {
       return false;
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Title row
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            widget.title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Title row
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              widget.title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ),
 
-        // Search bar and Create button in the same row
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            children: [
-              // Search bar (expanded to take available space)
-              if (widget.searchBar != null) Expanded(child: widget.searchBar!),
-
-              // Add some spacing between search and button
-              if (widget.searchBar != null && widget.onCreatePressed != null)
-                const Spacer(),
-
-              // Create button
-              if (widget.onCreatePressed != null)
-                ElevatedButton.icon(
-                  onPressed: widget.onCreatePressed,
-                  icon: Icon(
-                    Icons.add,
-                    color: Theme.of(context).colorScheme.surface,
-                  ),
-                  label: Text(
-                    widget.createButtonText,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.surface,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-
-        // Error message if present
-        if (widget.errorMessage != null)
+          // Search bar and Create button in the same row
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 16.0,
               vertical: 8.0,
             ),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red[300]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline, color: Colors.red[700]),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      widget.errorMessage!,
-                      style: TextStyle(color: Colors.red[700]),
+            child: Row(
+              children: [
+                // Search bar (expanded to take available space)
+                if (widget.searchBar != null)
+                  Expanded(child: widget.searchBar!),
+
+                // Add some spacing between search and button
+                if (widget.searchBar != null && widget.onCreatePressed != null)
+                  const Spacer(),
+
+                // Create button
+                if (widget.onCreatePressed != null)
+                  ElevatedButton.icon(
+                    onPressed: widget.onCreatePressed,
+                    icon: Icon(
+                      Icons.add,
+                      color: Theme.of(context).colorScheme.surface,
+                    ),
+                    label: Text(
+                      widget.createButtonText,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.surface,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
-                  if (widget.onRetry != null)
-                    TextButton.icon(
-                      onPressed: widget.onRetry,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                ],
-              ),
+              ],
             ),
           ),
 
-        // Data table content - Always show the table structure
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Horizontal scroll hint with conditional visibility for delete button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.end,
+          // Error message if present
+          if (widget.errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red[300]!),
+                ),
+                child: Row(
                   children: [
-                    // Replace the existing filter icon code with this
-                    GestureDetector(
-                      onTap: () => _showFilterMenu(context),
-                      key: _showFilterKey,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Icon(
-                              Icons.filter_alt_rounded,
-                              color:
-                                  hasActiveFilters()
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
-                            ),
-                            const SizedBox(width: 4),
-                            if (hasActiveFilters())
-                              Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Text(
-                                  _getActiveFilterCount().toString(),
-                                  style: TextStyle(
-                                    color:
-                                        Theme.of(context).colorScheme.onPrimary,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            Icon(Icons.arrow_drop_down),
-                          ],
-                        ),
+                    Icon(Icons.error_outline, color: Colors.red[700]),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        widget.errorMessage!,
+                        style: TextStyle(color: Colors.red[700]),
                       ),
                     ),
+                    if (widget.onRetry != null)
+                      TextButton.icon(
+                        onPressed: widget.onRetry,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                      ),
+                  ],
+                ),
+              ),
+            ),
 
-                    // Add this helper method to count active filters
-
-                    // Only show delete button when rows are selected
-                    Visibility(
-                      visible: hasSelectedRows,
-                      child: GestureDetector(
-                        onLongPress: () => _showDeleteMenu(context),
-                        key: _showDeletekey,
-                        onTap:
-                            () => _showDeleteMenu(
-                              context,
-                            ), // Also allow regular tap for better UX
+          // Data table content - Always show the table structure
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Horizontal scroll hint with conditional visibility for delete button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Replace the existing filter icon code with this
+                      GestureDetector(
+                        onTap: () => _showFilterMenu(context),
+                        key: _showFilterKey,
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Icon(
-                                Icons.delete,
+                                Icons.filter_alt_rounded,
                                 color:
-                                    hasSelectedRows
+                                    hasActiveFilters()
                                         ? Theme.of(context).colorScheme.primary
                                         : null,
                               ),
+                              const SizedBox(width: 4),
+                              if (hasActiveFilters())
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    _getActiveFilterCount().toString(),
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
                               Icon(Icons.arrow_drop_down),
                             ],
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
 
-                // Table with horizontal scrolling - Always show the structure
-                Scrollbar(
-                  controller: _horizontalScrollController,
-                  thickness: 5,
-                  thumbVisibility: true,
-                  trackVisibility: true,
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    controller: _horizontalScrollController,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        // Set a minimum width that's wider than the screen
-                        minWidth: MediaQuery.of(context).size.width - 100,
-                      ),
-                      child: _buildTableContent(),
-                    ),
-                  ),
-                ),
+                      // Add this helper method to count active filters
 
-                // Pagination controls
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8.0,
-                    horizontal: 16.0,
-                  ),
-                  decoration: BoxDecoration(
-                    // color: const Color.fromARGB(255, 36, 34, 34),
-                    border: Border(
-                      top: BorderSide(color: Colors.grey[300]!, width: 1),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed:
-                            widget.currentPage > 1
-                                ? () =>
-                                    widget.onPageChanged(widget.currentPage - 1)
-                                : null,
-                        child: const Text('Previous'),
-                      ),
-                      Text(
-                        'Page ${widget.currentPage}-${widget.totalPages} of ${widget.dataLength}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      TextButton(
-                        onPressed:
-                            widget.currentPage < widget.totalPages
-                                ? () =>
-                                    widget.onPageChanged(widget.currentPage + 1)
-                                : null,
-                        child: const Text('Next'),
+                      // Only show delete button when rows are selected
+                      Visibility(
+                        visible: hasSelectedRows,
+                        child: GestureDetector(
+                          onLongPress: () => _showDeleteMenu(context),
+                          key: _showDeletekey,
+                          onTap:
+                              () => _showDeleteMenu(
+                                context,
+                              ), // Also allow regular tap for better UX
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Icon(
+                                  Icons.delete,
+                                  color:
+                                      hasSelectedRows
+                                          ? Theme.of(
+                                            context,
+                                          ).colorScheme.primary
+                                          : null,
+                                ),
+                                Icon(Icons.arrow_drop_down),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+
+                  // Table with horizontal scrolling - Always show the structure
+                  Scrollbar(
+                    controller: _horizontalScrollController,
+                    thickness: 5,
+                    thumbVisibility: true,
+                    trackVisibility: true,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      controller: _horizontalScrollController,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          // Set a minimum width that's wider than the screen
+                          minWidth: MediaQuery.of(context).size.width - 100,
+                        ),
+                        child: _buildTableContent(),
+                      ),
+                    ),
+                  ),
+
+                  // Pagination controls
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8.0,
+                      horizontal: 16.0,
+                    ),
+                    decoration: BoxDecoration(
+                      // color: const Color.fromARGB(255, 36, 34, 34),
+                      border: Border(
+                        top: BorderSide(color: Colors.grey[300]!, width: 1),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed:
+                              widget.currentPage > 1
+                                  ? () => widget.onPageChanged(
+                                    widget.currentPage - 1,
+                                  )
+                                  : null,
+                          child: const Text('Previous'),
+                        ),
+                        Text(
+                          'Page ${widget.currentPage}-${widget.totalPages} of ${widget.dataLength}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed:
+                              widget.currentPage < widget.totalPages
+                                  ? () => widget.onPageChanged(
+                                    widget.currentPage + 1,
+                                  )
+                                  : null,
+                          child: const Text('Next'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

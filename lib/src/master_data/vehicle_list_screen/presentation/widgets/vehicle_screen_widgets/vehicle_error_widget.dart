@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_event.dart';
 
 class VehicleErrorWidget extends StatelessWidget {
   final String errorMessage;
@@ -27,7 +27,7 @@ class VehicleErrorWidget extends StatelessWidget {
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () {
-              context.read<VehicleBloc>().add(const GetVehiclesEvent());
+              context.read<DeliveryVehicleBloc>().add(const LoadAllDeliveryVehiclesEvent());
             },
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),

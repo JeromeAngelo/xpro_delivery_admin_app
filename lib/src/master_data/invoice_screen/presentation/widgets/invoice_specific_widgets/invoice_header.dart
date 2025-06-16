@@ -1,9 +1,9 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/entity/invoice_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/domain/entity/invoice_data_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_header.dart';
 import 'package:flutter/material.dart';
 
 class InvoiceHeaderWidget extends StatelessWidget {
-  final InvoiceEntity invoice;
+  final InvoiceDataEntity invoice;
   final VoidCallback? onEditPressed;
   final VoidCallback? onOptionsPressed;
 
@@ -18,8 +18,8 @@ class InvoiceHeaderWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return DetailedDesktopHeader(
       title: 'Invoice',
-      subtitle: invoice.invoiceNumber ?? 'N/A',
-      description: 'Customer: ${invoice.customer?.storeName ?? 'N/A'} | Trip: ${invoice.trip?.tripNumberId ?? 'N/A'}',
+      subtitle: invoice.name ?? 'N/A',
+      description: 'Customer: ${invoice.customer?.name ?? 'N/A'} ',
       leadingIcon: const Icon(Icons.receipt_long, size: 32),
       actions: [
         if (onEditPressed != null)

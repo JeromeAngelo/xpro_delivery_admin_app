@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/entity/completed_customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/domain/entity/collection_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_dashboard.dart';
-import 'package:xpro_delivery_admin_app/core/enums/mode_of_payment.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 
 class CompletedCustomerDashboard extends StatelessWidget {
-  final List<CompletedCustomerEntity> customers;
+  final List<CollectionEntity> collections;
   final bool isLoading;
 
   const CompletedCustomerDashboard({
     super.key,
-    required this.customers,
+    required this.collections,
     this.isLoading = false,
   });
 
@@ -22,14 +21,32 @@ class CompletedCustomerDashboard extends StatelessWidget {
     }
 
     // Calculate dashboard metrics
-    final totalCustomers = customers.length;
-    final totalAmount = customers.fold<double>(
+    final totalCollections = collections.length;
+    final totalAmount = collections.fold<double>(
       0,
-      (sum, customer) => sum + (customer.totalAmount ?? 0),
+      (sum, collection) => sum + (collection.totalAmount ?? 0),
     );
 
-    // Calculate totals by payment mode
-    final paymentTotals = _calculatePaymentTotals();
+    // Calculate unique customers and trips
+    final uniqueCustomers = collections
+        .where((collection) => collection.customer?.id != null)
+        .map((collection) => collection.customer!.id!)
+        .toSet()
+        .length;
+
+    final uniqueTrips = collections
+        .where((collection) => collection.trip?.id != null)
+        .map((collection) => collection.trip!.id!)
+        .toSet()
+        .length;
+
+    // Calculate average collection amount
+    final averageAmount = totalCollections > 0 ? totalAmount / totalCollections : 0.0;
+
+    // Calculate collections by delivery status
+    final completedDeliveries = collections
+        .where((collection) => collection.deliveryData != null)
+        .length;
 
     // Format currency
     final currencyFormatter = NumberFormat.currency(
@@ -38,62 +55,54 @@ class CompletedCustomerDashboard extends StatelessWidget {
     );
 
     return DashboardSummary(
-      title: 'Completed Customers Overview',
+      title: 'Collections Overview',
       isLoading: isLoading,
       items: [
-        // Total Completed Customers
+        // Total Collections
         DashboardInfoItem(
-          icon: Icons.people,
-          value: totalCustomers.toString(),
-          label: 'Total Completed Customers',
+          icon: Icons.collections_bookmark,
+          value: totalCollections.toString(),
+          label: 'Total Collections',
           iconColor: Colors.blue,
         ),
 
-        // Total Amount
+        // Total Collection Amount
         DashboardInfoItem(
           icon: Icons.monetization_on,
           value: currencyFormatter.format(totalAmount),
-          label: 'Total Collections',
+          label: 'Total Collection Amount',
           iconColor: Colors.green,
         ),
 
-        // Cash on Delivery Total
+        // Unique Customers Served
         DashboardInfoItem(
-          icon: Icons.payments,
-          value: currencyFormatter.format(
-            paymentTotals[ModeOfPayment.cashOnDelivery] ?? 0,
-          ),
-          label: 'Cash on Delivery',
+          icon: Icons.people,
+          value: uniqueCustomers.toString(),
+          label: 'Customers Served',
           iconColor: Colors.orange,
         ),
 
-        // Bank Transfer Total
+        // Unique Trips
         DashboardInfoItem(
-          icon: Icons.account_balance,
-          value: currencyFormatter.format(
-            paymentTotals[ModeOfPayment.bankTransfer] ?? 0,
-          ),
-          label: 'Bank Transfer',
+          icon: Icons.local_shipping,
+          value: uniqueTrips.toString(),
+          label: 'Trips Completed',
           iconColor: Colors.purple,
         ),
 
-        // Cheque Total
+        // Average Collection Amount
         DashboardInfoItem(
-          icon: Icons.money,
-          value: currencyFormatter.format(
-            paymentTotals[ModeOfPayment.cheque] ?? 0,
-          ),
-          label: 'Cheque',
+          icon: Icons.trending_up,
+          value: currencyFormatter.format(averageAmount),
+          label: 'Average Collection',
           iconColor: Colors.indigo,
         ),
 
-        // E-Wallet Total
+        // Completed Deliveries
         DashboardInfoItem(
-          icon: Icons.account_balance_wallet,
-          value: currencyFormatter.format(
-            paymentTotals[ModeOfPayment.eWallet] ?? 0,
-          ),
-          label: 'E-Wallet',
+          icon: Icons.check_circle,
+          value: completedDeliveries.toString(),
+          label: 'Completed Deliveries',
           iconColor: Colors.teal,
         ),
       ],
@@ -194,43 +203,5 @@ class CompletedCustomerDashboard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Map<ModeOfPayment, double> _calculatePaymentTotals() {
-    final Map<ModeOfPayment, double> totals = {
-      for (var mode in ModeOfPayment.values) mode: 0.0,
-    };
-
-    for (final customer in customers) {
-      // Get payment mode from string or use default
-      ModeOfPayment paymentMode;
-
-      if (customer.modeOfPaymentString != null) {
-        paymentMode = ModeOfPayment.values.firstWhere(
-          (mode) => mode.toString() == customer.modeOfPaymentString,
-          orElse: () => ModeOfPayment.cashOnDelivery,
-        );
-      } else if (customer.modeOfPayment != null) {
-        // Try to parse from the string representation
-        try {
-          paymentMode = ModeOfPayment.values.firstWhere(
-            (mode) => mode.toString().toLowerCase().contains(
-              customer.modeOfPayment!.toLowerCase().replaceAll(' ', ''),
-            ),
-            orElse: () => ModeOfPayment.cashOnDelivery,
-          );
-        } catch (_) {
-          paymentMode = ModeOfPayment.cashOnDelivery;
-        }
-      } else {
-        paymentMode = ModeOfPayment.cashOnDelivery;
-      }
-
-      // Add to the total for this payment mode
-      totals[paymentMode] =
-          (totals[paymentMode] ?? 0) + (customer.totalAmount ?? 0);
-    }
-
-    return totals;
   }
 }

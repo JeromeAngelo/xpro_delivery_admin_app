@@ -1,9 +1,9 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/entity/completed_customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/domain/entity/collection_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_header.dart';
 import 'package:flutter/material.dart';
 
 class CompletedCustomerHeaderWidget extends StatelessWidget {
-  final CompletedCustomerEntity customer;
+  final CollectionEntity customer;
   final VoidCallback? onPrintReceipt;
 
   const CompletedCustomerHeaderWidget({
@@ -16,7 +16,7 @@ class CompletedCustomerHeaderWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return DetailedDesktopHeader(
       title: 'Customer',
-      subtitle: customer.storeName ?? 'N/A',
+      subtitle: customer.customer!.name ?? 'N/A',
       description: _buildDescription(),
       leadingIcon: const Icon(Icons.store, size: 32, color: Colors.green),
       actions: [
@@ -34,11 +34,10 @@ class CompletedCustomerHeaderWidget extends StatelessWidget {
 
   String _buildDescription() {
     final address = [
-      customer.address,
-      customer.municipality,
-      customer.province,
+      customer.customer!.municipality,
+      customer.customer!.province,
     ].where((element) => element != null && element.isNotEmpty).join(', ');
 
-    return 'Owner: ${customer.ownerName ?? 'N/A'} | $address';
+    return 'Owner: ${customer.customer!.name ?? 'N/A'} | $address';
   }
 }

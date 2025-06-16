@@ -1,17 +1,12 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/entity/product_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_items/domain/entity/invoice_items_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
-
 import 'package:xpro_delivery_admin_app/src/master_data/product_list_screen/presentation/widgets/product_list_widget/product_search_bar_widget.dart';
-//import 'package:xpro_delivery_admin_app/src/master_data/product_list_screen/presentation/widgets/product_list_widget/product_status_chip_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class ProductDataTable extends StatelessWidget {
-  final List<ProductEntity> products;
+  final List<InvoiceItemsEntity> products;
   final bool isLoading;
   final int currentPage;
   final int totalPages;
@@ -19,6 +14,8 @@ class ProductDataTable extends StatelessWidget {
   final TextEditingController searchController;
   final String searchQuery;
   final Function(String) onSearchChanged;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
 
   const ProductDataTable({
     super.key,
@@ -30,6 +27,8 @@ class ProductDataTable extends StatelessWidget {
     required this.searchController,
     required this.searchQuery,
     required this.onSearchChanged,
+    this.errorMessage,
+    this.onRetry,
   });
 
   @override
@@ -51,74 +50,90 @@ class ProductDataTable extends StatelessWidget {
       columns: const [
         DataColumn(label: Text('ID')),
         DataColumn(label: Text('Name')),
-        DataColumn(label: Text('Description')),
-        DataColumn(label: Text('Price Per Case')),
-        DataColumn(label: Text('Price Per Pc')),
+        DataColumn(label: Text('Brand')),
+        DataColumn(label: Text('Reference ID')),
+        DataColumn(label: Text('UOM')),
+        DataColumn(label: Text('Quantity')),
+        DataColumn(label: Text('UOM Price')),
         DataColumn(label: Text('Total Amount')),
-        //  DataColumn(label: Text('Status')),
         DataColumn(label: Text('Actions')),
       ],
-      rows:
-          products.map((product) {
-            return DataRow(
-              cells: [
-                DataCell(Text(product.id ?? 'N/A')),
-                DataCell(Text(product.name ?? 'N/A')),
-                DataCell(Text(product.description ?? 'N/A')),
-                DataCell(Text(_formatCurrency(product.pricePerCase))),
-                DataCell(Text(_formatCurrency(product.pricePerPc))),
-                DataCell(Text(_formatCurrency(product.totalAmount))),
-                //   DataCell(ProductStatusChip(product: product)),
-                DataCell(
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.visibility, color: Colors.blue),
-                        tooltip: 'View Details',
-                        onPressed: () {
-                          // View product details
-                          if (product.id != null) {
-                            // Navigate to product details screen
-                            context.go('/product/${product.id}');
-                          }
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.orange),
-                        tooltip: 'Edit',
-                        onPressed: () {
-                          // Edit product
-                          if (product.id != null) {
-                            // Navigate to edit screen with product data
-                            context.go('/product/edit/${product.id}');
-                          }
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        tooltip: 'Delete',
-                        onPressed: () {
-                          // Show confirmation dialog before deleting
-                          _showDeleteConfirmationDialog(context, product);
-                        },
-                      ),
-                    ],
+      rows: products.map((product) {
+        return DataRow(
+          cells: [
+            DataCell(
+              Text(product.id?.substring(0, 8) ?? 'N/A'),
+            ),
+            DataCell(
+              Text(product.name ?? 'N/A'),
+            ),
+            DataCell(
+              Text(product.brand ?? 'N/A'),
+            ),
+            DataCell(
+              Text(product.refId ?? 'N/A'),
+            ),
+            DataCell(
+              Text(product.uom ?? 'N/A'),
+            ),
+            DataCell(
+              Text(_formatQuantity(product.quantity)),
+            ),
+            DataCell(
+              Text(_formatCurrency(product.uomPrice)),
+            ),
+            DataCell(
+              Text(_formatCurrency(product.totalAmount)),
+            ),
+            DataCell(
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.visibility, color: Colors.blue),
+                    tooltip: 'View Details',
+                    onPressed: () {
+                      
+                    },
                   ),
-                ),
-              ],
-            );
-          }).toList(),
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.orange),
+                    tooltip: 'Edit',
+                    onPressed: () {
+                      // Edit product
+                      if (product.id != null) {
+                        // Navigate to edit screen with product data
+                        context.go('/product/edit/${product.id}');
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    tooltip: 'Delete',
+                    onPressed: () {
+                      // Show confirmation dialog before deleting
+                      _showDeleteConfirmationDialog(context, product);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      }).toList(),
       currentPage: currentPage,
       totalPages: totalPages,
       onPageChanged: onPageChanged,
       isLoading: isLoading,
+      errorMessage: errorMessage,
+      onRetry: onRetry,
       onFiltered: () {
         // Show filter options
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Filter options coming soon')),
         );
       },
-      dataLength: '${products.length}', onDeleted: () {  },
+      dataLength: '${products.length}',
+      onDeleted: () {},
     );
   }
 
@@ -140,9 +155,36 @@ class ProductDataTable extends StatelessWidget {
     return amount.toString();
   }
 
+  String _formatQuantity(dynamic quantity) {
+    if (quantity == null) return 'N/A';
+    
+    if (quantity is double) {
+      return quantity.toStringAsFixed(2);
+    } else if (quantity is int) {
+      return quantity.toString();
+    } else if (quantity is String) {
+      try {
+        return double.parse(quantity).toStringAsFixed(2);
+      } catch (_) {
+        return quantity;
+      }
+    }
+    return quantity.toString();
+  }
+
+  // void _navigateToProductDetails(BuildContext context, InvoiceItemsEntity product) {
+  //   if (product.id != null) {
+  //     // First, dispatch the event to load the product data
+  //     context.read<InvoiceItemsBloc>().add(GetInvoiceItemsByInvoiceDataId(product.));
+
+  //     // Then navigate to the specific product screen
+  //     context.go('/product/${product.id}');
+  //   }
+  // }
+
   Future<void> _showDeleteConfirmationDialog(
     BuildContext context,
-    ProductEntity product,
+    InvoiceItemsEntity product,
   ) async {
     return showDialog<void>(
       context: context,
@@ -172,11 +214,7 @@ class ProductDataTable extends StatelessWidget {
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                if (product.id != null) {
-                  context.read<ProductsBloc>().add(
-                    DeleteProductEvent(product.id!),
-                  );
-                }
+                
               },
             ),
           ],

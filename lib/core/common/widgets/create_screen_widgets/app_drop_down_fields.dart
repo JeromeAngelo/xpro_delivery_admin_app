@@ -5,11 +5,13 @@ class DropdownItem<T> {
   final String label;
   final Widget? icon;
   final String uniqueId;
+  final Widget? trailingIcon;
   final List<String>? searchTerms; // Additional search terms
 
   DropdownItem({
     required this.value,
     required this.label,
+    this.trailingIcon,
     this.icon,
     required this.uniqueId,
     this.searchTerms, // Optional additional search terms
@@ -64,7 +66,7 @@ class AppDropdownField<T> extends StatelessWidget {
                 text: TextSpan(
                   text: label,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                   children:

@@ -1,10 +1,10 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/domain/entity/customer_data_entity.dart';
 
 class CustomerMapScreen extends StatefulWidget {
-  final CustomerEntity selectedCustomer;
+  final CustomerDataEntity selectedCustomer;
   final double height;
 
   const CustomerMapScreen({
@@ -87,7 +87,7 @@ class _CustomerMapScreenState extends State<CustomerMapScreen>
             ),
             const SizedBox(height: 8),
 
-            // Use direct customer data instead of BlocBuilder
+            // Use direct customer data
             Builder(
               builder: (context) {
                 if (!isMapReady) {
@@ -95,15 +95,11 @@ class _CustomerMapScreenState extends State<CustomerMapScreen>
                 }
 
                 // Extract coordinates directly from the customer entity
-                final lat =
-                    double.tryParse(widget.selectedCustomer.latitude ?? '') ??
-                    15.058583416335447;
-                final lng =
-                    double.tryParse(widget.selectedCustomer.longitude ?? '') ??
-                    120.77471934782055;
+                // Use the latitude and longitude as double values
+                final lat = widget.selectedCustomer.latitude ?? 15.058583416335447;
+                final lng = widget.selectedCustomer.longitude ?? 120.77471934782055;
                 final location = LatLng(lat, lng);
-                final locationText =
-                    '${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
+                final locationText = '${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,12 +233,8 @@ class _CustomerMapScreenState extends State<CustomerMapScreen>
   }
 
   void _showFullScreenMap(BuildContext context) {
-    final lat =
-        double.tryParse(widget.selectedCustomer.latitude ?? '') ??
-        15.058583416335447;
-    final lng =
-        double.tryParse(widget.selectedCustomer.longitude ?? '') ??
-        120.77471934782055;
+    final lat = widget.selectedCustomer.latitude ?? 15.058583416335447;
+    final lng = widget.selectedCustomer.longitude ?? 120.77471934782055;
     final location = LatLng(lat, lng);
 
     showDialog(

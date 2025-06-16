@@ -1,14 +1,13 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/domain/entity/customer_data_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
-import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/status_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 class CustomerDataTable extends StatelessWidget {
-  final List<CustomerEntity> customers;
+  final List<CustomerDataEntity> customers;
   final bool isLoading;
   final int currentPage;
   final int totalPages;
@@ -45,7 +44,7 @@ class CustomerDataTable extends StatelessWidget {
       searchBar: TextField(
         controller: searchController,
         decoration: InputDecoration(
-          hintText: 'Search by name, address, or delivery number...',
+          hintText: 'Search by name, province, or municipality...',
           prefixIcon: const Icon(Icons.search),
           suffixIcon:
               searchQuery.isNotEmpty
@@ -70,12 +69,10 @@ class CustomerDataTable extends StatelessWidget {
       createButtonText: 'Create Customer',
       columns: [
         DataColumn(label: Text('ID', style: headerStyle)),
-        DataColumn(label: Text('Store Name', style: headerStyle)),
-        DataColumn(label: Text('Owner', style: headerStyle)),
-        DataColumn(label: Text('Address', style: headerStyle)),
-        // DataColumn(label: Text('Contact', style: headerStyle)),
-        // DataColumn(label: Text('Delivery Number', style: headerStyle)),
-        DataColumn(label: Text('Status', style: headerStyle)),
+        DataColumn(label: Text('Name', style: headerStyle)),
+        DataColumn(label: Text('Reference ID', style: headerStyle)),
+        DataColumn(label: Text('Location', style: headerStyle)),
+        DataColumn(label: Text('Has Coordinates', style: headerStyle)),
         DataColumn(label: Text('Actions', style: headerStyle)),
       ],
       rows:
@@ -87,27 +84,19 @@ class CustomerDataTable extends StatelessWidget {
                   onTap: () => _navigateToCustomerDetails(context, customer),
                 ),
                 DataCell(
-                  Text(customer.storeName ?? 'N/A'),
+                  Text(customer.name ?? 'N/A'),
                   onTap: () => _navigateToCustomerDetails(context, customer),
                 ),
                 DataCell(
-                  Text(customer.ownerName ?? 'N/A'),
+                  Text(customer.refId ?? 'N/A'),
                   onTap: () => _navigateToCustomerDetails(context, customer),
                 ),
                 DataCell(
                   Text(_formatAddress(customer)),
                   onTap: () => _navigateToCustomerDetails(context, customer),
                 ),
-                // DataCell(
-                //   Text(_formatContacts(customer.contactNumber)),
-                //   onTap: () => _navigateToCustomerDetails(context, customer),
-                // ),
-                // DataCell(
-                //   Text(customer.deliveryNumber ?? 'N/A'),
-                //   onTap: () => _navigateToCustomerDetails(context, customer),
-                // ),
                 DataCell(
-                  _buildCustomerStatusChip(customer),
+                  _buildLocationStatusChip(customer),
                   onTap: () => _navigateToCustomerDetails(context, customer),
                 ),
                 DataCell(
@@ -118,13 +107,7 @@ class CustomerDataTable extends StatelessWidget {
                         tooltip: 'View Details',
                         onPressed: () {
                           // View customer details
-                          if (customer.id != null) {
-                            context.read<CustomerBloc>().add(
-                              GetCustomerLocationEvent(customer.id!),
-                            );
-                            // Show customer details dialog or navigate to details page
-                            _navigateToCustomerDetails(context, customer);
-                          }
+                          _navigateToCustomerDetails(context, customer);
                         },
                       ),
                       IconButton(
@@ -155,89 +138,47 @@ class CustomerDataTable extends StatelessWidget {
       isLoading: isLoading,
       errorMessage: errorMessage,
       onRetry: onRetry,
-      onFiltered: () {}, dataLength: '${customers.length}', onDeleted: () {  },
+      onFiltered: () {}, 
+      dataLength: '${customers.length}', 
+      onDeleted: () {},
     );
   }
 
-  String _formatAddress(CustomerEntity customer) {
-    final parts =
-        [
-          customer.address,
-          customer.municipality,
-          customer.province,
-        ].where((part) => part != null && part.isNotEmpty).toList();
+  String _formatAddress(CustomerDataEntity customer) {
+    final parts = [
+      customer.barangay,
+      customer.municipality,
+      customer.province,
+    ].where((part) => part != null && part.isNotEmpty).toList();
 
     return parts.join(', ');
   }
 
-  // String _formatContacts(List<String>? contacts) {
-  //   if (contacts == null || contacts.isEmpty) return 'N/A';
-  //   return contacts.join(', ');
-  // }
-
-  Widget _buildCustomerStatusChip(CustomerEntity customer) {
-    // Get the latest status
-    String status = "No Status";
-
-    if (customer.deliveryStatus.isNotEmpty) {
-      // Get the last (most recent) status update
-      status = customer.deliveryStatus.last.title ?? "No Status";
-    }
-
-    // Map status to color
-    Color color;
-    switch (status.toLowerCase()) {
-      case 'arrived':
-        color = Colors.blue;
-        break;
-      case 'unloading':
-        color = Colors.amber;
-        break;
-      case 'undelivered':
-      case 'mark as undelivered':
-        color = Colors.red;
-        break;
-      case 'in transit':
-        color = Colors.indigo;
-        break;
-      case 'delivered':
-        color = Colors.green;
-        break;
-      case 'received':
-      case 'mark as received':
-        color = Colors.teal;
-        break;
-      case 'completed':
-      case 'end delivery':
-        color = Colors.green.shade800;
-        break;
-      case 'pending':
-      default:
-        color = Colors.orange;
-        break;
-    }
-
-    // Get the corresponding icon from StatusIcons
-    final IconData statusIcon = StatusIcons.getStatusIcon(status);
-
+  Widget _buildLocationStatusChip(CustomerDataEntity customer) {
+    final hasLocation = customer.latitude != null && customer.longitude != null;
+    
     return Chip(
-      avatar: Icon(statusIcon, size: 16, color: Colors.white),
+      avatar: Icon(
+        hasLocation ? Icons.check_circle : Icons.cancel,
+        size: 16,
+        color: Colors.white,
+      ),
       label: Text(
-        status,
+        hasLocation ? 'Yes' : 'No',
         style: const TextStyle(color: Colors.white, fontSize: 12),
       ),
-      backgroundColor: color,
+      backgroundColor: hasLocation ? Colors.green : Colors.red,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
       visualDensity: VisualDensity.compact,
     );
   }
 
-  void _showEditCustomerDialog(BuildContext context, CustomerEntity customer) {
+  void _showEditCustomerDialog(BuildContext context, CustomerDataEntity customer) {
     // This would be implemented to show a dialog for editing customer
     // For now, just show a snackbar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Edit customer: ${customer.storeName}'),
+        content: Text('Edit customer: ${customer.name}'),
         action: SnackBarAction(label: 'OK', onPressed: () {}),
       ),
     );
@@ -245,7 +186,7 @@ class CustomerDataTable extends StatelessWidget {
 
   void _showDeleteConfirmationDialog(
     BuildContext context,
-    CustomerEntity customer,
+    CustomerDataEntity customer,
   ) {
     showDialog<void>(
       context: context,
@@ -256,7 +197,7 @@ class CustomerDataTable extends StatelessWidget {
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('Are you sure you want to delete ${customer.storeName}?'),
+                Text('Are you sure you want to delete ${customer.name}?'),
                 const SizedBox(height: 10),
                 const Text('This action cannot be undone.'),
               ],
@@ -274,12 +215,12 @@ class CustomerDataTable extends StatelessWidget {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 if (customer.id != null) {
-                  context.read<CustomerBloc>().add(
-                    DeleteCustomerEvent(customer.id!),
+                  context.read<CustomerDataBloc>().add(
+                    DeleteCustomerDataEvent(customer.id!),
                   );
                   // Refresh the list after deletion
-                  context.read<CustomerBloc>().add(
-                    const GetAllCustomersEvent(),
+                  context.read<CustomerDataBloc>().add(
+                    const GetAllCustomerDataEvent(),
                   );
                 }
               },
@@ -292,12 +233,10 @@ class CustomerDataTable extends StatelessWidget {
 
   void _navigateToCustomerDetails(
     BuildContext context,
-    CustomerEntity customer,
+    CustomerDataEntity customer,
   ) {
     if (customer.id != null) {
-      context.read<CustomerBloc>().add(GetCustomerLocationEvent(customer.id!));
-
-      context.go('/customer/:{$customer.id}');
+      context.go('/customer/${customer.id}');
     }
   }
 }

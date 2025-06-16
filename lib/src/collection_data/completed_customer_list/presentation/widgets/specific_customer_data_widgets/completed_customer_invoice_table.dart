@@ -1,31 +1,31 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/entity/invoice_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/domain/entity/collection_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_event.dart';
+
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
-import 'package:xpro_delivery_admin_app/src/master_data/invoice_screen/presentation/widgets/invoice_list_widget/invoice_status_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class CompletedCustomerInvoiceTable extends StatelessWidget {
-  final List<InvoiceEntity> invoices;
+  final List<CollectionEntity> collections;
   final bool isLoading;
   final int currentPage;
   final int totalPages;
   final Function(int) onPageChanged;
-  final String completedCustomerId;
+  final String? completedCustomerId;
   final String? errorMessage;
   final VoidCallback? onRetry;
 
   const CompletedCustomerInvoiceTable({
     super.key,
-    required this.invoices,
+    required this.collections,
     required this.isLoading,
     required this.currentPage,
     required this.totalPages,
     required this.onPageChanged,
-    required this.completedCustomerId,
+    this.completedCustomerId,
     this.errorMessage,
     this.onRetry,
   });
@@ -33,9 +33,11 @@ class CompletedCustomerInvoiceTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DataTableLayout(
-      title: 'Customer Invoices',
+      title: 'Collection Invoices',
       columns: const [
+        DataColumn(label: Text('Collection Name')),
         DataColumn(label: Text('Invoice Number')),
+        DataColumn(label: Text('Delivery Number')),
         DataColumn(label: Text('Date')),
         DataColumn(label: Text('Total Amount')),
         DataColumn(label: Text('Confirmed Total Amount')),
@@ -43,38 +45,49 @@ class CompletedCustomerInvoiceTable extends StatelessWidget {
         DataColumn(label: Text('Actions')),
       ],
       rows:
-          invoices.map((invoice) {
+          collections.map((collection) {
             return DataRow(
               cells: [
                 DataCell(
-                  Text(invoice.invoiceNumber ?? 'N/A'),
-                  onTap: () => _navigateToInvoiceDetails(context, invoice),
+                  Text(collection.collectionName ?? 'N/A'),
+                  onTap: () => _navigateToCollectionDetails(context, collection),
                 ),
                 DataCell(
-                  Text(_formatDate(invoice.created)),
-                  onTap: () => _navigateToInvoiceDetails(context, invoice),
+                  Text(collection.invoice?.refId ?? 'N/A'),
+                  onTap: () => _navigateToInvoiceDetails(context, collection),
                 ),
                 DataCell(
-                  Text(_formatAmount(invoice.totalAmount)),
-                  onTap: () => _navigateToInvoiceDetails(context, invoice),
+                  Text(collection.deliveryData?.deliveryNumber ?? 'N/A'),
+                  onTap: () => _navigateToCollectionDetails(context, collection),
                 ),
                 DataCell(
-                  Text(_formatAmount(invoice.confirmTotalAmount)),
-                  onTap: () => _navigateToInvoiceDetails(context, invoice),
+                  Text(_formatDate(collection.created)),
+                  onTap: () => _navigateToCollectionDetails(context, collection),
                 ),
                 DataCell(
-                  InvoiceStatusChip(invoice: invoice),
-                  onTap: () => _navigateToInvoiceDetails(context, invoice),
+                  Text(_formatAmount(collection.totalAmount)),
+                  onTap: () => _navigateToCollectionDetails(context, collection),
                 ),
+                DataCell(
+                  Text(_formatAmount(collection.invoice?.totalAmount)),
+                  onTap: () => _navigateToCollectionDetails(context, collection),
+                ),
+                
                 DataCell(
                   Row(
                     children: [
                       IconButton(
                         icon: const Icon(Icons.visibility, color: Colors.blue),
-                        tooltip: 'View Details',
+                        tooltip: 'View Collection Details',
                         onPressed:
-                            () => _navigateToInvoiceDetails(context, invoice),
+                            () => _navigateToCollectionDetails(context, collection),
                       ),
+                      if (collection.invoice != null)
+                        IconButton(
+                          icon: const Icon(Icons.receipt, color: Colors.green),
+                          tooltip: 'View Invoice',
+                          onPressed: () => _navigateToInvoiceDetails(context, collection),
+                        ),
                       IconButton(
                         icon: const Icon(
                           Icons.picture_as_pdf,
@@ -84,20 +97,24 @@ class CompletedCustomerInvoiceTable extends StatelessWidget {
                         onPressed: () {
                           // View PDF functionality
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('PDF viewer coming soon'),
+                            SnackBar(
+                              content: Text(
+                                'PDF viewer for ${collection.collectionName ?? 'collection'} coming soon',
+                              ),
                             ),
                           );
                         },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.print, color: Colors.green),
-                        tooltip: 'Print Invoice',
+                        icon: const Icon(Icons.print, color: Colors.purple),
+                        tooltip: 'Print Collection Receipt',
                         onPressed: () {
                           // Print functionality
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Print functionality coming soon'),
+                            SnackBar(
+                              content: Text(
+                                'Printing receipt for ${collection.collectionName ?? 'collection'}...',
+                              ),
                             ),
                           );
                         },
@@ -114,7 +131,12 @@ class CompletedCustomerInvoiceTable extends StatelessWidget {
       isLoading: isLoading,
       errorMessage: errorMessage,
       onRetry: onRetry,
-      onFiltered: () {}, dataLength: '${invoices.length}', onDeleted: () {  },
+      onFiltered: () {
+        // Show filter dialog for collections
+        _showFilterDialog(context);
+      }, 
+      dataLength: '${collections.length}', 
+      onDeleted: () {  },
     );
   }
 
@@ -129,13 +151,144 @@ class CompletedCustomerInvoiceTable extends StatelessWidget {
     return formatter.format(amount);
   }
 
-  void _navigateToInvoiceDetails(BuildContext context, InvoiceEntity invoice) {
-    if (invoice.id != null) {
+  void _navigateToCollectionDetails(BuildContext context, CollectionEntity collection) {
+    if (collection.id != null) {
+      // Navigate to collection details screen
+      context.go('/collections/${collection.id}');
+    }
+  }
+
+  void _navigateToInvoiceDetails(BuildContext context, CollectionEntity collection) {
+    if (collection.invoice?.id != null) {
       // First, dispatch the event to load the invoice data
-      context.read<InvoiceBloc>().add(GetInvoiceByIdEvent(invoice.id!));
+      context.read<InvoiceDataBloc>().add(GetInvoiceDataByIdEvent(collection.invoice!.id!));
 
       // Then navigate to the specific invoice screen
-      context.go('/invoice/${invoice.id}');
+      context.go('/invoice/${collection.invoice!.id}');
     }
+  }
+
+  void _showFilterDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Filter Collections'),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Collection Name Filter
+                TextField(
+                  decoration: const InputDecoration(
+                    labelText: 'Collection Name',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    // Handle collection name filter
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Date Range Filter
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          labelText: 'From Date',
+                          border: OutlineInputBorder(),
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                        readOnly: true,
+                        onTap: () async {
+                          // Show date picker
+                          // Handle selected date
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          labelText: 'To Date',
+                          border: OutlineInputBorder(),
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                        readOnly: true,
+                        onTap: () async {
+                          // Show date picker
+                          // Handle selected date
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Amount Range Filter
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          labelText: 'Min Amount',
+                          border: OutlineInputBorder(),
+                          prefixText: '₱ ',
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          // Handle min amount filter
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          labelText: 'Max Amount',
+                          border: OutlineInputBorder(),
+                          prefixText: '₱ ',
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          // Handle max amount filter
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Clear'),
+              onPressed: () {
+                // Clear all filters
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Apply'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                // Apply filters
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Filters applied')),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }

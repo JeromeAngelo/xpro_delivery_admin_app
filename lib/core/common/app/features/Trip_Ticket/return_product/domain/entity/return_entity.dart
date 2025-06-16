@@ -1,5 +1,3 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
 import 'package:xpro_delivery_admin_app/core/enums/product_return_reason.dart';
 import 'package:equatable/equatable.dart';
@@ -24,11 +22,7 @@ class ReturnEntity extends Equatable {
   bool? isBox;
   bool? isPack;
 
-  InvoiceModel? invoice;
-  InvoiceModel? invoiceRef;
-
-   CustomerModel? customer;
-  CustomerModel? customerRef;
+ 
 
   TripModel? trip;
    TripModel? tripRef;
@@ -49,10 +43,7 @@ class ReturnEntity extends Equatable {
     this.isPcs,
     this.isBox,
     this.isPack,
-    this.invoice,
-    this.invoiceRef,
-    this.customer,
-    this.customerRef,
+   
     this.trip,
     this.tripRef,
   });
@@ -74,10 +65,7 @@ class ReturnEntity extends Equatable {
     isPcs,
     isBox,
     isPack,
-    invoice,
-    invoiceRef,
-    customer,
-    customerRef,
+   
     trip,
     tripRef,
   ];

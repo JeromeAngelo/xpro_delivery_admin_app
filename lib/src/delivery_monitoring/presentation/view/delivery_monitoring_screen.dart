@@ -1,10 +1,9 @@
 import 'dart:async';
 
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_state.dart';
-
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/default_drawer.dart';
 import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/customer_information_tile.dart';
 import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/delivery_status_icon.dart';
@@ -25,15 +24,14 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
 
   Timer? _autoRefreshTimer;
 
-  // Auto-refresh duration - 5 minutes
+  // Auto-refresh duration - 2 minutes
   static const Duration autoRefreshDuration = Duration(minutes: 2);
 
   @override
   void initState() {
     super.initState();
-    // Start watching all customers when the screen initializes
-    // This will provide real-time updates
-    context.read<CustomerBloc>().add(const WatchAllCustomersEvent());
+    // Load all delivery data when the screen initializes
+    context.read<DeliveryDataBloc>().add(const GetAllDeliveryDataWithTripsEvent());
 
     // Set up auto-refresh timer
     _setupAutoRefreshTimer();
@@ -41,12 +39,8 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
 
   @override
   void dispose() {
-    // Stop watching when the screen is disposed
-    context.read<CustomerBloc>().add(const StopWatchingEvent());
-
     // Cancel the timer when disposing the widget
     _autoRefreshTimer?.cancel();
-
     super.dispose();
   }
 
@@ -55,7 +49,7 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
     // Cancel any existing timer
     _autoRefreshTimer?.cancel();
 
-    // Create a new timer that fires every 5 minutes
+    // Create a new timer that fires every 2 minutes
     _autoRefreshTimer = Timer.periodic(
       autoRefreshDuration,
       (_) => _refreshData(),
@@ -74,9 +68,8 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
         ),
       );
 
-      // Restart the real-time subscription
-      context.read<CustomerBloc>().add(const StopWatchingEvent());
-      context.read<CustomerBloc>().add(const WatchAllCustomersEvent());
+      // Refresh delivery data
+      context.read<DeliveryDataBloc>().add(const GetAllDeliveryDataWithTripsEvent());
     }
   }
 
@@ -124,8 +117,7 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
             ),
             tooltip: 'Filter',
             onPressed: () {
-              // Manually refresh all customers if needed
-              // context.read<CustomerBloc>().add(const GetAllCustomersEvent());
+              // Filter functionality can be added here if needed
             },
           ),
           IconButton(
@@ -135,26 +127,21 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
             ),
             tooltip: 'Refresh',
             onPressed: () {
-              // Manually refresh all customers if needed
-              context.read<CustomerBloc>().add(const GetAllCustomersEvent());
+              // Manually refresh delivery data
+              context.read<DeliveryDataBloc>().add(const GetAllDeliveryDataWithTripsEvent());
             },
           ),
           const SizedBox(width: 8),
         ],
       ),
       drawer: const DefaultDrawer(),
-      body: BlocBuilder<CustomerBloc, CustomerState>(
+      body: BlocBuilder<DeliveryDataBloc, DeliveryDataState>(
         builder: (context, state) {
-          if (state is CustomerLoading || state is AllCustomersWatching) {
+          if (state is DeliveryDataLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is CustomerError || state is CustomerStreamError) {
-            final errorMessage =
-                state is CustomerError
-                    ? state.message
-                    : (state as CustomerStreamError).message;
-
+          if (state is DeliveryDataError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -162,15 +149,16 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
                   Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
                   const SizedBox(height: 16),
                   Text(
-                    'Error loading customers: $errorMessage',
+                    'Error loading delivery data: ${state.message}',
                     style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () {
-                      // Try watching again
-                      context.read<CustomerBloc>().add(
-                        const WatchAllCustomersEvent(),
+                      // Retry loading delivery data
+                      context.read<DeliveryDataBloc>().add(
+                        const GetAllDeliveryDataWithTripsEvent(),
                       );
                     },
                     icon: const Icon(Icons.refresh),
@@ -181,13 +169,11 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
             );
           }
 
-          List<CustomerEntity> customers = [];
+          List<DeliveryDataEntity> deliveryDataList = [];
 
           // Handle different loaded states
-          if (state is AllCustomersLoaded) {
-            customers = state.customers;
-          } else if (state is CustomerLoaded) {
-            customers = state.customer;
+          if (state is AllDeliveryDataWithTripsLoaded) {
+            deliveryDataList = state.deliveryData;
           }
 
           return CustomScrollView(
@@ -203,8 +189,8 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
                   ),
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final status = statuses[index];
-                    final statusCustomers = _filterCustomersByStatus(
-                      customers,
+                    final statusDeliveryData = _filterDeliveryDataByStatus(
+                      deliveryDataList,
                       status.name,
                     );
 
@@ -214,9 +200,9 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
                         statusName: status.name,
                         statusIcon: status.icon,
                         statusColor: status.color,
-                        customers: statusCustomers,
-                        onCustomerTap: (customer) {
-                          _showCustomerDetails(context, customer);
+                        deliveryDataList: statusDeliveryData,
+                        onDeliveryDataTap: (deliveryData) {
+                          _showDeliveryDataDetails(context, deliveryData);
                         },
                         subtitle: status.subtitle,
                       ),
@@ -231,30 +217,27 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
       // Add a floating action button to manually refresh
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Restart the real-time subscription
-          context.read<CustomerBloc>().add(const StopWatchingEvent());
-          context.read<CustomerBloc>().add(const WatchAllCustomersEvent());
+          // Manually refresh delivery data
+          context.read<DeliveryDataBloc>().add(const GetAllDeliveryDataEvent());
         },
-        tooltip: 'Restart real-time updates',
+        tooltip: 'Refresh delivery data',
         child: const Icon(Icons.sync),
       ),
     );
   }
 
-  // Filter customers by their delivery status
-  List<CustomerEntity> _filterCustomersByStatus(
-    List<CustomerEntity> customers,
+  // Filter delivery data by their delivery status
+  List<DeliveryDataEntity> _filterDeliveryDataByStatus(
+    List<DeliveryDataEntity> deliveryDataList,
     String status,
   ) {
-    // This is a simplified implementation - in a real app, you would need to
-    // check the actual delivery status from the customer entity
     final statusLower = status.toLowerCase();
 
-    return customers.where((customer) {
+    return deliveryDataList.where((deliveryData) {
       // Get the most recent delivery status
       final deliveryStatus =
-          customer.deliveryStatus.isNotEmpty
-              ? customer.deliveryStatus.last.title?.toLowerCase() ?? ''
+          deliveryData.deliveryUpdates.isNotEmpty
+              ? deliveryData.deliveryUpdates.last.title?.toLowerCase() ?? ''
               : '';
 
       // Match status names (simplified)
@@ -286,15 +269,8 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
     }).toList();
   }
 
-  // Show customer details in a dialog
-  void _showCustomerDetails(BuildContext context, CustomerEntity customer) {
-    if (customer.id != null) {
-      // Start watching this specific customer's location for real-time updates
-      context.read<CustomerBloc>().add(
-        WatchCustomerLocationEvent(customer.id!),
-      );
-    }
-
+  // Show delivery data details in a dialog
+  void _showDeliveryDataDetails(BuildContext context, DeliveryDataEntity deliveryData) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -336,7 +312,7 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Customer Details',
+                          'Delivery Details',
                           style: Theme.of(
                             context,
                           ).textTheme.titleMedium?.copyWith(
@@ -347,14 +323,6 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
                         IconButton(
                           icon: const Icon(Icons.close),
                           onPressed: () {
-                            // Stop watching this customer when dialog is closed
-                            context.read<CustomerBloc>().add(
-                              const StopWatchingEvent(),
-                            );
-                            // Resume watching all customers
-                            context.read<CustomerBloc>().add(
-                              const WatchAllCustomersEvent(),
-                            );
                             Navigator.pop(context);
                           },
                           color: Theme.of(context).colorScheme.surface,
@@ -363,40 +331,10 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
                     ),
                   ),
 
-                  // Customer information content with real-time updates
+                  // Delivery data information content
                   Flexible(
-                    child: BlocBuilder<CustomerBloc, CustomerState>(
-                      builder: (context, state) {
-                        // Show loading indicator when fetching location
-                        if (state is CustomerLocationLoading ||
-                            state is CustomerLocationWatching) {
-                          return const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircularProgressIndicator(),
-                                SizedBox(height: 16),
-                                Text('Loading customer details...'),
-                              ],
-                            ),
-                          );
-                        }
-
-                        // Show updated customer data if available
-                        if (state is CustomerLocationLoaded &&
-                            state.customer.id == customer.id) {
-                          return SingleChildScrollView(
-                            child: CustomerInformationTile(
-                              customer: state.customer,
-                            ),
-                          );
-                        }
-
-                        // Fallback to original customer data
-                        return SingleChildScrollView(
-                          child: CustomerInformationTile(customer: customer),
-                        );
-                      },
+                    child: SingleChildScrollView(
+                      child: CustomerInformationTile(deliveryData: deliveryData),
                     ),
                   ),
                 ],
@@ -405,11 +343,6 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
           ),
         );
       },
-    ).then((_) {
-      // When dialog is closed, ensure we stop watching the specific customer
-      context.read<CustomerBloc>().add(const StopWatchingEvent());
-      // Resume watching all customers
-      context.read<CustomerBloc>().add(const WatchAllCustomersEvent());
-    });
+    );
   }
 }

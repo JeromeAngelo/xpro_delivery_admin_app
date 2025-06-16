@@ -1,5 +1,5 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/entity/completed_customer_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/domain/entity/collection_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -7,7 +7,7 @@ import 'package:shimmer/shimmer.dart';
 
 class CollectionTripDashboardWidget extends StatelessWidget {
   final TripEntity trip;
-  final List<CompletedCustomerEntity> completedCustomers;
+  final List<CollectionEntity> completedCustomers;
   final bool isLoading;
 
   const CollectionTripDashboardWidget({

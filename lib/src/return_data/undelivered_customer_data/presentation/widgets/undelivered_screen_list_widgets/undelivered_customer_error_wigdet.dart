@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/undeliverable_customer/presentation/bloc/undeliverable_customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/undeliverable_customer/presentation/bloc/undeliverable_customer_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cancelled_invoices/presentation/bloc/cancelled_invoice_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cancelled_invoices/presentation/bloc/cancelled_invoice_event.dart';
 
 class UndeliveredCustomerErrorWidget extends StatelessWidget {
   final String errorMessage;
@@ -27,8 +27,8 @@ class UndeliveredCustomerErrorWidget extends StatelessWidget {
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () {
-              context.read<UndeliverableCustomerBloc>().add(
-                const GetAllUndeliverableCustomersEvent()
+              context.read<CancelledInvoiceBloc>().add(
+                const GetAllCancelledInvoicesEvent()
               );
             },
             icon: const Icon(Icons.refresh),

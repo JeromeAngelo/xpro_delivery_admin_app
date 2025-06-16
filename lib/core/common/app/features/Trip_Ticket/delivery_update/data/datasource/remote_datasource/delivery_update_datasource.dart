@@ -2,9 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/models/delivery_update_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/data/model/return_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/transaction/data/model/transaction_model.dart';
 import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:flutter/material.dart';
@@ -15,13 +12,7 @@ import 'package:pocketbase/pocketbase.dart';
 abstract class DeliveryUpdateDatasource {
   Future<List<DeliveryUpdateModel>> getDeliveryStatusChoices(String customerId);
   Future<void> updateDeliveryStatus(String customerId, String statusId);
-  Future<void> completeDelivery(
-    String customerId, {
-    required List<InvoiceModel> invoices,
-    required List<TransactionModel> transactions,
-    required List<ReturnModel> returns,
-    required List<DeliveryUpdateModel> deliveryStatus,
-  });
+
  Future<DataMap> checkEndDeliverStatus(String tripId);
   Future<void> initializePendingStatus(List<String> customerIds);
   Future<void> createDeliveryStatus(
@@ -264,145 +255,6 @@ class DeliveryUpdateDatasourceImpl implements DeliveryUpdateDatasource {
     }
   }
 
-  @override
-  Future<void> completeDelivery(
-    String customerId, {
-    required List<InvoiceModel> invoices,
-    required List<TransactionModel> transactions,
-    required List<ReturnModel> returns,
-    required List<DeliveryUpdateModel> deliveryStatus,
-  }) async {
-    try {
-      debugPrint('🔄 Processing end delivery for customer: $customerId');
-
-      final customerRecord = await _pocketBaseClient
-          .collection('customers')
-          .getOne(customerId, expand: 'trip');
-
-      final tripId = customerRecord.expand['trip']?[0].id;
-      if (tripId == null) {
-        throw const ServerException(
-          message: 'Trip ID not found for customer',
-          statusCode: '404',
-        );
-      }
-
-      // Get delivery team using explicit filter
-      final deliveryTeamRecords = await _pocketBaseClient
-          .collection('delivery_team')
-          .getList(filter: 'tripTicket = "$tripId"');
-
-      if (deliveryTeamRecords.items.isEmpty) {
-        throw const ServerException(
-          message: 'Delivery team not found for this trip',
-          statusCode: '404',
-        );
-      }
-
-      final deliveryTeamRecord = deliveryTeamRecords.items.first;
-      debugPrint('✅ Found delivery team: ${deliveryTeamRecord.id}');
-
-      final currentActiveDeliveries = int.tryParse(
-              deliveryTeamRecord.data['activeDeliveries']?.toString() ?? '0') ??
-          0;
-      final currentTotalDelivered = int.tryParse(
-              deliveryTeamRecord.data['totalDelivered']?.toString() ?? '0') ??
-          0;
-
-      // Update delivery team stats
-      await _pocketBaseClient.collection('delivery_team').update(
-        deliveryTeamRecord.id,
-        body: {
-          'activeDeliveries': (currentActiveDeliveries - 1).toString(),
-          'totalDelivered': (currentTotalDelivered + 1).toString(),
-        },
-      );
-
-      // Inside completeDelivery method
-      debugPrint('📝 Recording transactions for customer: $customerId');
-      debugPrint('💰 Total transactions to record: ${transactions.length}');
-
-// First fetch the latest transactions for this customer
-      final customerTransactions = await _pocketBaseClient
-          .collection('transactions')
-          .getList(filter: 'customer = "$customerId"');
-
-      debugPrint(
-          '📊 Found ${customerTransactions.items.length} transactions for customer');
-
-      final transactionIds =
-          customerTransactions.items.map((t) => t.id).toList();
-
-      final returnIds = (customerRecord.expand['returnList'] as List?)
-              ?.map((r) => r.id)
-              .whereType<String>()
-              .toList() ??
-          [];
-
-      // Get payment method from transactions
-      final paymentMode = customerTransactions.items.isNotEmpty
-          ? customerTransactions.items.first.data['modeOfPayment']
-          : 'cashOnDelivery';
-      final completedCustomerData = {
-        'deliveryNumber': customerRecord.data['deliveryNumber'],
-        'storeName': customerRecord.data['storeName'],
-        'ownerName': customerRecord.data['ownerName'],
-        'contactNumber': customerRecord.data['contactNumber'],
-        'address': customerRecord.data['address'],
-        'municipality': customerRecord.data['municipality'],
-        'province': customerRecord.data['province'],
-        'modeOfPayment': customerRecord.data['modeOfPayment'],
-        'timeCompleted': DateTime.now().toUtc().toIso8601String(),
-        'totalAmount': customerRecord
-            .data['confirmedTotalPayment'], // Use confirmed total payment
-        'invoices':
-            invoices.map((invoice) => invoice.id).whereType<String>().toList(),
-        'transactions': transactionIds,
-        'returns': returnIds,
-        'deliveryStatus':
-            deliveryStatus.map((d) => d.id).whereType<String>().toList(),
-        'customer': customerId,
-        'trip': tripId,
-        'payment_selection': paymentMode,
-      };
-
-      final completedCustomerRecord = await _pocketBaseClient
-          .collection('completedCustomer')
-          .create(body: completedCustomerData);
-
-      debugPrint(
-          '✅ Created completed customer record: ${completedCustomerRecord.id}');
-
-      // Update each transaction with completed customer relation
-      for (final transactionId in transactionIds) {
-        await _pocketBaseClient.collection('transactions').update(
-          transactionId,
-          body: {
-            'completedCustomer': completedCustomerRecord.id,
-          },
-        );
-        debugPrint(
-            '✅ Updated transaction $transactionId with completed customer relation');
-      }
-      debugPrint('✅ Successfully linked all transactions');
-      // Update tripticket with completed customer
-      await _pocketBaseClient.collection('tripticket').update(
-        tripId,
-        body: {
-          'completedCustomer+': [completedCustomerRecord.id],
-        },
-      );
-      debugPrint('✅ Updated trip ticket with completed customer');
-
-      debugPrint('✅ Successfully completed delivery process');
-    } catch (e) {
-      debugPrint('❌ Failed to complete delivery: ${e.toString()}');
-      throw ServerException(
-        message: 'Failed to complete delivery: ${e.toString()}',
-        statusCode: '500',
-      );
-    }
-  }
 @override
 Future<DataMap> checkEndDeliverStatus(String tripId) async {
   try {

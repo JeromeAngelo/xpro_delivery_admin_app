@@ -2,6 +2,9 @@
 
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/data/models/auth_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/data/model/delivery_data_model.dart'
+    show DeliveryDataModel;
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
 import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
@@ -53,7 +56,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           .collection('tripticket')
           .getFullList(
             expand:
-                'customers,delivery_team,personels,vehicle,checklist,invoices,user',
+                'customers,delivery_team,personels,vehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
             sort: '-created',
           );
 
@@ -90,47 +93,37 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
 
       // Prepare data for creation
       final Map<String, dynamic> tripData = {};
-String tripNumberId = trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSinceEpoch}';
-      // Set basic fields
-      tripData['tripNumberId'] =
+      String tripNumberId =
           trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSinceEpoch}';
+
+      // Set basic fields
+      tripData['tripNumberId'] = tripNumberId;
       tripData['created'] = DateTime.now().toIso8601String();
       tripData['updated'] = DateTime.now().toIso8601String();
       tripData['isAccepted'] = false;
       tripData['isEndTrip'] = false;
 
-       // Generate QR code (using trip number as the QR code value)
-    // You can customize this to include more information if needed
-    tripData['qrCode'] = tripNumberId;
-    debugPrint('📄 Generated QR code: ${tripData['qrCode']}');
+      // Generate QR code (using trip number as the QR code value)
+      tripData['qrCode'] = tripNumberId;
+      debugPrint('📄 Generated QR code: ${tripData['qrCode']}');
 
+      // Handle vehicle - Set the deliveryVehicle field in tripticket
+      if (trip.vehicle != null && trip.vehicle!.id != null) {
+        tripData['deliveryVehicle'] = trip.vehicle!.id;
+        debugPrint(
+          '📄 Setting deliveryVehicle field: ${tripData['deliveryVehicle']}',
+        );
 
-      // Handle relationship fields - convert objects to IDs for PocketBase
-
-      // Customers - extract IDs for the relationship
-      List<String> customerIds = [];
-      if (trip.customers.isNotEmpty) {
-        customerIds =
-            trip.customers
-                .map((customer) => customer.id)
-                .where((id) => id != null)
-                .cast<String>()
-                .toList();
-        tripData['customers'] = customerIds;
-        debugPrint('📄 Setting customers: ${tripData['customers']}');
-      }
-
-      // Vehicle - extract IDs for the relationship
-      List<String> vehicleIds = [];
-      if (trip.vehicle.isNotEmpty) {
-        vehicleIds =
-            trip.vehicle
-                .map((vehicle) => vehicle.id)
-                .where((id) => id != null)
-                .cast<String>()
-                .toList();
-        tripData['vehicle'] = vehicleIds;
-        debugPrint('📄 Setting vehicle: ${tripData['vehicle']}');
+        // Calculate volume and weight capacity rates
+        await _calculateAndSetCapacityRates(
+          trip.vehicle! as DeliveryVehicleModel,
+          tripData,
+        );
+      } else {
+        // Set default values if no vehicle is provided
+        tripData['volumeRate'] = 0;
+        tripData['capacityRate'] = 0;
+        tripData['averageFillRate'] = 0;
       }
 
       // Personnel - extract IDs for the relationship
@@ -159,36 +152,87 @@ String tripNumberId = trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSi
         debugPrint('📄 Setting checklist: ${tripData['checklist']}');
       }
 
-      // Invoices - extract IDs for the relationship
-      List<String> invoiceIds = [];
-      if (trip.invoices.isNotEmpty) {
-        invoiceIds =
-            trip.invoices
-                .map((invoice) => invoice.id)
-                .where((id) => id != null)
-                .cast<String>()
-                .toList();
-        tripData['invoices'] = invoiceIds;
-        debugPrint('📄 Setting invoices: ${tripData['invoices']}');
-      }
-
       debugPrint('📄 Creating trip with data: $tripData');
 
       // Create the trip record
-      final record = await _pocketBaseClient
+      final tripRecord = await _pocketBaseClient
           .collection('tripticket')
           .create(body: tripData);
 
-      final String tripId = record.id;
+      final String tripId = tripRecord.id;
       debugPrint('✅ Trip ticket created successfully: $tripId');
 
-      // Now update all related entities to reference this trip
+      // Find deliveryData items with null trip field and assign this trip
+      debugPrint('🔄 Finding deliveryData items with null trip field');
+      final deliveryDataRecords = await _pocketBaseClient
+          .collection('deliveryData')
+          .getFullList(filter: 'trip = null');
 
-      // Update customers to reference this trip
-      await _updateRelatedEntities('customers', customerIds, tripId);
+      List<String> deliveryDataIds = [];
 
-      // Update vehicles to reference this trip
-      await _updateRelatedEntities('vehicle', vehicleIds, tripId);
+      // Get the "Pending" status from delivery_status_choices
+      debugPrint('🔄 Fetching Pending status from delivery_status_choices');
+      final pendingStatus = await _pocketBaseClient
+          .collection('delivery_status_choices')
+          .getFirstListItem('title = "Pending"');
+
+      debugPrint('✅ Found Pending status: ${pendingStatus.id}');
+
+      // Update each deliveryData item to reference this trip
+      for (final dataRecord in deliveryDataRecords) {
+        // First update the deliveryData to reference this trip
+        await _pocketBaseClient
+            .collection('deliveryData')
+            .update(dataRecord.id, body: {'trip': tripId, 'hasTrip': true});
+
+        deliveryDataIds.add(dataRecord.id);
+        debugPrint(
+          '✅ Updated deliveryData item ${dataRecord.id} with trip reference',
+        );
+
+        // Create a delivery_update record with Pending status
+        debugPrint(
+          '🔄 Creating delivery_update with Pending status for deliveryData: ${dataRecord.id}',
+        );
+        final deliveryUpdateRecord = await _pocketBaseClient
+            .collection('delivery_update')
+            .create(
+              body: {
+                'deliveryData': dataRecord.id,
+                'status': pendingStatus.id,
+                'title': pendingStatus.data['title'],
+                'subtitle': pendingStatus.data['subtitle'],
+                'created': DateTime.now().toIso8601String(),
+                'time': DateTime.now().toIso8601String(),
+                'isAssigned': true,
+              },
+            );
+
+        // Update the deliveryData to include this delivery update
+        await _pocketBaseClient
+            .collection('deliveryData')
+            .update(
+              dataRecord.id,
+              body: {
+                'deliveryUpdates+': [deliveryUpdateRecord.id],
+              },
+            );
+
+        debugPrint(
+          '✅ Created and linked delivery_update record: ${deliveryUpdateRecord.id}',
+        );
+      }
+
+      // Update the trip with the deliveryData references
+      if (deliveryDataIds.isNotEmpty) {
+        await _pocketBaseClient
+            .collection('tripticket')
+            .update(tripId, body: {'deliveryData': deliveryDataIds});
+
+        debugPrint(
+          '✅ Updated trip with ${deliveryDataIds.length} deliveryData references',
+        );
+      }
 
       // Update personnel to reference this trip
       await _updateRelatedEntities('personels', personnelIds, tripId);
@@ -196,10 +240,24 @@ String tripNumberId = trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSi
       // Update checklists to reference this trip
       await _updateRelatedEntities('checklist', checklistIds, tripId);
 
-      // Update invoices to reference this trip
-      await _updateRelatedEntities('invoices', invoiceIds, tripId);
-
       debugPrint('✅ All related entities updated with trip reference');
+
+      // Verify that the vehicle was properly set in the trip
+      final updatedTrip = await _pocketBaseClient
+          .collection('tripticket')
+          .getOne(tripId);
+
+      if (updatedTrip.data['deliveryVehicle'] != null) {
+        debugPrint(
+          '✅ Vehicle successfully set in trip: ${updatedTrip.data['deliveryVehicle']}',
+        );
+      } else if (trip.vehicle != null && trip.vehicle!.id != null) {
+        debugPrint('⚠️ Vehicle not set in trip, attempting to update');
+        await _pocketBaseClient
+            .collection('tripticket')
+            .update(tripId, body: {'deliveryVehicle': trip.vehicle!.id});
+        debugPrint('✅ Vehicle updated in trip: ${trip.vehicle!.id}');
+      }
 
       // Fetch the created record with expanded relations
       return getTripTicketById(tripId);
@@ -209,6 +267,72 @@ String tripNumberId = trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSi
         message: 'Failed to create trip ticket: ${e.toString()}',
         statusCode: '500',
       );
+    }
+  }
+
+  // Helper method to calculate and set capacity rates
+  Future<void> _calculateAndSetCapacityRates(
+    DeliveryVehicleModel vehicle,
+    Map<String, dynamic> tripData,
+  ) async {
+    try {
+      debugPrint('🔄 Calculating vehicle capacity rates');
+
+      // Get all unassigned delivery data
+      final deliveryDataRecords = await _pocketBaseClient
+          .collection('deliveryData')
+          .getFullList(filter: 'hasTrip = false');
+
+      double totalWeight = 0;
+      double totalVolume = 0;
+
+      // Calculate total weight and volume from all deliveries
+      for (final record in deliveryDataRecords) {
+        // Check if the record has an invoice field
+        if (record.data['invoice'] != null) {
+          // Get the invoice details
+          final invoiceId = record.data['invoice'];
+          final invoice = await _pocketBaseClient
+              .collection('invoice')
+              .getOne(invoiceId);
+
+          // Add weight and volume
+          totalWeight +=
+              double.tryParse(invoice.data['weight']?.toString() ?? '0') ?? 0;
+          totalVolume +=
+              double.tryParse(invoice.data['volume']?.toString() ?? '0') ?? 0;
+        }
+      }
+
+      // Calculate percentages (handle division by zero)
+      final weightCapacity = vehicle.weightCapacity ?? 0;
+      final volumeCapacity = vehicle.volumeCapacity ?? 0;
+
+      final weightPercentage =
+          weightCapacity > 0 ? (totalWeight / weightCapacity) * 100 : 0;
+
+      final volumePercentage =
+          volumeCapacity > 0 ? (totalVolume / volumeCapacity) * 100 : 0;
+
+      // Set the calculated rates in the trip data
+      tripData['capacityRate'] = weightPercentage.round();
+      tripData['volumeRate'] = volumePercentage.round();
+
+      // Calculate and set the average fill rate
+      final averageFillRate = (weightPercentage + volumePercentage) / 2;
+      tripData['averageFillRate'] = averageFillRate.round();
+
+      debugPrint('📊 Calculated capacity rate: ${tripData['capacityRate']}%');
+      debugPrint('📊 Calculated volume rate: ${tripData['volumeRate']}%');
+      debugPrint(
+        '📊 Calculated average fill rate: ${tripData['averageFillRate']}%',
+      );
+    } catch (e) {
+      debugPrint('⚠️ Error calculating capacity rates: ${e.toString()}');
+      // Set default values in case of error
+      tripData['volumeRate'] = 0;
+      tripData['capacityRate'] = 0;
+      tripData['averageFillRate'] = 0;
     }
   }
 
@@ -290,7 +414,7 @@ String tripNumberId = trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSi
           .getFullList(
             filter: filterString.isNotEmpty ? filterString : null,
             expand:
-                'customers,delivery_team,personels,vehicle,checklist,invoices',
+                'customers,delivery_team,personels,vehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection',
           );
 
       debugPrint('✅ Found ${records.length} matching trip tickets');
@@ -317,7 +441,7 @@ String tripNumberId = trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSi
           .getOne(
             tripId,
             expand:
-                'customers,delivery_team,personels,vehicle,checklist,invoices',
+                'customers,delivery_team,personels,vehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
           );
 
       debugPrint('✅ Trip ticket found: ${record.id}');
@@ -447,6 +571,7 @@ String tripNumberId = trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSi
           debugPrint('❌ Failed to parse timeEndTrip: ${e.toString()}');
         }
       }
+
       // Handle user data
       final userData = record.expand['user'];
       GeneralUserModel? usersModel;
@@ -488,6 +613,61 @@ String tripNumberId = trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSi
         debugPrint('⚠️ No user data found in record');
       }
 
+      // Handle delivery vehicle - Updated to use single DeliveryVehicleModel
+      final vehicleData = record.expand['deliveryVehicle'];
+      DeliveryVehicleModel? vehicleModel;
+
+      if (vehicleData != null) {
+        debugPrint('✅ Found vehicle data type: ${vehicleData.runtimeType}');
+
+        try {
+          if (vehicleData.isNotEmpty) {
+            var firstVehicle = vehicleData[0];
+            vehicleModel = DeliveryVehicleModel.fromJson({
+              'id': firstVehicle.id,
+              'collectionId': firstVehicle.collectionId,
+              'collectionName': firstVehicle.collectionName,
+              ...firstVehicle.data,
+            });
+            debugPrint('✅ Processed first vehicle from list');
+          } else {
+            debugPrint('⚠️ Vehicle data format not recognized');
+          }
+        } catch (e) {
+          debugPrint('❌ Error processing vehicle data: $e');
+        }
+      } else {
+        debugPrint('⚠️ No vehicle data found in record');
+      }
+
+      // Handle delivery data - New relationship
+      final deliveryDataList = record.expand['deliveryData'];
+      List<DeliveryDataModel> deliveryDataModels = [];
+
+      if (deliveryDataList != null) {
+        debugPrint('✅ Found delivery data: ${deliveryDataList.runtimeType}');
+
+        try {
+          for (var dataItem in deliveryDataList) {
+            deliveryDataModels.add(
+              DeliveryDataModel.fromJson({
+                'id': dataItem.id,
+                'collectionId': dataItem.collectionId,
+                'collectionName': dataItem.collectionName,
+                ...dataItem.data,
+              }),
+            );
+          }
+          debugPrint(
+            '✅ Processed ${deliveryDataModels.length} delivery data items',
+          );
+        } catch (e) {
+          debugPrint('❌ Error processing delivery data: $e');
+        }
+      } else {
+        debugPrint('⚠️ No delivery data found in record');
+      }
+
       final mappedData = {
         'id': record.id,
         'collectionId': record.collectionId,
@@ -496,9 +676,19 @@ String tripNumberId = trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSi
         'customers': _mapExpandedList(record.expand['customers']),
         'delivery_team': _mapExpandedItem(record.expand['delivery_team']),
         'personels': _mapExpandedList(record.expand['personels']),
-        'vehicle': _mapExpandedList(record.expand['vehicle']),
+        'vehicle':
+            vehicleModel?.toJson(), // Updated: Changed to single vehicle model
+        'deliveryData':
+            deliveryDataModels
+                .map((model) => model.toJson())
+                .toList(), // Added: Map delivery data
         'checklist': _mapExpandedList(record.expand['checklist']),
-        'invoices': _mapExpandedList(record.expand['invoices']),
+        'cancelledInvoice': _mapExpandedList(record.expand['cancelledInvoice']),
+        'deliveryCollection': _mapExpandedList(
+          record.expand['deliveryCollection'],
+        ),
+
+        'trip_update_list': _mapExpandedList(record.expand['trip_update_list']),
         'user': usersModel?.toJson(),
         'created': record.created,
         'updated': record.updated,
@@ -506,6 +696,9 @@ String tripNumberId = trip.tripNumberId ?? 'TRIP-${DateTime.now().millisecondsSi
         'timeEndTrip': timeEndTrip?.toIso8601String(),
         'longitude': record.data['longitude'],
         'latitude': record.data['latitude'],
+        'volumeRate': record.data['volumeRate'],
+        'weightRate': record.data['weightRate'],
+        'averageFillRate': record.data['averageFillRate'],
       };
 
       return TripModel.fromJson(mappedData);

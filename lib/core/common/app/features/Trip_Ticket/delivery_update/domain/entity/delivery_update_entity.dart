@@ -1,4 +1,3 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
 import 'package:equatable/equatable.dart';
 
 class DeliveryUpdateEntity extends Equatable {
@@ -15,7 +14,6 @@ class DeliveryUpdateEntity extends Equatable {
   bool? isAssigned;
   String? assignedTo;
   String? remarks;
-  final List<CustomerModel> customers;
 
   DeliveryUpdateEntity({
     this.id,
@@ -31,8 +29,7 @@ class DeliveryUpdateEntity extends Equatable {
     this.image,
     this.isAssigned,
     this.assignedTo,
-    List<CustomerModel>? customersList,
-  }) : customers = customersList ?? [];
+  }) ;
 
   @override
   List<Object?> get props => [
@@ -48,7 +45,6 @@ class DeliveryUpdateEntity extends Equatable {
         customer,
         isAssigned,
         assignedTo,
-        customers,
         image,
       ];
 }

@@ -1,18 +1,16 @@
-// ignore_for_file: unused_local_variable
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/status_icons.dart';
 
 class TripCustomersTable extends StatelessWidget {
   final String tripId;
   final VoidCallback? onAttachCustomer;
-  final List<CustomerEntity> customers;
   final bool isLoading;
   final int currentPage;
   final int totalPages;
@@ -25,7 +23,6 @@ class TripCustomersTable extends StatelessWidget {
     super.key,
     required this.tripId,
     this.onAttachCustomer,
-    required this.customers,
     required this.isLoading,
     required this.currentPage,
     required this.totalPages,
@@ -37,133 +34,177 @@ class TripCustomersTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DataTableLayout(
-      title: 'Customers',
-      searchBar: TextField(
-        controller: searchController,
-        decoration: InputDecoration(
-          hintText: 'Search by name, address, or status...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon:
-              searchQuery.isNotEmpty
-                  ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      searchController.clear();
-                      onSearchChanged('');
-                    },
+   
+
+    return BlocBuilder<DeliveryDataBloc, DeliveryDataState>(
+      builder: (context, state) {
+        List<DeliveryDataEntity> deliveries = [];
+        bool loading = isLoading;
+        String? errorMessage;
+
+        if (state is DeliveryDataLoading) {
+          loading = true;
+        } else if (state is DeliveryDataByTripLoaded &&
+            state.tripId == tripId) {
+          deliveries = state.deliveryData;
+          loading = false;
+        } else if (state is DeliveryDataError) {
+          loading = false;
+          errorMessage = state.message;
+        }
+
+        // Filter deliveries based on search query if needed
+        if (searchQuery.isNotEmpty) {
+          deliveries =
+              deliveries.where((delivery) {
+                final customerName =
+                    delivery.customer?.name?.toLowerCase() ?? '';
+                final invoiceNumber =
+                    delivery.invoice?.name?.toLowerCase() ?? '';
+                final query = searchQuery.toLowerCase();
+
+                return customerName.contains(query) ||
+                    invoiceNumber.contains(query);
+              }).toList();
+        }
+
+        return DataTableLayout(
+          title: 'Deliveries',
+          searchBar: TextField(
+            controller: searchController,
+            decoration: InputDecoration(
+              hintText: 'Search by customer name or invoice number...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon:
+                  searchQuery.isNotEmpty
+                      ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          searchController.clear();
+                          onSearchChanged('');
+                        },
+                      )
+                      : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onChanged: onSearchChanged,
+          ),
+          onCreatePressed: onAttachCustomer,
+          createButtonText: 'Attach Delivery',
+          columns: const [
+            DataColumn(label: Text('ID')),
+            DataColumn(label: Text('Customer Name')),
+            DataColumn(label: Text('Invoice Number')),
+            DataColumn(label: Text('Status')),
+            DataColumn(label: Text('Total Amount')),
+            DataColumn(label: Text('Actions')),
+          ],
+          rows:
+              deliveries.map((delivery) {
+                return DataRow(
+                  cells: [
+                    // ID
+                    DataCell(
+                      Text(delivery.id ?? 'N/A'),
+                      onTap:
+                          () => _navigateToDeliveryDetails(context, delivery),
+                    ),
+
+                    // Customer Name
+                    DataCell(
+                      Text(delivery.customer?.name ?? 'N/A'),
+                      onTap:
+                          () => _navigateToDeliveryDetails(context, delivery),
+                    ),
+
+                    // Invoice Number
+                    DataCell(
+                      Text(delivery.invoice?.name ?? 'N/A'),
+                      onTap:
+                          () => _navigateToDeliveryDetails(context, delivery),
+                    ),
+
+                    // Status
+                    DataCell(
+                      _buildDeliveryStatusChip(delivery),
+                      onTap:
+                          () => _navigateToDeliveryDetails(context, delivery),
+                    ),
+
+                    // Total Amount
+                    DataCell(
+                      Text(_formatCurrency(delivery)),
+                      onTap:
+                          () => _navigateToDeliveryDetails(context, delivery),
+                    ),
+
+                    // Actions
+                    DataCell(
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.visibility,
+                              color: Colors.blue,
+                            ),
+                            tooltip: 'View Details',
+                            onPressed: () {
+                              _navigateToDeliveryDetails(context, delivery);
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.orange),
+                            tooltip: 'Edit',
+                            onPressed: () {
+                              // Navigate to edit delivery screen
+                              context.go('/delivery/edit/${delivery.id}');
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            tooltip: 'Delete',
+                            onPressed: () {
+                              _showDeleteDeliveryDialog(context, delivery);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+          currentPage: currentPage,
+          totalPages: totalPages,
+          onPageChanged: onPageChanged,
+          isLoading: loading,
+          errorMessage: errorMessage,
+          onRetry:
+              errorMessage != null
+                  ? () => context.read<DeliveryDataBloc>().add(
+                    GetDeliveryDataByTripIdEvent(tripId),
                   )
                   : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        onChanged: onSearchChanged,
-      ),
-      onCreatePressed: onAttachCustomer,
-      createButtonText: 'Attach Customer',
-      columns: const [
-        DataColumn(label: Text('ID')),
-        DataColumn(label: Text('Customer Name')),
-        DataColumn(label: Text('Address')),
-        DataColumn(label: Text('Status')),
-        DataColumn(label: Text('Total Amount')),
-        DataColumn(label: Text('Actions')),
-      ],
-      rows:
-          customers.map((customer) {
-            return DataRow(
-              cells: [
-                // ID
-                DataCell(
-                  Text(customer.id ?? 'N/A'),
-                  onTap: () => _navigateToCustomerDetails(context, customer),
-                ),
-
-                // Customer Name
-                DataCell(
-                  Text(customer.storeName ?? 'N/A'),
-                  onTap: () => _navigateToCustomerDetails(context, customer),
-                ),
-
-                // Address
-                DataCell(
-                  Text(_formatAddress(customer)),
-                  onTap: () => _navigateToCustomerDetails(context, customer),
-                ),
-
-                // Status
-                DataCell(
-                  _buildCustomerStatusChip(customer),
-                  onTap: () => _navigateToCustomerDetails(context, customer),
-                ),
-
-                // Total Amount
-                DataCell(
-                  Text(_formatCurrency(customer)),
-                  onTap: () => _navigateToCustomerDetails(context, customer),
-                ),
-
-                // Actions
-                DataCell(
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.visibility, color: Colors.blue),
-                        tooltip: 'View Details',
-                        onPressed: () {
-                          _navigateToCustomerDetails(context, customer);
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.orange),
-                        tooltip: 'Edit',
-                        onPressed: () {
-                          // Navigate to edit customer screen
-                          context.go('/customer/edit/${customer.id}');
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        tooltip: 'Delete',
-                        onPressed: () {
-                          _showDeleteCustomerDialog(context, customer);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
-      currentPage: currentPage,
-      totalPages: totalPages,
-      onPageChanged: onPageChanged,
-      isLoading: isLoading,
-      onFiltered: () {
-        // Show filter dialog
-        _showFilterDialog(context);
+          onFiltered: () {
+            // Show filter dialog
+            _showFilterDialog(context);
+          },
+          dataLength: '${deliveries.length}',
+          onDeleted: () {},
+        );
       },
-      dataLength: '${customers.length}', onDeleted: () {  },
     );
   }
 
-  String _formatAddress(CustomerEntity customer) {
-    final parts =
-        [
-          customer.address,
-          customer.municipality,
-          customer.province,
-        ].where((part) => part != null && part.isNotEmpty).toList();
-
-    return parts.join(', ');
-  }
-
-  Widget _buildCustomerStatusChip(CustomerEntity customer) {
-    // Get the latest status
+  Widget _buildDeliveryStatusChip(DeliveryDataEntity delivery) {
+    // Get the latest status from delivery updates
     String status = "No Status";
 
-    if (customer.deliveryStatus.isNotEmpty) {
+    if (delivery.deliveryUpdates.isNotEmpty) {
       // Get the last (most recent) status update
-      status = customer.deliveryStatus.last.title ?? "No Status";
+      final latestUpdate = delivery.deliveryUpdates.last;
+      status = latestUpdate.title?.toString().split('.').last ?? "No Status";
     }
 
     // Map status to color
@@ -214,47 +255,19 @@ class TripCustomersTable extends StatelessWidget {
     );
   }
 
-  String _formatCurrency(CustomerEntity customer) {
-    // Try different approaches to get the total amount
-
-    // 1. Try direct totalAmount property (might be a double or a string)
-    if (customer.totalAmount != null) {
-      if (customer.totalAmount is double) {
-        return '₱${(customer.totalAmount as double).toStringAsFixed(2)}';
-      } else if (customer.totalAmount is String) {
-        try {
-          final amount = double.parse(customer.totalAmount as String);
-          return '₱${amount.toStringAsFixed(2)}';
-        } catch (e) {
-          return '₱${customer.totalAmount}';
-        }
-      }
-    }
-
-    // 2. Check if there's a confirmedTotalPayment
-    if (customer.confirmedTotalPayment != null) {
-      return '₱${customer.confirmedTotalPayment!.toStringAsFixed(2)}';
-    }
-
-    // 3. Calculate from invoices
-    if (customer.invoicesList.isNotEmpty) {
-      double total = 0.0;
-      for (var invoice in customer.invoicesList) {
-        if (invoice.totalAmount != null) {
-          total += invoice.totalAmount!;
-        }
-      }
-      if (total > 0) {
-        return '₱${total.toStringAsFixed(2)}';
-      }
+  String _formatCurrency(DeliveryDataEntity delivery) {
+    // Try to get the total amount from the invoice
+    if (delivery.invoice?.totalAmount != null) {
+      final amount = delivery.invoice!.totalAmount!;
+      return '₱${amount.toStringAsFixed(2)}';
     }
 
     return 'N/A';
   }
 
-  void _showDeleteCustomerDialog(
+  void _showDeleteDeliveryDialog(
     BuildContext context,
-    CustomerEntity customer,
+    DeliveryDataEntity delivery,
   ) {
     showDialog<void>(
       context: context,
@@ -266,7 +279,7 @@ class TripCustomersTable extends StatelessWidget {
             child: ListBody(
               children: <Widget>[
                 Text(
-                  'Are you sure you want to remove ${customer.storeName} from this trip?',
+                  'Are you sure you want to remove ${delivery.customer?.name ?? 'this delivery'} from this trip?',
                 ),
                 const SizedBox(height: 10),
                 const Text('This action cannot be undone.'),
@@ -285,7 +298,12 @@ class TripCustomersTable extends StatelessWidget {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 // Implement delete functionality
-                // context.read<CustomerBloc>().add(DeleteCustomerEvent(customer.id!));
+                // This would need a delete event in the DeliveryDataBloc
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Delete functionality not implemented yet'),
+                  ),
+                );
               },
             ),
           ],
@@ -294,20 +312,18 @@ class TripCustomersTable extends StatelessWidget {
     );
   }
 
-  void _navigateToCustomerDetails(
+  void _navigateToDeliveryDetails(
     BuildContext context,
-    CustomerEntity customer,
+    DeliveryDataEntity delivery,
   ) {
-    if (customer.id != null) {
-      context.read<CustomerBloc>().add(GetCustomerLocationEvent(customer.id!));
-      context.go('/customer/${customer.id}');
+    if (delivery.id != null) {
+      // Navigate to delivery details page
+      context.go('/delivery/${delivery.id}');
     }
   }
 
   Future<void> _showFilterDialog(BuildContext context) async {
     String? selectedStatus;
-    double? minAmount;
-    double? maxAmount;
 
     return showDialog<void>(
       context: context,
@@ -315,7 +331,7 @@ class TripCustomersTable extends StatelessWidget {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Filter Customers'),
+              title: const Text('Filter Deliveries'),
               content: SizedBox(
                 width: 400,
                 child: Column(
@@ -373,13 +389,9 @@ class TripCustomersTable extends StatelessWidget {
                             keyboardType: TextInputType.number,
                             onChanged: (value) {
                               if (value.isNotEmpty) {
-                                setState(() {
-                                  minAmount = double.tryParse(value);
-                                });
+                                setState(() {});
                               } else {
-                                setState(() {
-                                  minAmount = null;
-                                });
+                                setState(() {});
                               }
                             },
                           ),
@@ -394,13 +406,9 @@ class TripCustomersTable extends StatelessWidget {
                             keyboardType: TextInputType.number,
                             onChanged: (value) {
                               if (value.isNotEmpty) {
-                                setState(() {
-                                  maxAmount = double.tryParse(value);
-                                });
+                                setState(() {});
                               } else {
-                                setState(() {
-                                  maxAmount = null;
-                                });
+                                setState(() {});
                               }
                             },
                           ),
@@ -416,8 +424,6 @@ class TripCustomersTable extends StatelessWidget {
                   onPressed: () {
                     setState(() {
                       selectedStatus = null;
-                      minAmount = null;
-                      maxAmount = null;
                     });
                   },
                 ),
@@ -431,9 +437,11 @@ class TripCustomersTable extends StatelessWidget {
                   child: const Text('Apply'),
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
-                    // Apply filters - this would need a custom event in the CustomerBloc
+                    // Apply filters - this would need a custom event in the DeliveryDataBloc
                     // For now, we'll just refresh the list
-                    context.read<CustomerBloc>().add(GetCustomerEvent(tripId));
+                    context.read<DeliveryDataBloc>().add(
+                      GetDeliveryDataByTripIdEvent(tripId),
+                    );
                   },
                 ),
               ],

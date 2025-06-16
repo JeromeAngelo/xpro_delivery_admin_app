@@ -1,11 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/datasource/remote_datasource/delivery_update_datasource.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/models/delivery_update_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/domain/entity/delivery_update_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/domain/repo/delivery_update_repo.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/data/model/return_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/transaction/data/model/transaction_model.dart';
 import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:xpro_delivery_admin_app/core/errors/failures.dart';
 import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
@@ -38,27 +34,7 @@ class DeliveryUpdateRepoImpl extends DeliveryUpdateRepo {
     }
   }
 
-  @override
-  ResultFuture<void> completeDelivery(
-    String customerId, {
-    required List<InvoiceModel> invoices,
-    required List<TransactionModel> transactions,
-    required List<ReturnModel> returns,
-    required List<DeliveryUpdateModel> deliveryStatus,
-  }) async {
-    try {
-      await _remoteDataSource.completeDelivery(
-        customerId,
-        invoices: invoices,
-        transactions: transactions,
-        returns: returns,
-        deliveryStatus: deliveryStatus,
-      );
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    }
-  }
+  
 
   @override
   ResultFuture<DataMap> checkEndDeliverStatus(String tripId) async {

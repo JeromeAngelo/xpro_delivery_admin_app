@@ -1,3 +1,6 @@
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/domain/entity/collection_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_list/presentation/widgets/completed_customer_overview_widgets/cc_overview_quick_access_tools.dart';
@@ -5,11 +8,9 @@ import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_l
 import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_list/presentation/widgets/completed_customer_overview_widgets/completed_customer_ov_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/entity/completed_customer_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_state.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../../core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_event.dart';
 
 class CompletedCustomerOverview extends StatefulWidget {
   const CompletedCustomerOverview({super.key});
@@ -24,8 +25,8 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
   void initState() {
     super.initState();
     // Load completed customers when the screen initializes
-    context.read<CompletedCustomerBloc>().add(
-      const GetAllCompletedCustomersEvent(),
+    context.read<CollectionsBloc>().add(
+      const GetAllCollectionsEvent(),
     );
   }
 
@@ -50,20 +51,20 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
       onProfileTap: () {
         // Handle profile tap
       },
-      child: BlocBuilder<CompletedCustomerBloc, CompletedCustomerState>(
+      child: BlocBuilder<CollectionsBloc, CollectionsState>(
         builder: (context, state) {
           // Handle different states
-          if (state is CompletedCustomerInitial) {
+          if (state is CollectionsInitial) {
             // Initial state, trigger loading
-            context.read<CompletedCustomerBloc>().add(
-              const GetAllCompletedCustomersEvent(),
+            context.read<CollectionsBloc>().add(
+              const GetAllCollectionsEvent(),
             );
             return const Center(child: CircularProgressIndicator());
           }
 
-          final bool isLoading = state is CompletedCustomerLoading;
-          final List<CompletedCustomerEntity> customers =
-              state is AllCompletedCustomersLoaded ? state.customers : [];
+          final bool isLoading = state is CollectionsLoading;
+          final List<CollectionEntity> customers =
+              state is AllCollectionsLoaded ? state.collections : [];
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
@@ -89,7 +90,7 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
 
                 // Dashboard Summary
                 CompletedCustomerDashboard(
-                  customers: customers,
+                  collections: customers,
                   isLoading: isLoading,
                 ),
                 const SizedBox(height: 24),
@@ -121,7 +122,7 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
 
                 // Recent Completed Customers
                 RecentCompletedCustomers(
-                  customers: customers,
+                  collections: customers,
                   isLoading: isLoading,
                 ),
 

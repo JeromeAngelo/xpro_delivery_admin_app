@@ -1,16 +1,14 @@
 import 'package:xpro_delivery_admin_app/src/return_data/undelivered_customer_data/presentation/widgets/undelivered_screen_list_widgets/undeliverable_customer_search_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/undeliverable_customer/domain/entity/undeliverable_customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cancelled_invoices/domain/entity/cancelled_invoice_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 import 'package:xpro_delivery_admin_app/core/enums/undeliverable_reason.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/undeliverable_customer/presentation/bloc/undeliverable_customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/undeliverable_customer/presentation/bloc/undeliverable_customer_event.dart';
+
 
 class UndeliveredCustomerTable extends StatelessWidget {
-  final List<UndeliverableCustomerEntity> undeliveredCustomers;
+  final List<CancelledInvoiceEntity> cancelledInvoices;
   final bool isLoading;
   final int currentPage;
   final int totalPages;
@@ -21,7 +19,7 @@ class UndeliveredCustomerTable extends StatelessWidget {
 
   const UndeliveredCustomerTable({
     super.key,
-    required this.undeliveredCustomers,
+    required this.cancelledInvoices,
     required this.isLoading,
     required this.currentPage,
     required this.totalPages,
@@ -34,9 +32,9 @@ class UndeliveredCustomerTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Debug the data
-    for (var customer in undeliveredCustomers) {
+    for (var cancelledInvoice in cancelledInvoices) {
       debugPrint(
-        '📋 Undelivered Customer: ${customer.storeName} | Reason: ${customer.reason?.name}',
+        '📋 Cancelled Invoice: ${cancelledInvoice.customer?.name} | Reason: ${cancelledInvoice.reason?.name}',
       );
     }
 
@@ -53,43 +51,22 @@ class UndeliveredCustomerTable extends StatelessWidget {
       },
       createButtonText: 'Add Undeliverable Customer',
       columns: const [
-        //     DataColumn(label: Text('Customer ID')),
         DataColumn(label: Text('Store Name')),
         DataColumn(label: Text('Delivery Number')),
         DataColumn(label: Text('Address')),
         DataColumn(label: Text('Reason')),
         DataColumn(label: Text('Time')),
-        // DataColumn(label: Text('Trip')),
         DataColumn(label: Text('Actions')),
       ],
       rows:
-          undeliveredCustomers.map((customer) {
+          cancelledInvoices.map((cancelledInvoice) {
             return DataRow(
               cells: [
-                //        DataCell(Text(customer.customer!.id ?? 'N/A')),
-                DataCell(Text(customer.storeName ?? 'N/A')),
-                DataCell(Text(customer.deliveryNumber ?? 'N/A')),
-                DataCell(Text(_formatAddress(customer))),
-                DataCell(_buildReasonChip(customer.reason)),
-                DataCell(Text(_formatDate(customer.time))),
-                // DataCell(
-                //   customer.trip != null
-                //       ? InkWell(
-                //         onTap: () {
-                //           if (customer.trip?.id != null) {
-                //             context.go('/tripticket/${customer.trip!.id}');
-                //           }
-                //         },
-                //         child: Text(
-                //           customer.trip?.tripNumberId ?? 'N/A',
-                //           style: const TextStyle(
-                //             color: Colors.blue,
-                //             decoration: TextDecoration.underline,
-                //           ),
-                //         ),
-                //       )
-                //       : const Text('No Trip Data'),
-                // ),
+                DataCell(Text(cancelledInvoice.customer?.name ?? 'N/A')),
+                DataCell(Text(cancelledInvoice.deliveryData?.deliveryNumber ?? 'N/A')),
+                DataCell(Text(_formatAddress(cancelledInvoice))),
+                DataCell(_buildReasonChip(cancelledInvoice.reason)),
+                DataCell(Text(_formatDate(cancelledInvoice.created))),
                 DataCell(
                   Row(
                     children: [
@@ -97,10 +74,10 @@ class UndeliveredCustomerTable extends StatelessWidget {
                         icon: const Icon(Icons.visibility, color: Colors.blue),
                         tooltip: 'View Details',
                         onPressed: () {
-                          // View customer details
-                          if (customer.id != null) {
+                          // View cancelled invoice details
+                          if (cancelledInvoice.id != null) {
                             context.go(
-                              '/undeliverable-customers/${customer.id}',
+                              '/undeliverable-customers/${cancelledInvoice.id}',
                             );
                           }
                         },
@@ -109,10 +86,10 @@ class UndeliveredCustomerTable extends StatelessWidget {
                         icon: const Icon(Icons.edit, color: Colors.orange),
                         tooltip: 'Edit',
                         onPressed: () {
-                          // Edit customer
-                          if (customer.id != null) {
+                          // Edit cancelled invoice
+                          if (cancelledInvoice.id != null) {
                             context.go(
-                              '/undeliverable-customers/edit/${customer.id}',
+                              '/undeliverable-customers/edit/${cancelledInvoice.id}',
                             );
                           }
                         },
@@ -122,7 +99,7 @@ class UndeliveredCustomerTable extends StatelessWidget {
                         tooltip: 'Delete',
                         onPressed: () {
                           // Show confirmation dialog before deleting
-                          _showDeleteConfirmationDialog(context, customer);
+                          _showDeleteConfirmationDialog(context, cancelledInvoice);
                         },
                       ),
                     ],
@@ -138,7 +115,9 @@ class UndeliveredCustomerTable extends StatelessWidget {
       onFiltered: () {
         // Show filter dialog
         _showFilterDialog(context);
-      }, dataLength: '${undeliveredCustomers.length}', onDeleted: () {  },
+      }, 
+      dataLength: '${cancelledInvoices.length}', 
+      onDeleted: () {  },
     );
   }
 
@@ -186,13 +165,11 @@ class UndeliveredCustomerTable extends StatelessWidget {
     }
   }
 
-  String _formatAddress(UndeliverableCustomerEntity customer) {
-    final parts =
-        [
-          customer.address,
-          customer.municipality,
-          customer.province,
-        ].where((part) => part != null && part.isNotEmpty).toList();
+  String _formatAddress(CancelledInvoiceEntity cancelledInvoice) {
+    final parts = [
+      cancelledInvoice.customer?.municipality,
+      cancelledInvoice.customer?.province,
+    ].where((part) => part != null && part.isNotEmpty).toList();
 
     return parts.isEmpty ? 'No Address' : parts.join(', ');
   }
@@ -204,7 +181,7 @@ class UndeliveredCustomerTable extends StatelessWidget {
 
   Future<void> _showDeleteConfirmationDialog(
     BuildContext context,
-    UndeliverableCustomerEntity customer,
+    CancelledInvoiceEntity cancelledInvoice,
   ) async {
     return showDialog<void>(
       context: context,
@@ -216,7 +193,7 @@ class UndeliveredCustomerTable extends StatelessWidget {
             child: ListBody(
               children: <Widget>[
                 Text(
-                  'Are you sure you want to delete the undeliverable record for ${customer.storeName}?',
+                  'Are you sure you want to delete the undeliverable record for ${cancelledInvoice.customer?.name}?',
                 ),
                 const SizedBox(height: 10),
                 const Text('This action cannot be undone.'),
@@ -234,11 +211,11 @@ class UndeliveredCustomerTable extends StatelessWidget {
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                if (customer.id != null) {
-                  context.read<UndeliverableCustomerBloc>().add(
-                    DeleteUndeliverableCustomerEvent(customer.id!),
-                  );
-                }
+                // if (cancelledInvoice.id != null) {
+                //   context.read<UndeliverableCustomerBloc>().add(
+                //     DeleteUndeliverableCustomerEvent(cancelledInvoice.id!),
+                //   );
+                // }
               },
             ),
           ],

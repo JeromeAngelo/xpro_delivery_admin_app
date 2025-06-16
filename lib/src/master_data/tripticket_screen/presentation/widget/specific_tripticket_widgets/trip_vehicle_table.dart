@@ -1,10 +1,12 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/domain/entity/vehicle_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+// Import the new DeliveryVehicleEntity
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/domain/enitity/delivery_vehicle_entity.dart';
 
 class TripVehicleTable extends StatefulWidget {
   final String tripId;
@@ -60,38 +62,30 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
           );
         }
 
-        List<VehicleEntity> vehicles = [];
+        // Updated: Changed from List<VehicleEntity> to DeliveryVehicleEntity
+        DeliveryVehicleEntity? vehicle;
 
         if (state is TripTicketLoaded) {
-          vehicles = state.trip.vehicle;
-          debugPrint('✅ Loaded ${vehicles.length} vehicles from trip data');
+          vehicle = state.trip.vehicle;
+          debugPrint('✅ Loaded vehicle from trip data: ${vehicle?.plateNo}');
         }
 
-        // Calculate total pages
-        final int totalPages = (vehicles.length / _itemsPerPage).ceil();
-        final int effectiveTotalPages = totalPages == 0 ? 1 : totalPages;
+        // Create a list with a single vehicle if it exists
+        final List<DeliveryVehicleEntity> vehicles =
+            vehicle != null ? [vehicle] : [];
 
-        // Paginate vehicles
-        final startIndex = (_currentPage - 1) * _itemsPerPage;
-        final endIndex =
-            startIndex + _itemsPerPage > vehicles.length
-                ? vehicles.length
-                : startIndex + _itemsPerPage;
-
-        final paginatedVehicles =
-            startIndex < vehicles.length
-                ? vehicles.sublist(startIndex, endIndex)
-                : [];
+        // Calculate total pages - always 1 since we have at most 1 vehicle
+        final int totalPages = vehicles.isEmpty ? 1 : 1;
 
         // Create data rows from vehicles
         final List<DataRow> rows =
-            paginatedVehicles.map((vehicle) {
+            vehicles.map((vehicle) {
               return DataRow(
                 cells: [
                   DataCell(Text(vehicle.id ?? 'N/A')),
-                  DataCell(Text(vehicle.vehicleName ?? 'N/A')),
-                  DataCell(Text(vehicle.vehiclePlateNumber ?? 'N/A')),
-                  //   DataCell(_buildTypeChip(vehicle.vehicleType)),
+                  DataCell(Text(vehicle.name ?? 'N/A')),
+                  DataCell(Text(vehicle.plateNo ?? 'N/A')),
+                  DataCell(Text(vehicle.type ?? 'N/A')),
                   DataCell(
                     Row(
                       children: [
@@ -126,12 +120,12 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
             DataColumn(label: Text('ID')),
             DataColumn(label: Text('Name')),
             DataColumn(label: Text('Plate Number')),
-            //   DataColumn(label: Text('Type')),
+            DataColumn(label: Text('Type')),
             DataColumn(label: Text('Actions')),
           ],
           rows: rows,
           currentPage: _currentPage,
-          totalPages: effectiveTotalPages,
+          totalPages: totalPages,
           onPageChanged: (page) {
             setState(() {
               _currentPage = page;
@@ -145,51 +139,57 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
                     GetTripTicketByIdEvent(widget.tripId),
                   )
                   : null,
-          onFiltered: () {}, dataLength: '${vehicles.length}', onDeleted: () {  },
+          onFiltered: () {},
+          dataLength: '${vehicles.length}',
+          onDeleted: () {},
         );
       },
     );
   }
 
-  // Widget _buildTypeChip(String? type) {
-  //   if (type == null || type.isEmpty) return const Text('N/A');
+  // ignore: unused_element
+  Widget _buildTypeChip(String? type) {
+    if (type == null || type.isEmpty) return const Text('N/A');
 
-  //   Color chipColor;
+    Color chipColor;
 
-  //   switch (type.toLowerCase()) {
-  //     case 'truck':
-  //       chipColor = Colors.blue;
-  //       break;
-  //     case 'van':
-  //       chipColor = Colors.green;
-  //       break;
-  //     case 'motorcycle':
-  //       chipColor = Colors.orange;
-  //       break;
-  //     default:
-  //       chipColor = Colors.grey;
-  //   }
+    switch (type.toLowerCase()) {
+      case 'truck':
+        chipColor = Colors.blue;
+        break;
+      case 'van':
+        chipColor = Colors.green;
+        break;
+      case 'motorcycle':
+        chipColor = Colors.orange;
+        break;
+      default:
+        chipColor = Colors.grey;
+    }
 
-  //   return Chip(
-  //     label: Text(
-  //       type,
-  //       style: const TextStyle(
-  //         color: Color.fromARGB(255, 41, 40, 40),
-  //         fontSize: 12,
-  //       ),
-  //     ),
-  //     backgroundColor: chipColor,
-  //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-  //     visualDensity: VisualDensity.compact,
-  //   );
-  // }
+    return Chip(
+      label: Text(
+        type,
+        style: const TextStyle(
+          color: Color.fromARGB(255, 41, 40, 40),
+          fontSize: 12,
+        ),
+      ),
+      backgroundColor: chipColor,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      visualDensity: VisualDensity.compact,
+    );
+  }
 
-  void _showEditVehicleDialog(BuildContext context, VehicleEntity vehicle) {
+  void _showEditVehicleDialog(
+    BuildContext context,
+    DeliveryVehicleEntity vehicle,
+  ) {
     // This would be implemented to show a dialog for editing vehicle
     // For now, just show a snackbar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Edit vehicle: ${vehicle.vehicleName}'),
+        content: Text('Edit vehicle: ${vehicle.name}'),
         action: SnackBarAction(label: 'OK', onPressed: () {}),
       ),
     );
@@ -197,7 +197,7 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
 
   void _showDeleteConfirmationDialog(
     BuildContext context,
-    VehicleEntity vehicle,
+    DeliveryVehicleEntity vehicle,
   ) {
     showDialog<void>(
       context: context,
@@ -208,7 +208,7 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('Are you sure you want to delete ${vehicle.vehicleName}?'),
+                Text('Are you sure you want to delete ${vehicle.name}?'),
                 const SizedBox(height: 10),
                 const Text('This action cannot be undone.'),
               ],
@@ -232,7 +232,7 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Vehicle ${vehicle.vehicleName} would be removed from trip',
+                      'Vehicle ${vehicle.name} would be removed from trip',
                     ),
                     action: SnackBarAction(label: 'OK', onPressed: () {}),
                   ),

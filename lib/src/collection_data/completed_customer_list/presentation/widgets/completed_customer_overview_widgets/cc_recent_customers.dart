@@ -1,30 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/entity/completed_customer_entity.dart';
-import 'package:xpro_delivery_admin_app/core/enums/mode_of_payment.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/domain/entity/collection_entity.dart';
 
 class RecentCompletedCustomers extends StatelessWidget {
-  final List<CompletedCustomerEntity> customers;
+  final List<CollectionEntity> collections;
   final bool isLoading;
 
   const RecentCompletedCustomers({
     super.key,
-    required this.customers,
+    required this.collections,
     this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Sort customers by completion date (newest first)
-    final sortedCustomers = List<CompletedCustomerEntity>.from(customers)..sort(
-      (a, b) => (b.timeCompleted ?? DateTime.now()).compareTo(
-        a.timeCompleted ?? DateTime.now(),
+    // Sort collections by creation date (newest first)
+    final sortedCollections = List<CollectionEntity>.from(collections)..sort(
+      (a, b) => (b.created ?? DateTime.now()).compareTo(
+        a.created ?? DateTime.now(),
       ),
     );
 
-    // Take only the 5 most recent customers
-    final recentCustomers = sortedCustomers.take(5).toList();
+    // Take only the 5 most recent collections
+    final recentCollections = sortedCollections.take(5).toList();
 
     return Card(
       elevation: 2,
@@ -38,13 +37,13 @@ class RecentCompletedCustomers extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Recent Completed Customers',
+                  'Recent Collections',
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 TextButton.icon(
-                  onPressed: () => context.go('/completed-customers'),
+                  onPressed: () => context.go('/completed-collections'),
                   icon: const Icon(Icons.visibility),
                   label: const Text('View All'),
                 ),
@@ -58,7 +57,7 @@ class RecentCompletedCustomers extends StatelessWidget {
                   child: CircularProgressIndicator(),
                 ),
               )
-            else if (recentCustomers.isEmpty)
+            else if (recentCollections.isEmpty)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32.0),
@@ -71,7 +70,7 @@ class RecentCompletedCustomers extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'No completed customers found',
+                        'No collections found',
                         style: TextStyle(color: Colors.grey[600]),
                       ),
                     ],
@@ -82,10 +81,10 @@ class RecentCompletedCustomers extends StatelessWidget {
               Table(
                 columnWidths: const {
                   0: FlexColumnWidth(2), // Store Name
-                  1: FlexColumnWidth(2), // Address
-                  2: FlexColumnWidth(1.5), // Completion Date
-                  3: FlexColumnWidth(1.5), // Amount
-                  4: FlexColumnWidth(1.5), // Payment Mode
+                  1: FlexColumnWidth(1.5), // Collection Name
+                  2: FlexColumnWidth(1.5), // Delivery Number
+                  3: FlexColumnWidth(1.5), // Created Date
+                  4: FlexColumnWidth(1.5), // Amount
                   5: FlexColumnWidth(1), // Actions
                 },
                 border: TableBorder(
@@ -100,35 +99,29 @@ class RecentCompletedCustomers extends StatelessWidget {
                     decoration: BoxDecoration(color: Colors.grey[100]),
                     children: [
                       _buildTableHeader(context, 'Store Name'),
-                      _buildTableHeader(context, 'Address'),
-                      _buildTableHeader(context, 'Completion Date'),
+                      _buildTableHeader(context, 'Collection'),
+                      _buildTableHeader(context, 'Delivery #'),
+                      _buildTableHeader(context, 'Created Date'),
                       _buildTableHeader(context, 'Amount'),
-                      _buildTableHeader(context, 'Payment Mode'),
                       _buildTableHeader(context, 'Actions'),
                     ],
                   ),
                   // Table Rows
-                  ...recentCustomers.map(
-                    (customer) => TableRow(
+                  ...recentCollections.map(
+                    (collection) => TableRow(
                       children: [
-                        _buildTableCell(context, customer.storeName ?? 'N/A'),
-                        _buildTableCell(context, customer.address ?? 'N/A'),
+                        _buildTableCell(context, collection.customer?.name ?? 'N/A'),
+                        _buildTableCell(context, collection.collectionName ?? 'N/A'),
+                        _buildTableCell(context, collection.deliveryData?.deliveryNumber ?? 'N/A'),
                         _buildTableCell(
                           context,
-                          _formatDate(customer.timeCompleted),
+                          _formatDate(collection.created),
                         ),
                         _buildTableCell(
                           context,
-                          _formatCurrency(customer.totalAmount ?? 0),
+                          _formatCurrency(collection.totalAmount ?? 0),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8.0,
-                            horizontal: 16.0,
-                          ),
-                          child: _buildPaymentModeChip(customer),
-                        ),
-                        _buildActionCell(context, customer),
+                        _buildActionCell(context, collection),
                       ],
                     ),
                   ),
@@ -162,67 +155,37 @@ class RecentCompletedCustomers extends StatelessWidget {
 
   Widget _buildActionCell(
     BuildContext context,
-    CompletedCustomerEntity customer,
+    CollectionEntity collection,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: IconButton(
-        icon: const Icon(Icons.visibility, color: Colors.blue),
-        onPressed: () {
-          if (customer.id != null) {
-            context.go('/completed-customers/details/${customer.id}');
-          }
-        },
-        tooltip: 'View Details',
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.visibility, color: Colors.blue),
+            onPressed: () {
+              if (collection.id != null) {
+                context.go('/completed-collections/details/${collection.id}');
+              }
+            },
+            tooltip: 'View Details',
+          ),
+          IconButton(
+            icon: const Icon(Icons.print, color: Colors.green),
+            onPressed: () {
+              // Print collection receipt
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Printing receipt for ${collection.customer?.name ?? 'collection'}...',
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Print Receipt',
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildPaymentModeChip(CompletedCustomerEntity customer) {
-    // Determine payment mode and color
-    Color color;
-    String paymentModeText;
-
-    if (customer.modeOfPaymentString != null) {
-      final paymentMode = ModeOfPayment.values.firstWhere(
-        (mode) => mode.toString() == customer.modeOfPaymentString,
-        orElse: () => ModeOfPayment.cashOnDelivery,
-      );
-
-      switch (paymentMode) {
-        case ModeOfPayment.cashOnDelivery:
-          color = Colors.orange;
-          paymentModeText = 'Cash on Delivery';
-          break;
-        case ModeOfPayment.bankTransfer:
-          color = Colors.purple;
-          paymentModeText = 'Bank Transfer';
-          break;
-        case ModeOfPayment.cheque:
-          color = Colors.indigo;
-          paymentModeText = 'Cheque';
-          break;
-        case ModeOfPayment.eWallet:
-          color = Colors.teal;
-          paymentModeText = 'E-Wallet';
-          break;
-      }
-    } else if (customer.modeOfPayment != null) {
-      paymentModeText = customer.modeOfPayment!;
-      color = Colors.blue;
-    } else {
-      paymentModeText = 'Unknown';
-      color = Colors.grey;
-    }
-
-    return Chip(
-      label: Text(
-        paymentModeText,
-        style: const TextStyle(color: Colors.white, fontSize: 12),
-      ),
-      backgroundColor: color,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-      visualDensity: VisualDensity.compact,
     );
   }
 

@@ -1,7 +1,7 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/domain/entity/customer_data_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/customer_screen/presentation/widgets/customer_list_view_widget/customer_data_table.dart';
@@ -29,7 +29,7 @@ class _CustomerListScreenViewState extends State<CustomerListScreenView> {
   void initState() {
     super.initState();
     // Load customers when the screen initializes
-    context.read<CustomerBloc>().add(const GetAllCustomersEvent());
+    context.read<CustomerDataBloc>().add(const GetAllCustomerDataEvent());
   }
 
   @override
@@ -59,18 +59,19 @@ class _CustomerListScreenViewState extends State<CustomerListScreenView> {
       onProfileTap: () {
         // Handle profile tap
       },
-      child: BlocBuilder<CustomerBloc, CustomerState>(
+      child: BlocBuilder<CustomerDataBloc, CustomerDataState>(
         builder: (context, state) {
-          // Handle different states
-          if (state is CustomerInitial) {
+          // Handle different states - SAME FORMAT AS INVOICE PRESET GROUPS
+          if (state is CustomerDataInitial) {
             // Initial state, trigger loading
-            context.read<CustomerBloc>().add(const GetAllCustomersEvent());
+            context.read<CustomerDataBloc>().add(const GetAllCustomerDataEvent());
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is CustomerLoading) {
+          if (state is CustomerDataLoading) {
+            // Return the table directly with loading state - NO WRAPPING
             return CustomerDataTable(
-              customers: [],
+              customers: const <CustomerDataEntity>[],
               isLoading: true,
               currentPage: _currentPage,
               totalPages: _totalPages,
@@ -89,31 +90,34 @@ class _CustomerListScreenViewState extends State<CustomerListScreenView> {
             );
           }
 
-          if (state is CustomerError) {
+          if (state is CustomerDataError) {
             return CustomerErrorWidget(errorMessage: state.message);
           }
 
-          if (state is AllCustomersLoaded) {
-            List<CustomerEntity> customers = state.customers;
+          if (state is AllCustomerDataLoaded) {
+            // Create an empty list of CustomerDataEntity
+            List<CustomerDataEntity> customers = <CustomerDataEntity>[];
+            
+            // Only try to map if there are items in the list
+            if (state.customerData.isNotEmpty) {
+              // Safely map each item to CustomerDataEntity
+              customers = state.customerData.map((customer) {
+                // Ensure each item is a CustomerDataEntity
+                return customer;
+              }).toList();
+            }
 
             // Filter customers based on search query
             if (_searchQuery.isNotEmpty) {
-              customers =
-                  customers.where((customer) {
-                    final query = _searchQuery.toLowerCase();
-                    return (customer.id?.toLowerCase().contains(query) ??
-                            false) ||
-                        (customer.storeName?.toLowerCase().contains(query) ??
-                            false) ||
-                        (customer.ownerName?.toLowerCase().contains(query) ??
-                            false) ||
-                        (customer.address?.toLowerCase().contains(query) ??
-                            false) ||
-                        (customer.deliveryNumber?.toLowerCase().contains(
-                              query,
-                            ) ??
-                            false);
-                  }).toList();
+              customers = customers.where((customer) {
+                final query = _searchQuery.toLowerCase();
+                return (customer.id?.toLowerCase().contains(query) ?? false) ||
+                    (customer.name?.toLowerCase().contains(query) ?? false) ||
+                    (customer.refId?.toLowerCase().contains(query) ?? false) ||
+                    (customer.province?.toLowerCase().contains(query) ?? false) ||
+                    (customer.municipality?.toLowerCase().contains(query) ?? false) ||
+                    (customer.barangay?.toLowerCase().contains(query) ?? false);
+              }).toList();
             }
 
             // Calculate total pages
@@ -122,18 +126,18 @@ class _CustomerListScreenViewState extends State<CustomerListScreenView> {
 
             // Paginate customers
             final startIndex = (_currentPage - 1) * _itemsPerPage;
-            final endIndex =
-                startIndex + _itemsPerPage > customers.length
-                    ? customers.length
-                    : startIndex + _itemsPerPage;
+            final endIndex = startIndex + _itemsPerPage > customers.length
+                ? customers.length
+                : startIndex + _itemsPerPage;
 
-            final paginatedCustomers =
+            final List<CustomerDataEntity> paginatedCustomers =
                 startIndex < customers.length
-                    ? customers.sublist(startIndex, endIndex)
-                    : [];
+                    ? List<CustomerDataEntity>.from(customers.sublist(startIndex, endIndex))
+                    : <CustomerDataEntity>[];
 
+            // Return the table directly - NO WRAPPING WITH COLUMN/SINGLECHILDSCROLLVIEW
             return CustomerDataTable(
-              customers: paginatedCustomers as List<CustomerEntity>,
+              customers: paginatedCustomers,
               isLoading: false,
               currentPage: _currentPage,
               totalPages: _totalPages,
@@ -147,23 +151,12 @@ class _CustomerListScreenViewState extends State<CustomerListScreenView> {
               onSearchChanged: (value) {
                 setState(() {
                   _searchQuery = value;
+                  _currentPage = 1; // Reset to first page when searching
                 });
-
-                if (value.isEmpty) {
-                  // If search query is cleared, load all customers
-                  context.read<CustomerBloc>().add(
-                    const GetAllCustomersEvent(),
-                  );
-                }
-                // Search functionality will be implemented later
-                // else {
-                //   // If search query is not empty, search customers
-                //   // context.read<CustomerBloc>().add(SearchCustomersEvent(value));
-                // }
               },
               errorMessage: null,
               onRetry: () {
-                context.read<CustomerBloc>().add(const GetAllCustomersEvent());
+                context.read<CustomerDataBloc>().add(const GetAllCustomerDataEvent());
               },
             );
           }
@@ -171,7 +164,7 @@ class _CustomerListScreenViewState extends State<CustomerListScreenView> {
           // Default fallback
           return const Center(
             child: Text(
-              'Unknown state - Please check your CustomerBloc implementation',
+              'Unknown state - Please check your CustomerDataBloc implementation',
             ),
           );
         },

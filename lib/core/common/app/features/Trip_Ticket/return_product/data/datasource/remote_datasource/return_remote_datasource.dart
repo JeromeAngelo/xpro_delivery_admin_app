@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/data/model/return_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
 import 'package:xpro_delivery_admin_app/core/enums/product_return_reason.dart';
@@ -153,24 +151,7 @@ class ReturnRemoteDatasourceImpl implements ReturnRemoteDatasource {
 
       final returnRecord = returns.first as RecordModel;
 
-      final invoices = returnRecord.expand['invoice'] as List?;
-      final invoice =
-          invoices?.isNotEmpty == true
-              ? InvoiceModel.fromJson({
-                'id': (invoices!.first as RecordModel).id,
-                'collectionId': (invoices.first as RecordModel).collectionId,
-                'collectionName':
-                    (invoices.first as RecordModel).collectionName,
-                ...(invoices.first as RecordModel).data,
-              })
-              : null;
-
-      final customer = CustomerModel.fromJson({
-        'id': customerRecord.id,
-        'collectionId': customerRecord.collectionId,
-        'collectionName': customerRecord.collectionName,
-        ...customerRecord.data,
-      });
+   //   final invoices = returnRecord.expand['invoice'] as List?;
 
       final trips = returnRecord.expand['trip'] as List?;
       final trip =
@@ -215,8 +196,7 @@ class ReturnRemoteDatasourceImpl implements ReturnRemoteDatasource {
         returnDate: DateTime.tryParse(
           returnRecord.data['returnDate']?.toString() ?? '',
         ),
-        invoice: invoice,
-        customer: customer,
+
         trip: trip,
       );
     } catch (e) {
@@ -279,30 +259,7 @@ class ReturnRemoteDatasourceImpl implements ReturnRemoteDatasource {
 
       debugPrint('✅ Return record created successfully: ${record.id}');
 
-      // Process expanded data
-      InvoiceModel? invoice;
-      CustomerModel? customer;
       TripModel? trip;
-
-      if (createdRecord.expand['invoice'] != null) {
-        final invoiceData = createdRecord.expand['invoice']![0];
-        invoice = InvoiceModel.fromJson({
-          'id': invoiceData.id,
-          'collectionId': invoiceData.collectionId,
-          'collectionName': invoiceData.collectionName,
-          ...invoiceData.data,
-        });
-      }
-
-      if (createdRecord.expand['customer'] != null) {
-        final customerData = createdRecord.expand['customer']![0];
-        customer = CustomerModel.fromJson({
-          'id': customerData.id,
-          'collectionId': customerData.collectionId,
-          'collectionName': customerData.collectionName,
-          ...customerData.data,
-        });
-      }
 
       if (createdRecord.expand['trip'] != null) {
         final tripData = createdRecord.expand['trip']![0];
@@ -346,8 +303,7 @@ class ReturnRemoteDatasourceImpl implements ReturnRemoteDatasource {
             createdRecord.data['isPack'] == true,
         reason: reason,
         returnDate: returnDate,
-        invoice: invoice,
-        customer: customer,
+
         trip: trip,
       );
     } catch (e) {
@@ -427,171 +383,139 @@ class ReturnRemoteDatasourceImpl implements ReturnRemoteDatasource {
       );
     }
   }
+
   @override
-Future<List<ReturnModel>> getAllReturns() async {
-  try {
-    debugPrint('🔄 Fetching all returns');
-    
-    final records = await _pocketBaseClient
-        .collection('returns')
-        .getFullList(expand: 'invoice,customer,trip');
-    
-    debugPrint('✅ Retrieved ${records.length} returns from API');
-    
-    List<ReturnModel> returnsList = [];
-    
-    for (final record in records) {
-      try {
-        debugPrint('📦 Processing return record: ${record.id}');
-        
-        // Check if we have product data or just an ID
-        if (record.data['productName'] == null) {
-          debugPrint('   🏷️ Product data: ${record.id} (ID only)');
-          // This is just an ID reference, create a minimal model
+  Future<List<ReturnModel>> getAllReturns() async {
+    try {
+      debugPrint('🔄 Fetching all returns');
+
+      final records = await _pocketBaseClient
+          .collection('returns')
+          .getFullList(expand: 'invoice,customer,trip');
+
+      debugPrint('✅ Retrieved ${records.length} returns from API');
+
+      List<ReturnModel> returnsList = [];
+
+      for (final record in records) {
+        try {
+          debugPrint('📦 Processing return record: ${record.id}');
+
+          // Check if we have product data or just an ID
+          if (record.data['productName'] == null) {
+            debugPrint('   🏷️ Product data: ${record.id} (ID only)');
+            // This is just an ID reference, create a minimal model
+            returnsList.add(ReturnModel(id: record.id));
+            continue;
+          }
+
+          // Create a direct ReturnModel without using fromJson
+          final returnModel = ReturnModel(
+            id: record.id,
+            collectionId: record.collectionId,
+            collectionName: record.collectionName,
+            productName: record.data['productName']?.toString(),
+            productDescription: record.data['productDescription']?.toString(),
+            productQuantityCase: int.tryParse(
+              record.data['productQuantityCase']?.toString() ?? '0',
+            ),
+            productQuantityPcs: int.tryParse(
+              record.data['productQuantityPcs']?.toString() ?? '0',
+            ),
+            productQuantityPack: int.tryParse(
+              record.data['productQuantityPack']?.toString() ?? '0',
+            ),
+            productQuantityBox: int.tryParse(
+              record.data['productQuantityBox']?.toString() ?? '0',
+            ),
+            isCase:
+                record.data['isCase'] == true ||
+                record.data['isCase'] == 'true',
+            isPcs:
+                record.data['isPcs'] == true || record.data['isPcs'] == 'true',
+            isBox:
+                record.data['isBox'] == true || record.data['isBox'] == 'true',
+            isPack:
+                record.data['isPack'] == true ||
+                record.data['isPack'] == 'true',
+            reason:
+                record.data['reason'] != null
+                    ? _parseReturnReason(record.data['reason'].toString())
+                    : null,
+            returnDate:
+                record.data['returnDate'] != null
+                    ? DateTime.tryParse(record.data['returnDate'].toString())
+                    : null,
+            tripId: record.data['trip']?.toString(),
+          );
+
+          // Process expanded data if available
+          if (record.expand.isNotEmpty) {
+            // Process trip
+            if (record.expand['trip'] != null) {
+              final tripData = record.expand['trip'];
+              if (tripData is List && tripData!.isNotEmpty) {
+                try {
+                  final tripRecord = tripData.first;
+                  final trip = TripModel.fromJson({
+                    'id': tripRecord.id,
+                    'collectionId': tripRecord.collectionId,
+                    'collectionName': tripRecord.collectionName,
+                    ...Map<String, dynamic>.from(tripRecord.data),
+                  });
+                  returnModel.trip = trip;
+                } catch (e) {
+                  debugPrint('⚠️ Error processing trip: $e');
+                }
+              }
+            }
+          }
+
+          returnsList.add(returnModel);
+          debugPrint('✅ Successfully processed return: ${record.id}');
+        } catch (itemError) {
+          debugPrint('⚠️ Error processing return item: $itemError');
+          // Add a minimal model with just the ID to avoid losing the entire list
           returnsList.add(ReturnModel(id: record.id));
-          continue;
         }
-        
-        // Create a direct ReturnModel without using fromJson
-        final returnModel = ReturnModel(
-          id: record.id,
-          collectionId: record.collectionId,
-          collectionName: record.collectionName,
-          productName: record.data['productName']?.toString(),
-          productDescription: record.data['productDescription']?.toString(),
-          productQuantityCase: int.tryParse(
-            record.data['productQuantityCase']?.toString() ?? '0',
-          ),
-          productQuantityPcs: int.tryParse(
-            record.data['productQuantityPcs']?.toString() ?? '0',
-          ),
-          productQuantityPack: int.tryParse(
-            record.data['productQuantityPack']?.toString() ?? '0',
-          ),
-          productQuantityBox: int.tryParse(
-            record.data['productQuantityBox']?.toString() ?? '0',
-          ),
-          isCase: record.data['isCase'] == true || record.data['isCase'] == 'true',
-          isPcs: record.data['isPcs'] == true || record.data['isPcs'] == 'true',
-          isBox: record.data['isBox'] == true || record.data['isBox'] == 'true',
-          isPack: record.data['isPack'] == true || record.data['isPack'] == 'true',
-          reason: record.data['reason'] != null 
-              ? _parseReturnReason(record.data['reason'].toString())
-              : null,
-          returnDate: record.data['returnDate'] != null 
-              ? DateTime.tryParse(record.data['returnDate'].toString())
-              : null,
-          tripId: record.data['trip']?.toString(),
-        );
-        
-        // Process expanded data if available
-        if (record.expand.isNotEmpty) {
-          // Process invoice
-          if (record.expand['invoice'] != null) {
-            final invoiceData = record.expand['invoice'];
-            if (invoiceData is List && invoiceData!.isNotEmpty) {
-              try {
-                final invoiceRecord = invoiceData.first;
-                final invoice = InvoiceModel.fromJson({
-                  'id': invoiceRecord.id,
-                  'collectionId': invoiceRecord.collectionId,
-                  'collectionName': invoiceRecord.collectionName,
-                  ...Map<String, dynamic>.from(invoiceRecord.data),
-                });
-                returnModel.invoice = invoice;
-                            } catch (e) {
-                debugPrint('⚠️ Error processing invoice: $e');
-              }
-            }
-          }
-          
-          // Process customer
-          if (record.expand['customer'] != null) {
-            final customerData = record.expand['customer'];
-            if (customerData is List && customerData!.isNotEmpty) {
-              try {
-                final customerRecord = customerData.first;
-                final customer = CustomerModel.fromJson({
-                  'id': customerRecord.id,
-                  'collectionId': customerRecord.collectionId,
-                  'collectionName': customerRecord.collectionName,
-                  ...Map<String, dynamic>.from(customerRecord.data),
-                });
-                returnModel.customer = customer;
-                            } catch (e) {
-                debugPrint('⚠️ Error processing customer: $e');
-              }
-            }
-          }
-          
-          // Process trip
-          if (record.expand['trip'] != null) {
-            final tripData = record.expand['trip'];
-            if (tripData is List && tripData!.isNotEmpty) {
-              try {
-                final tripRecord = tripData.first;
-                final trip = TripModel.fromJson({
-                  'id': tripRecord.id,
-                  'collectionId': tripRecord.collectionId,
-                  'collectionName': tripRecord.collectionName,
-                  ...Map<String, dynamic>.from(tripRecord.data),
-                });
-                returnModel.trip = trip;
-                            } catch (e) {
-                debugPrint('⚠️ Error processing trip: $e');
-              }
-            }
-          }
+      }
+
+      debugPrint('✅ Successfully fetched ${returnsList.length} returns');
+      return returnsList;
+    } catch (e) {
+      debugPrint('❌ Returns fetch failed: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to load all returns: ${e.toString()}',
+        statusCode: '500',
+      );
+    }
+  }
+
+  // Helper method to parse return reason
+  ProductReturnReason _parseReturnReason(String reasonStr) {
+    try {
+      // First try to match the exact string
+      for (var reason in ProductReturnReason.values) {
+        if (reason.toString() == reasonStr ||
+            reason.toString() == 'ProductReturnReason.$reasonStr') {
+          return reason;
         }
-        
-        returnsList.add(returnModel);
-        debugPrint('✅ Successfully processed return: ${record.id}');
-        
-      } catch (itemError) {
-        debugPrint('⚠️ Error processing return item: $itemError');
-        // Add a minimal model with just the ID to avoid losing the entire list
-        returnsList.add(ReturnModel(id: record.id));
       }
-    }
-    
-    debugPrint('✅ Successfully fetched ${returnsList.length} returns');
-    return returnsList;
-    
-  } catch (e) {
-    debugPrint('❌ Returns fetch failed: ${e.toString()}');
-    throw ServerException(
-      message: 'Failed to load all returns: ${e.toString()}',
-      statusCode: '500',
-    );
-  }
-}
 
+      // If not found, try to match just the name part
+      for (var reason in ProductReturnReason.values) {
+        final reasonName = reason.toString().split('.').last;
+        if (reasonStr == reasonName) {
+          return reason;
+        }
+      }
 
-// Helper method to parse return reason
-ProductReturnReason _parseReturnReason(String reasonStr) {
-  try {
-    // First try to match the exact string
-    for (var reason in ProductReturnReason.values) {
-      if (reason.toString() == reasonStr || 
-          reason.toString() == 'ProductReturnReason.$reasonStr') {
-        return reason;
-      }
+      // Default fallback
+      return ProductReturnReason.damaged;
+    } catch (_) {
+      return ProductReturnReason.damaged;
     }
-    
-    // If not found, try to match just the name part
-    for (var reason in ProductReturnReason.values) {
-      final reasonName = reason.toString().split('.').last;
-      if (reasonStr == reasonName) {
-        return reason;
-      }
-    }
-    
-    // Default fallback
-    return ProductReturnReason.damaged;
-  } catch (_) {
-    return ProductReturnReason.damaged;
   }
-}
 
   @override
   Future<ReturnModel> updateReturn({
@@ -653,29 +577,8 @@ ProductReturnReason _parseReturnReason(String reasonStr) {
       debugPrint('✅ Return record updated successfully');
 
       // Process expanded data
-      InvoiceModel? invoice;
-      CustomerModel? customer;
+
       TripModel? trip;
-
-      if (updatedRecord.expand['invoice'] != null) {
-        final invoiceData = updatedRecord.expand['invoice']![0];
-        invoice = InvoiceModel.fromJson({
-          'id': invoiceData.id,
-          'collectionId': invoiceData.collectionId,
-          'collectionName': invoiceData.collectionName,
-          ...invoiceData.data,
-        });
-      }
-
-      if (updatedRecord.expand['customer'] != null) {
-        final customerData = updatedRecord.expand['customer']![0];
-        customer = CustomerModel.fromJson({
-          'id': customerData.id,
-          'collectionId': customerData.collectionId,
-          'collectionName': customerData.collectionName,
-          ...customerData.data,
-        });
-      }
 
       if (updatedRecord.expand['trip'] != null) {
         final tripData = updatedRecord.expand['trip']![0];
@@ -726,8 +629,7 @@ ProductReturnReason _parseReturnReason(String reasonStr) {
         returnDate:
             returnDate ??
             DateTime.tryParse(updatedRecord.data['returnDate'] ?? ''),
-        invoice: invoice,
-        customer: customer,
+
         trip: trip,
       );
     } catch (e) {

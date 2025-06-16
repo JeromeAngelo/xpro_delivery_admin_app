@@ -1,6 +1,7 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/entity/completed_customer_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_event.dart';
+
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/domain/entity/collection_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 import 'package:xpro_delivery_admin_app/core/enums/mode_of_payment.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,7 @@ import 'package:intl/intl.dart';
 
 class CollectionCompletedCustomersTable extends StatefulWidget {
   final String tripId;
-  final List<CompletedCustomerEntity> completedCustomers;
+  final List<CollectionEntity> completedCustomers;
   final bool isLoading;
 
   const CollectionCompletedCustomersTable({
@@ -42,16 +43,16 @@ class _CollectionCompletedCustomersTableState
   @override
   Widget build(BuildContext context) {
     // Filter customers based on search query
-    List<CompletedCustomerEntity> filteredCustomers = widget.completedCustomers;
+    List<CollectionEntity> filteredCustomers = widget.completedCustomers;
     if (_searchQuery.isNotEmpty) {
       filteredCustomers =
           filteredCustomers.where((customer) {
             final query = _searchQuery.toLowerCase();
-            return (customer.storeName?.toLowerCase().contains(query) ??
+            return (customer.customer!.name?.toLowerCase().contains(query) ??
                     false) ||
-                (customer.deliveryNumber?.toLowerCase().contains(query) ??
+                (customer.customer!.id?.toLowerCase().contains(query) ??
                     false) ||
-                (customer.ownerName?.toLowerCase().contains(query) ?? false);
+                (customer.customer!.ownerName?.toLowerCase().contains(query) ?? false);
           }).toList();
     }
 
@@ -240,7 +241,7 @@ class _CollectionCompletedCustomersTableState
 
   void _showCustomerDetailsDialog(
     BuildContext context,
-    CompletedCustomerEntity customer,
+    CollectionEntity customer,
   ) {
     // Format currency
     final currencyFormatter = NumberFormat.currency(
@@ -252,7 +253,7 @@ class _CollectionCompletedCustomersTableState
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text(customer.storeName ?? 'Customer Details'),
+            title: Text(customer.customer!.name ?? 'Customer Details'),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,29 +261,29 @@ class _CollectionCompletedCustomersTableState
                 children: [
                   _buildDetailRow(
                     'Delivery Number',
-                    customer.deliveryNumber ?? 'N/A',
+                    customer.deliveryData!.deliveryNumber ?? 'N/A',
                   ),
-                  _buildDetailRow('Owner Name', customer.ownerName ?? 'N/A'),
+                  _buildDetailRow('Owner Name', customer.customer!.name ?? 'N/A'),
                   _buildDetailRow(
                     'Contact',
-                    customer.contactNumber?.join(', ') ?? 'N/A',
+                    customer.customer!.contactNumber ?? 'N/A',
                   ),
-                  _buildDetailRow('Address', customer.address ?? 'N/A'),
+                  _buildDetailRow('Address', customer.customer!.province ?? 'N/A'),
                   _buildDetailRow(
                     'Municipality',
-                    customer.municipality ?? 'N/A',
+                    customer.customer!.municipality ?? 'N/A',
                   ),
-                  _buildDetailRow('Province', customer.province ?? 'N/A'),
+                  _buildDetailRow('Province', customer.customer!.province ?? 'N/A'),
                   _buildDetailRow(
                     'Mode of Payment',
-                    _formatModeOfPayment(customer.modeOfPayment),
+                    _formatModeOfPayment(customer.customer!.paymentMode),
                   ),
                   _buildDetailRow(
                     'Completed At',
-                    customer.timeCompleted != null
+                    customer.created != null
                         ? DateFormat(
                           'MMM dd, yyyy hh:mm a',
-                        ).format(customer.timeCompleted!)
+                        ).format(customer.created!)
                         : 'N/A',
                   ),
                   _buildDetailRow(
@@ -291,38 +292,8 @@ class _CollectionCompletedCustomersTableState
                         ? currencyFormatter.format(customer.totalAmount)
                         : 'N/A',
                   ),
-                  _buildDetailRow('Total Time', customer.totalTime ?? 'N/A'),
 
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Invoices',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  customer.invoices.isNotEmpty
-                      ? Column(
-                        children:
-                            customer.invoices.map((invoice) {
-                              return ListTile(
-                                title: Text(invoice.invoiceNumber ?? 'N/A'),
-                                subtitle: Text(
-                                  invoice.totalAmount != null
-                                      ? currencyFormatter.format(
-                                        invoice.totalAmount,
-                                      )
-                                      : 'N/A',
-                                ),
-                                trailing: Text(
-                                  invoice.created != null
-                                      ? DateFormat(
-                                        'MMM dd, yyyy',
-                                      ).format(invoice.created!)
-                                      : 'N/A',
-                                ),
-                              );
-                            }).toList(),
-                      )
-                      : const Text('No invoices available'),
+                 
                 ],
               ),
             ),
@@ -423,11 +394,11 @@ class _CollectionCompletedCustomersTableState
 
   void _navigateToCustomerData(
     BuildContext context,
-    CompletedCustomerEntity customer,
+    CollectionEntity customer,
   ) {
     if (customer.id != null) {
-      context.read<CompletedCustomerBloc>().add(
-        GetCompletedCustomerByIdEvent(customer.id!),
+      context.read<CollectionsBloc>().add(
+        GetCollectionByIdEvent(customer.id!),
       );
 
       context.go('/completed-customers/:{$customer.id}');

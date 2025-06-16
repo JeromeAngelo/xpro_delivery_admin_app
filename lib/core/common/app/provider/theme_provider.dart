@@ -15,10 +15,10 @@ class ThemeProvider extends ChangeNotifier {
   
   // Current theme data based on mode
   ThemeData get theme {
-    if (_themeMode == ThemeMode.dark) {
-      return AppTheme.dark;
-    } else if (_themeMode == ThemeMode.light) {
+    if (_themeMode == ThemeMode.light) {
       return AppTheme.light;
+    } else if (_themeMode == ThemeMode.dark) {
+      return AppTheme.dark;
     } else {
       // System theme
       final brightness = SchedulerBinding.instance.platformDispatcher.platformBrightness;

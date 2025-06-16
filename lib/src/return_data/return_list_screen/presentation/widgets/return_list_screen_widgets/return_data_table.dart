@@ -49,7 +49,6 @@ class ReturnDataTable extends StatelessWidget {
         DataColumn(label: Text('Product Name')),
         DataColumn(label: Text('Reason')),
         DataColumn(label: Text('Return Date')),
-        DataColumn(label: Text('Customer')),
         DataColumn(label: Text('Trip')),
         DataColumn(label: Text('Quantity')),
         DataColumn(label: Text('Actions')),
@@ -64,24 +63,7 @@ class ReturnDataTable extends StatelessWidget {
                   ? DateFormat('MMM dd, yyyy').format(returnItem.returnDate!)
                   : 'N/A',
             )),
-            DataCell(
-              returnItem.customer != null
-                  ? InkWell(
-                      onTap: () {
-                        if (returnItem.customer?.id != null) {
-                          context.go('/customers/${returnItem.customer!.id}');
-                        }
-                      },
-                      child: Text(
-                        returnItem.customer?.storeName ?? 'N/A',
-                        style: const TextStyle(
-                          color: Colors.blue,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    )
-                  : const Text('N/A'),
-            ),
+          
             DataCell(
               returnItem.trip != null
                   ? InkWell(

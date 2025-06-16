@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
 import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/customer_tile.dart';
 
 class StatusContainer extends StatelessWidget {
@@ -7,16 +7,16 @@ class StatusContainer extends StatelessWidget {
   final String subtitle;
   final IconData statusIcon;
   final Color statusColor;
-  final List<CustomerEntity> customers;
-  final Function(CustomerEntity) onCustomerTap;
+  final List<DeliveryDataEntity> deliveryDataList;
+  final Function(DeliveryDataEntity) onDeliveryDataTap;
 
   const StatusContainer({
     super.key,
     required this.statusName,
     required this.statusIcon,
     required this.statusColor,
-    required this.customers,
-    required this.onCustomerTap,
+    required this.deliveryDataList,
+    required this.onDeliveryDataTap,
     required this.subtitle,
   });
 
@@ -94,7 +94,7 @@ class StatusContainer extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${customers.length}',
+                      '${deliveryDataList.length}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.surface,
@@ -105,8 +105,8 @@ class StatusContainer extends StatelessWidget {
               ),
             ),
 
-            // Customer list
-            if (customers.isEmpty)
+            // Delivery data list
+            if (deliveryDataList.isEmpty)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -116,7 +116,7 @@ class StatusContainer extends StatelessWidget {
                       Icon(Icons.inbox, size: 48, color: Colors.grey[400]),
                       const SizedBox(height: 8),
                       Text(
-                        'No customers in this status',
+                        'No deliveries in this status',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.grey[600],
                         ),
@@ -129,12 +129,12 @@ class StatusContainer extends StatelessWidget {
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: customers.length,
+                  itemCount: deliveryDataList.length,
                   itemBuilder: (context, index) {
                     return CustomerTile(
-                      customer: customers[index],
+                      deliveryData: deliveryDataList[index],
                       borderColor: statusColor.withOpacity(0.5),
-                      onTap: () => onCustomerTap(customers[index]),
+                      onTap: () => onDeliveryDataTap(deliveryDataList[index]),
                     );
                   },
                 ),

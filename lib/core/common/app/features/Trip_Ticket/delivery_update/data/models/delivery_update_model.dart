@@ -1,4 +1,3 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/domain/entity/delivery_update_entity.dart';
 import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +21,6 @@ class DeliveryUpdateModel extends DeliveryUpdateEntity {
     super.assignedTo,
     super.image,
     super.remarks,
-    super.customersList,
     this.objectBoxId = 0,
   }) : pocketbaseId = id ?? '';
 
@@ -115,7 +113,6 @@ class DeliveryUpdateModel extends DeliveryUpdateEntity {
     String? assignedTo,
     String? image,
     String? remarks,
-    List<CustomerModel>? customersList,
   }) {
     return DeliveryUpdateModel(
       id: id ?? this.id,
@@ -131,7 +128,6 @@ class DeliveryUpdateModel extends DeliveryUpdateEntity {
       assignedTo: assignedTo ?? this.assignedTo,
       remarks: remarks ?? this.remarks,
       image: image ?? this.image,
-      customersList: customersList ?? customers,
     );
   }
 }

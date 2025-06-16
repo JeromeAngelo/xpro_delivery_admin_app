@@ -109,31 +109,6 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
           title: Row(
             children: [
               Icon(
-                Icons.brightness_auto,
-                size: 20,
-                color:
-                    themeProvider.themeMode == ThemeMode.system
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
-              ),
-              const SizedBox(width: 12),
-              const Text('System'),
-            ],
-          ),
-          value: ThemeMode.system,
-          groupValue: themeProvider.themeMode,
-          onChanged: (ThemeMode? value) {
-            if (value != null) {
-              themeProvider.setThemeMode(value);
-            }
-          },
-          activeColor: Theme.of(context).colorScheme.primary,
-          dense: true,
-        ),
-        RadioListTile<ThemeMode>(
-          title: Row(
-            children: [
-              Icon(
                 Icons.light_mode,
                 size: 20,
                 color:
@@ -155,6 +130,32 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
           activeColor: Theme.of(context).colorScheme.primary,
           dense: true,
         ),
+        RadioListTile<ThemeMode>(
+          title: Row(
+            children: [
+              Icon(
+                Icons.brightness_auto,
+                size: 20,
+                color:
+                    themeProvider.themeMode == ThemeMode.system
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+              ),
+              const SizedBox(width: 12),
+              const Text('System'),
+            ],
+          ),
+          value: ThemeMode.system,
+          groupValue: themeProvider.themeMode,
+          onChanged: (ThemeMode? value) {
+            if (value != null) {
+              themeProvider.setThemeMode(value);
+            }
+          },
+          activeColor: Theme.of(context).colorScheme.primary,
+          dense: true,
+        ),
+
         RadioListTile<ThemeMode>(
           title: Row(
             children: [

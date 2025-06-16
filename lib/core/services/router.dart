@@ -8,6 +8,8 @@ import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/vie
 import 'package:xpro_delivery_admin_app/src/master_data/checklist_screen/presentation/view/checklist_screen_view.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/customer_screen/presentation/view/customer_list_screen_view.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/customer_screen/presentation/view/specific_customer_screen_view.dart';
+import 'package:xpro_delivery_admin_app/src/master_data/delivery_data/view/delivery_data_screen.dart';
+import 'package:xpro_delivery_admin_app/src/master_data/invoice_preset_groups_screen/presentation/view/invoice_preset_group_screen.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/invoice_screen/presentation/view/invoice_screen_list_view.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/invoice_screen/presentation/view/specific_invoice_screen_view.dart';
 import 'package:xpro_delivery_admin_app/src/main_screen/presentation/view/main_screen_view.dart';
@@ -25,6 +27,8 @@ import 'package:go_router/go_router.dart';
 import 'package:xpro_delivery_admin_app/src/users/presentation/view/create_user_view.dart';
 import 'package:xpro_delivery_admin_app/src/users/presentation/view/specific_user_view.dart';
 import 'package:xpro_delivery_admin_app/src/users/presentation/view/update_user_view.dart';
+
+import '../../src/master_data/delivery_data/view/specific_delivery_data_screen.dart';
 
 final router = GoRouter(
   routes: [
@@ -59,6 +63,18 @@ final router = GoRouter(
       builder: (context, state) => CustomerListScreenView(),
     ),
     GoRoute(
+      path: '/delivery-list',
+      builder: (context, state) => DeliveryDataScreen(),
+    ),
+    GoRoute(
+  path: '/delivery-details/:deliveryId',
+  builder: (context, state) {
+    final deliveryId = state.pathParameters['deliveryId']!;
+    return SpecificDeliveryDataScreen(deliveryId: deliveryId);
+  },
+),
+
+    GoRoute(
       path: '/customer/:customerId',
       builder: (context, state) {
         // Extract the customerId without any additional colons
@@ -69,6 +85,10 @@ final router = GoRouter(
     GoRoute(
       path: '/invoice-list',
       builder: (context, state) => InvoiceScreenListView(),
+    ),
+    GoRoute(
+      path: '/invoice-preset-groups',
+      builder: (context, state) => InvoicePresetGroupScreen(),
     ),
     GoRoute(
       path: '/invoice/:invoiceId',
@@ -118,10 +138,10 @@ final router = GoRouter(
       builder: (context, state) => const CompletedCustomerListScreen(),
     ),
     GoRoute(
-      path: '/completed-customers/:customerId',
+      path: '/completed-collections/:collectionId',
       builder: (context, state) {
-        final customerId = state.pathParameters['customerId']!;
-        return SpecificCompletedCustomerData(customerId: customerId);
+        final customerId = state.pathParameters['collectionId']!;
+        return SpecificCompletedCustomerData(collectionId: customerId);
       },
     ),
     GoRoute(
@@ -139,23 +159,22 @@ final router = GoRouter(
       builder: (context, state) => const CreateUserView(),
     ),
     // Add this route to your router configuration
-GoRoute(
-  path: '/user/:userId',
-  builder: (context, state) {
-    final userId = state.pathParameters['userId']!;
-    return SpecificUserView(userId: userId);
-  },
-),
+    GoRoute(
+      path: '/user/:userId',
+      builder: (context, state) {
+        final userId = state.pathParameters['userId']!;
+        return SpecificUserView(userId: userId);
+      },
+    ),
 
-// Add the new route for updating users
-GoRoute(
-  path: '/update-user/:userId',
-  builder: (context, state) {
-    final userId = state.pathParameters['userId']!;
-    return UpdateUserView(userId: userId);
-  },
-),
-
+    // Add the new route for updating users
+    GoRoute(
+      path: '/update-user/:userId',
+      builder: (context, state) {
+        final userId = state.pathParameters['userId']!;
+        return UpdateUserView(userId: userId);
+      },
+    ),
 
     GoRoute(
       path: '/undeliverable-customers',

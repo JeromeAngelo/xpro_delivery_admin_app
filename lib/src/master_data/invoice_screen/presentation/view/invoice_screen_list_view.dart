@@ -1,7 +1,7 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/entity/invoice_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/domain/entity/invoice_data_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/invoice_screen/presentation/widgets/invoice_list_widget/invoice_error_widget.dart';
@@ -21,7 +21,7 @@ class InvoiceScreenListView extends StatefulWidget {
 class _InvoiceScreenListViewState extends State<InvoiceScreenListView> {
   int _currentPage = 1;
   int _totalPages = 1;
-  final int _itemsPerPage = 25; // Same as in tripticket_screen_view.dart
+  final int _itemsPerPage = 25; // 25 items per page
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
@@ -29,7 +29,7 @@ class _InvoiceScreenListViewState extends State<InvoiceScreenListView> {
   void initState() {
     super.initState();
     // Load invoices when the screen initializes
-    context.read<InvoiceBloc>().add(const GetInvoiceEvent());
+    context.read<InvoiceDataBloc>().add(const GetAllInvoiceDataEvent());
   }
 
   @override
@@ -59,43 +59,44 @@ class _InvoiceScreenListViewState extends State<InvoiceScreenListView> {
       onProfileTap: () {
         // Handle profile tap
       },
-      child: BlocBuilder<InvoiceBloc, InvoiceState>(
+      child: BlocBuilder<InvoiceDataBloc, InvoiceDataState>(
         builder: (context, state) {
           // Handle different states
-          if (state is InvoiceInitial) {
+          if (state is InvoiceDataInitial) {
             // Initial state, trigger loading
-            context.read<InvoiceBloc>().add(const GetInvoiceEvent());
+            context.read<InvoiceDataBloc>().add(const GetAllInvoiceDataEvent());
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is InvoiceLoading) {
-            return InvoiceDataTable(
-              invoices: [],
-              isLoading: true,
-              currentPage: _currentPage,
-              totalPages: _totalPages,
-              onPageChanged: (page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              searchController: _searchController,
-              searchQuery: _searchQuery,
-              onSearchChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-                // Search function will be implemented later
-              },
+          if (state is InvoiceDataLoading) {
+            return SingleChildScrollView(
+              child: InvoiceDataTable(
+                invoices: const [],
+                isLoading: true,
+                currentPage: _currentPage,
+                totalPages: _totalPages,
+                onPageChanged: (page) {
+                  setState(() {
+                    _currentPage = page;
+                  });
+                },
+                searchController: _searchController,
+                searchQuery: _searchQuery,
+                onSearchChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
             );
           }
 
-          if (state is InvoiceError) {
+          if (state is InvoiceDataError) {
             return InvoiceErrorWidget(errorMessage: state.message);
           }
 
-          if (state is InvoiceLoaded) {
-            List<InvoiceEntity> invoices = state.invoices;
+          if (state is AllInvoiceDataLoaded) {
+            List<InvoiceDataEntity> invoices = state.invoiceData;
 
             // Filter invoices based on search query
             if (_searchQuery.isNotEmpty) {
@@ -104,13 +105,11 @@ class _InvoiceScreenListViewState extends State<InvoiceScreenListView> {
                     final query = _searchQuery.toLowerCase();
                     return (invoice.id?.toLowerCase().contains(query) ??
                             false) ||
-                        (invoice.invoiceNumber?.toLowerCase().contains(query) ??
+                        (invoice.refId?.toLowerCase().contains(query) ??
                             false) ||
-                        (invoice.customer?.storeName?.toLowerCase().contains(
-                              query,
-                            ) ??
+                        (invoice.name?.toLowerCase().contains(query) ??
                             false) ||
-                        (invoice.trip?.tripNumberId?.toLowerCase().contains(
+                        (invoice.customer?.name?.toLowerCase().contains(
                               query,
                             ) ??
                             false);
@@ -128,43 +127,45 @@ class _InvoiceScreenListViewState extends State<InvoiceScreenListView> {
                     ? invoices.length
                     : startIndex + _itemsPerPage;
 
-            final paginatedInvoices =
+            final List<InvoiceDataEntity> paginatedInvoices =
                 startIndex < invoices.length
-                    ? invoices.sublist(startIndex, endIndex)
-                    : [];
+                    ? List<InvoiceDataEntity>.from(
+                      invoices.sublist(startIndex, endIndex),
+                    )
+                    : <InvoiceDataEntity>[];
 
-            return InvoiceDataTable(
-              invoices: paginatedInvoices as List<InvoiceEntity>,
-              isLoading: false,
-              currentPage: _currentPage,
-              totalPages: _totalPages,
-              onPageChanged: (page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              searchController: _searchController,
-              searchQuery: _searchQuery,
-              onSearchChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-
-                // If search query is empty, get all invoices
-                if (value.isEmpty) {
-                  context.read<InvoiceBloc>().add(const GetInvoiceEvent());
-                }
-                // Search function will be implemented later
-              },
-              onRetry: () {
-                context.read<InvoiceBloc>().add(const GetInvoiceEvent());
-              },
+            return SingleChildScrollView(
+              child: InvoiceDataTable(
+                invoices: paginatedInvoices,
+                isLoading: false,
+                currentPage: _currentPage,
+                totalPages: _totalPages,
+                onPageChanged: (page) {
+                  setState(() {
+                    _currentPage = page;
+                  });
+                },
+                searchController: _searchController,
+                searchQuery: _searchQuery,
+                onSearchChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                    _currentPage = 1; // Reset to first page when searching
+                  });
+                },
+                errorMessage: null,
+                onRetry: () {
+                  context.read<InvoiceDataBloc>().add(
+                    const GetAllInvoiceDataEvent(),
+                  );
+                },
+              ),
             );
           }
 
-          // Handle other states like TripInvoicesLoaded or CustomerInvoicesLoaded
-          if (state is TripInvoicesLoaded) {
-            List<InvoiceEntity> invoices = state.invoices;
+          // Handle other states like InvoiceDataByDeliveryLoaded or InvoiceDataByCustomerLoaded
+          if (state is InvoiceDataByDeliveryLoaded) {
+            List<InvoiceDataEntity> invoices = state.invoiceData;
 
             // Filter and paginate as above
             if (_searchQuery.isNotEmpty) {
@@ -173,9 +174,11 @@ class _InvoiceScreenListViewState extends State<InvoiceScreenListView> {
                     final query = _searchQuery.toLowerCase();
                     return (invoice.id?.toLowerCase().contains(query) ??
                             false) ||
-                        (invoice.invoiceNumber?.toLowerCase().contains(query) ??
+                        (invoice.refId?.toLowerCase().contains(query) ??
                             false) ||
-                        (invoice.customer?.storeName?.toLowerCase().contains(
+                        (invoice.name?.toLowerCase().contains(query) ??
+                            false) ||
+                        (invoice.customer?.name?.toLowerCase().contains(
                               query,
                             ) ??
                             false);
@@ -191,34 +194,44 @@ class _InvoiceScreenListViewState extends State<InvoiceScreenListView> {
                     ? invoices.length
                     : startIndex + _itemsPerPage;
 
-            final paginatedInvoices =
+            final List<InvoiceDataEntity> paginatedInvoices =
                 startIndex < invoices.length
-                    ? invoices.sublist(startIndex, endIndex)
-                    : [];
+                    ? List<InvoiceDataEntity>.from(
+                      invoices.sublist(startIndex, endIndex),
+                    )
+                    : <InvoiceDataEntity>[];
 
-            return InvoiceDataTable(
-              invoices: paginatedInvoices as List<InvoiceEntity>,
-
-              isLoading: false,
-              currentPage: _currentPage,
-              totalPages: _totalPages,
-              onPageChanged: (page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              searchController: _searchController,
-              searchQuery: _searchQuery,
-              onSearchChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+            return SingleChildScrollView(
+              child: InvoiceDataTable(
+                invoices: paginatedInvoices,
+                isLoading: false,
+                currentPage: _currentPage,
+                totalPages: _totalPages,
+                onPageChanged: (page) {
+                  setState(() {
+                    _currentPage = page;
+                  });
+                },
+                searchController: _searchController,
+                searchQuery: _searchQuery,
+                onSearchChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                    _currentPage = 1;
+                  });
+                },
+                errorMessage: null,
+                onRetry: () {
+                  context.read<InvoiceDataBloc>().add(
+                    GetInvoiceDataByDeliveryIdEvent(state.deliveryId),
+                  );
+                },
+              ),
             );
           }
 
-          if (state is CustomerInvoicesLoaded) {
-            List<InvoiceEntity> invoices = state.invoices;
+          if (state is InvoiceDataByCustomerLoaded) {
+            List<InvoiceDataEntity> invoices = state.invoiceData;
 
             // Filter and paginate as above
             if (_searchQuery.isNotEmpty) {
@@ -227,12 +240,9 @@ class _InvoiceScreenListViewState extends State<InvoiceScreenListView> {
                     final query = _searchQuery.toLowerCase();
                     return (invoice.id?.toLowerCase().contains(query) ??
                             false) ||
-                        (invoice.invoiceNumber?.toLowerCase().contains(query) ??
+                        (invoice.refId?.toLowerCase().contains(query) ??
                             false) ||
-                        (invoice.trip?.tripNumberId?.toLowerCase().contains(
-                              query,
-                            ) ??
-                            false);
+                        (invoice.name?.toLowerCase().contains(query) ?? false);
                   }).toList();
             }
 
@@ -245,28 +255,39 @@ class _InvoiceScreenListViewState extends State<InvoiceScreenListView> {
                     ? invoices.length
                     : startIndex + _itemsPerPage;
 
-            final paginatedInvoices =
+            final List<InvoiceDataEntity> paginatedInvoices =
                 startIndex < invoices.length
-                    ? invoices.sublist(startIndex, endIndex)
-                    : [];
+                    ? List<InvoiceDataEntity>.from(
+                      invoices.sublist(startIndex, endIndex),
+                    )
+                    : <InvoiceDataEntity>[];
 
-            return InvoiceDataTable(
-              invoices: paginatedInvoices as List<InvoiceEntity>,
-              isLoading: false,
-              currentPage: _currentPage,
-              totalPages: _totalPages,
-              onPageChanged: (page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              searchController: _searchController,
-              searchQuery: _searchQuery,
-              onSearchChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+            return SingleChildScrollView(
+              child: InvoiceDataTable(
+                invoices: paginatedInvoices,
+                isLoading: false,
+                currentPage: _currentPage,
+                totalPages: _totalPages,
+                onPageChanged: (page) {
+                  setState(() {
+                    _currentPage = page;
+                  });
+                },
+                searchController: _searchController,
+                searchQuery: _searchQuery,
+                onSearchChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                    _currentPage = 1;
+                  });
+                },
+                errorMessage: null,
+                onRetry: () {
+                  context.read<InvoiceDataBloc>().add(
+                    GetInvoiceDataByCustomerIdEvent(state.customerId),
+                  );
+                },
+              ),
             );
           }
 

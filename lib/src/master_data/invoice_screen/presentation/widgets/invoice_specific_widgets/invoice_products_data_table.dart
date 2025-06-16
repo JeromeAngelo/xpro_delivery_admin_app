@@ -1,11 +1,10 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/entity/product_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_items/domain/entity/invoice_items_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
-import 'package:xpro_delivery_admin_app/core/enums/products_status.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class InvoiceProductsDataTable extends StatefulWidget {
-  final List<ProductEntity> products;
+  final List<InvoiceItemsEntity> products;
   final bool isLoading;
   final int currentPage;
   final int totalPages;
@@ -71,7 +70,6 @@ class _InvoiceProductsDataTableState extends State<InvoiceProductsDataTable> {
         DataColumn(label: Text('Quantity')),
         //    DataColumn(label: Text('Unit Price')),
         DataColumn(label: Text('Total Amount')),
-        DataColumn(label: Text('Status')),
         DataColumn(label: Text('Actions')),
       ],
       rows:
@@ -79,12 +77,11 @@ class _InvoiceProductsDataTableState extends State<InvoiceProductsDataTable> {
             return DataRow(
               cells: [
                 DataCell(Text(product.id ?? 'N/A')),
+                DataCell(Text(product.brand ?? 'N/A')),
                 DataCell(Text(product.name ?? 'N/A')),
-                DataCell(Text(product.description ?? 'N/A')),
-                DataCell(Text(_formatQuantity(product))),
+                DataCell(Text(product.quantity.toString())),
                 //     DataCell(Text(_formatUnitPrice(product))),
                 DataCell(Text(_formatAmount(product.totalAmount))),
-                DataCell(_buildStatusChip(product.status)),
                 DataCell(
                   Row(
                     children: [
@@ -133,24 +130,7 @@ class _InvoiceProductsDataTableState extends State<InvoiceProductsDataTable> {
     );
   }
 
-  String _formatQuantity(ProductEntity product) {
-    List<String> quantities = [];
-
-    if (product.case_ != null && product.case_ != 0) {
-      quantities.add('${product.case_} Case');
-    }
-    if (product.pcs != null && product.pcs != 0) {
-      quantities.add('${product.pcs} Pcs');
-    }
-    if (product.pack != null && product.pack != 0) {
-      quantities.add('${product.pack} Pack');
-    }
-    if (product.box != null && product.box != 0) {
-      quantities.add('${product.box} Box');
-    }
-
-    return quantities.isEmpty ? 'N/A' : quantities.join(', ');
-  }
+ 
 
   // String _formatUnitPrice(ProductEntity product) {
   //   List<String> prices = [];
@@ -171,44 +151,5 @@ class _InvoiceProductsDataTableState extends State<InvoiceProductsDataTable> {
     return formatter.format(amount);
   }
 
-  Widget _buildStatusChip(ProductsStatus? status) {
-    Color color;
-    String statusText;
-
-    switch (status) {
-      case ProductsStatus.truck:
-        color = Colors.blue;
-        statusText = 'In Truck';
-        break;
-      case ProductsStatus.unloading:
-        color = Colors.orange;
-        statusText = 'Unloading';
-        break;
-      case ProductsStatus.unloaded:
-        color = Colors.amber;
-        statusText = 'Unloaded';
-        break;
-      case ProductsStatus.completed:
-        color = Colors.green;
-        statusText = 'Completed';
-        break;
-      default:
-        color = Colors.grey;
-        statusText = 'Unknown';
-    }
-
-    return Chip(
-      label: Text(
-        statusText,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      backgroundColor: color,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-      visualDensity: VisualDensity.compact,
-    );
-  }
+  
 }

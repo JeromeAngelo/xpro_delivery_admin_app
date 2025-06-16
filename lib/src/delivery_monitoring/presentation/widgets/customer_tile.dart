@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
 
 class CustomerTile extends StatelessWidget {
-  final CustomerEntity customer;
+  final DeliveryDataEntity deliveryData;
   final VoidCallback? onTap;
   final Color? borderColor;
 
   const CustomerTile({
     super.key,
-    required this.customer,
+    required this.deliveryData,
     this.onTap,
     this.borderColor,
   });
@@ -42,7 +42,7 @@ class CustomerTile extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      customer.storeName ?? 'Unknown Store',
+                      deliveryData.customer?.name ?? 'Unknown Store',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -51,7 +51,7 @@ class CustomerTile extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    customer.trip?.tripNumberId ?? 'Unknown Store',
+                    deliveryData.trip?.tripNumberId ?? 'Unknown Trip',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -75,7 +75,7 @@ class CustomerTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Delivery #: ${customer.deliveryNumber ?? 'N/A'}',
+                    'Delivery #: ${deliveryData.deliveryNumber ?? 'N/A'}',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
@@ -97,7 +97,7 @@ class CustomerTile extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      _formatAddress(customer),
+                      _formatAddress(deliveryData),
                       style: Theme.of(context).textTheme.bodyMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -119,7 +119,7 @@ class CustomerTile extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      _formatDate(customer.deliveryStatus.last.time),
+                      _formatDate(_getLatestDeliveryUpdateTime(deliveryData)),
                       style: Theme.of(context).textTheme.bodyMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -145,13 +145,13 @@ class CustomerTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${customer.numberOfInvoices ?? 0} Invoice(s)',
+                        '1 Invoice',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
                   ),
                   Text(
-                    '₱${customer.totalAmount}',
+                    '₱${deliveryData.invoice?.totalAmount ?? 0}',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary,
@@ -177,21 +177,35 @@ class CustomerTile extends StatelessWidget {
     }
   }
 
-  String _formatAddress(CustomerEntity customer) {
+  String _formatAddress(DeliveryDataEntity deliveryData) {
     final List<String> addressParts = [];
 
-    if (customer.address != null && customer.address!.isNotEmpty) {
-      addressParts.add(customer.address!);
+    
+
+    if (deliveryData.customer?.municipality != null && deliveryData.customer!.municipality!.isNotEmpty) {
+      addressParts.add(deliveryData.customer!.municipality!);
     }
 
-    if (customer.municipality != null && customer.municipality!.isNotEmpty) {
-      addressParts.add(customer.municipality!);
-    }
-
-    if (customer.province != null && customer.province!.isNotEmpty) {
-      addressParts.add(customer.province!);
+    if (deliveryData.customer?.province != null && deliveryData.customer!.province!.isNotEmpty) {
+      addressParts.add(deliveryData.customer!.province!);
     }
 
     return addressParts.join(', ');
+  }
+
+  DateTime? _getLatestDeliveryUpdateTime(DeliveryDataEntity deliveryData) {
+    if (deliveryData.deliveryUpdates.isEmpty) return null;
+    
+    // Get the latest delivery update time
+    DateTime? latestTime;
+    for (final update in deliveryData.deliveryUpdates) {
+      if (update.time != null) {
+        if (latestTime == null || update.time!.isAfter(latestTime)) {
+          latestTime = update.time;
+        }
+      }
+    }
+    
+    return latestTime;
   }
 }

@@ -153,10 +153,7 @@ class _ReturnListViewState extends State<ReturnListView> {
                               query,
                             ) ??
                             false) ||
-                        (returnItem.customer?.storeName?.toLowerCase().contains(
-                              query,
-                            ) ??
-                            false) ||
+                       
                         (returnItem.trip?.tripNumberId?.toLowerCase().contains(
                               query,
                             ) ??

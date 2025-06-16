@@ -492,62 +492,59 @@ class _TripMapWidgetState extends State<TripMapWidget>
   }
 
   Widget _buildMap(LatLng center, List<Marker> markers) {
-     try {
-    return FlutterMap(
-      mapController: mapController,
-      options: MapOptions(
-        initialCenter: center,
-        initialZoom: 14,
-        minZoom: 5,
-        maxZoom: 25,
-        interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.all,
-          pinchMoveWinGestures: 10,
-        ),
-      ),
-      children: [
-        TileLayer(
-          urlTemplate: _isSatelliteView
-              ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
-              : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-          userAgentPackageName: 'com.example.desktop_app',
-        ),
-        // Add polyline for trip updates
-        if (markers.length > 1)
-          PolylineLayer(
-            polylines: [
-              Polyline(
-                points: markers.map((marker) => marker.point).toList(),
-                color: Colors.blue.withOpacity(0.7),
-                strokeWidth: 3.0,
-              ),
-            ],
+    try {
+      return FlutterMap(
+        mapController: mapController,
+        options: MapOptions(
+          initialCenter: center,
+          initialZoom: 14,
+          minZoom: 5,
+          maxZoom: 35,
+          interactionOptions: const InteractionOptions(
+            flags: InteractiveFlag.all,
+            pinchMoveWinGestures: 10,
           ),
-        // Add polyline for coordinates history
-        if (widget.tripCoordinates.length > 1)
-          PolylineLayer(
-            polylines: [
-              Polyline(
-                points: widget.tripCoordinates
-                    .where((coord) => coord.latitude != null && coord.longitude != null)
-                    .map((coord) => LatLng(coord.latitude!, coord.longitude!))
-                    .toList(),
-                color: Colors.green.withOpacity(0.5),
-                strokeWidth: 2.0,
-               
-              ),
-            ],
-          ),
-        MarkerLayer(markers: markers),
-        RichAttributionWidget(
-          attributions: [
-            TextSourceAttribution('Drag to move map', onTap: () {}),
-          ],
-          alignment: AttributionAlignment.bottomRight,
         ),
-      ],
-    );
-  } catch (e) {
+        children: [
+          TileLayer(
+            urlTemplate:
+                _isSatelliteView
+                    ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+                    : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+            userAgentPackageName: 'com.example.desktop_app',
+          ),
+          // UPDATED: Single polyline for trip coordinates history (chronological order)
+          if (widget.tripCoordinates.length > 1)
+            PolylineLayer(
+              polylines: [
+                Polyline(
+                  points:
+                      widget.tripCoordinates
+                          .where(
+                            (coord) =>
+                                coord.latitude != null &&
+                                coord.longitude != null,
+                          )
+                          .map(
+                            (coord) =>
+                                LatLng(coord.latitude!, coord.longitude!),
+                          )
+                          .toList(),
+                  color: Colors.blue.withOpacity(0.7),
+                  strokeWidth: 3.0,
+                ),
+              ],
+            ),
+          MarkerLayer(markers: markers),
+          RichAttributionWidget(
+            attributions: [
+              TextSourceAttribution('Drag to move map', onTap: () {}),
+            ],
+            alignment: AttributionAlignment.bottomRight,
+          ),
+        ],
+      );
+    } catch (e) {
       debugPrint('❌ Error building map: $e');
       return SizedBox(
         height: widget.height,

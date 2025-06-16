@@ -1,7 +1,3 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/models/delivery_update_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/data/model/return_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/transaction/data/model/transaction_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class DeliveryUpdateEvent extends Equatable {
@@ -25,22 +21,7 @@ class UpdateDeliveryStatusEvent extends DeliveryUpdateEvent {
   List<Object> get props => [customerId, statusId];
 }
 
-class CompleteDeliveryEvent extends DeliveryUpdateEvent {
-  final String customerId;
-  final List<InvoiceModel> invoices;
-  final List<TransactionModel> transactions;
-  final List<ReturnModel> returns;
-  final List<DeliveryUpdateModel> deliveryStatus;
-  const CompleteDeliveryEvent({
-    required this.customerId,
-    required this.invoices,
-    required this.transactions,
-    required this.returns,
-    required this.deliveryStatus,
-  });
-  @override
-  List<Object> get props => [customerId, invoices, transactions, returns, deliveryStatus];
-}
+
 
 class CheckEndDeliveryStatusEvent extends DeliveryUpdateEvent {
   final String tripId;

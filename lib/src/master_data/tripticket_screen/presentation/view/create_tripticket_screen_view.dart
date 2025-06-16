@@ -1,7 +1,15 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart'
+    show TripModel;
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/data/model/delivery_data_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/form_buttons.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/form_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
@@ -9,29 +17,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 
-// Customer related imports
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/presentation/bloc/customer_state.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
-
-// Invoice related imports
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_state.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
-
 // Personnel related imports
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/data/models/personel_models.dart';
-
-// Vehicle related imports
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_state.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/data/model/vehicle_model.dart';
 
 // Checklist related imports
 import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/presentation/bloc/checklist_bloc.dart';
@@ -60,15 +50,13 @@ class _CreateTripTicketScreenViewState
   final _tripIdController = TextEditingController();
   final _qrCodeController = TextEditingController();
 
-  // Selected items
-  List<CustomerModel> _selectedCustomers = [];
-  List<InvoiceModel> _selectedInvoices = [];
-  List<VehicleModel> _selectedVehicles = [];
+  // Selected items - Updated to use new models
+  List<DeliveryDataModel> _selectedDeliveries = [];
+  DeliveryVehicleModel? _selectedVehicle;
   List<PersonelModel> _selectedPersonnel = [];
   List<ChecklistModel> _selectedChecklists = [];
 
   bool _isLoading = false;
-
   String? _errorMessage;
 
   @override
@@ -85,17 +73,17 @@ class _CreateTripTicketScreenViewState
     super.dispose();
   }
 
- void _generateTripIdAndQrCode() {
+  void _generateTripIdAndQrCode() {
     // Generate a unique trip ID based on timestamp
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final tripId = 'TRIP-$timestamp';
-    
+
     // Set the trip ID
     _tripIdController.text = tripId;
-    
-    // Use the same value for QR code (or you could create a more complex value)
+
+    // Use the same value for QR code
     _qrCodeController.text = tripId;
-    
+
     debugPrint('Generated Trip ID: $tripId');
     debugPrint('Generated QR Code: ${_qrCodeController.text}');
   }
@@ -113,21 +101,21 @@ class _CreateTripTicketScreenViewState
       return;
     }
 
-    // Validate required selections
-    if (_selectedCustomers.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one customer'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    // // Validate required selections
+    // if (_selectedDeliveries.isEmpty) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text('Please add at least one delivery'),
+    //       backgroundColor: Colors.red,
+    //     ),
+    //   );
+    //   return;
+    // }
 
-    if (_selectedVehicles.isEmpty) {
+    if (_selectedVehicle == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select at least one vehicle'),
+          content: Text('Please select a vehicle'),
           backgroundColor: Colors.red,
         ),
       );
@@ -144,16 +132,16 @@ class _CreateTripTicketScreenViewState
       return;
     }
 
-    // Create the trip model
-    final tripModel = TripModel(
-      tripNumberId: _tripIdController.text,
-      customersList: _selectedCustomers,
-      vehicleList: _selectedVehicles,
-      personelsList: _selectedPersonnel,
-      checklistItems: _selectedChecklists,
-      invoicesList: _selectedInvoices,
-      // Other fields will be set by the remote data source
-    );
+    // Check if more than 2 personnel are selected
+    if (_selectedPersonnel.length > 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Maximum of 2 personnel allowed'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     // Set loading state
     setState(() {
@@ -161,16 +149,27 @@ class _CreateTripTicketScreenViewState
       _errorMessage = null;
     });
 
+    // Create trip model with the selected data
+    final tripModel = TripModel(
+      tripNumberId: _tripIdController.text,
+      qrCode: _qrCodeController.text,
+      vehicleModel: _selectedVehicle,
+      deliveryDataList: _selectedDeliveries,
+      personelsList: _selectedPersonnel,
+      checklistItems: _selectedChecklists,
+    );
+
     // Dispatch the create event
     context.read<TripBloc>().add(CreateTripTicketEvent(tripModel));
   }
 
   void _loadData() {
     // Load all required data using BLoCs
-    context.read<CustomerBloc>().add(const GetAllCustomersEvent());
-    context.read<InvoiceBloc>().add(const GetInvoiceEvent());
+    context.read<DeliveryDataBloc>().add(const GetAllDeliveryDataEvent());
+    context.read<DeliveryVehicleBloc>().add(
+      const LoadAllDeliveryVehiclesEvent(),
+    );
     context.read<PersonelBloc>().add(GetPersonelEvent());
-    context.read<VehicleBloc>().add(const GetVehiclesEvent());
     context.read<ChecklistBloc>().add(const GetAllChecklistsEvent());
   }
 
@@ -233,7 +232,6 @@ class _CreateTripTicketScreenViewState
         onProfileTap: () {
           // Handle profile tap
         },
-        //  title: 'Create Trip Ticket',
         child: Form(
           key: _formKey,
           child: FormLayout(
@@ -248,17 +246,6 @@ class _CreateTripTicketScreenViewState
                   context.go('/tripticket');
                 },
               ),
-              const SizedBox(width: 16),
-
-              // Create & Add Users Button
-              FormSubmitButton(
-                label: 'Create & Add Users',
-                onPressed: () {
-                  // Implement create and add users functionality
-                },
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-
               const SizedBox(width: 16),
 
               // Create Trip Button
@@ -294,63 +281,36 @@ class _CreateTripTicketScreenViewState
   }
 
   Widget _buildTripDetailsForm() {
-    return BlocBuilder<CustomerBloc, CustomerState>(
-      builder: (context, customerState) {
-        return BlocBuilder<InvoiceBloc, InvoiceState>(
-          builder: (context, invoiceState) {
-            // Determine available customers
-            List<CustomerModel> availableCustomers = [];
-            if (customerState is AllCustomersLoaded) {
-              availableCustomers =
-                  customerState.customers as List<CustomerModel>;
-            }
-
-            // Determine available invoices
-            List<InvoiceModel> availableInvoices = [];
-            if (invoiceState is AllInvoicesLoaded) {
-              availableInvoices = invoiceState.invoices as List<InvoiceModel>;
-            } else if (invoiceState is InvoiceLoaded) {
-              availableInvoices = invoiceState.invoices as List<InvoiceModel>;
-            }
-
-            return TripDetailsForm(
-              tripIdController: _tripIdController,
-              availableCustomers: availableCustomers,
-              selectedCustomers: _selectedCustomers,
-              availableInvoices: availableInvoices,
-              selectedInvoices: _selectedInvoices,
-              onCustomersChanged: (customers) {
-                setState(() {
-                  _selectedCustomers = customers;
-                });
-              },
-              onInvoicesChanged: (invoices) {
-                setState(() {
-                  _selectedInvoices = invoices;
-                });
-              }, qrCodeController: _qrCodeController,
-            );
-          },
-        );
+    return TripDetailsForm(
+      tripIdController: _tripIdController,
+      qrCodeController: _qrCodeController,
+      selectedCustomers: const [], // Not used anymore
+      selectedInvoices: const [], // Not used anymore
+      onCustomersChanged: (_) {}, // Not used anymore
+      onInvoicesChanged: (_) {}, // Not used anymore
+      onDeliveriesChanged: (deliveries) {
+        setState(() {
+          _selectedDeliveries = deliveries;
+        });
       },
     );
   }
 
   Widget _buildVehicleForm() {
-    return BlocBuilder<VehicleBloc, VehicleState>(
+    return BlocBuilder<DeliveryVehicleBloc, DeliveryVehicleState>(
       builder: (context, state) {
-        List<VehicleModel> availableVehicles = [];
+        List<DeliveryVehicleModel> availableVehicles = [];
 
-        if (state is VehiclesLoaded) {
-          availableVehicles = state.vehicles as List<VehicleModel>;
+        if (state is DeliveryVehiclesLoaded) {
+          availableVehicles = state.vehicles as List<DeliveryVehicleModel>;
         }
 
         return VehicleForm(
           availableVehicles: availableVehicles,
-          selectedVehicles: _selectedVehicles,
+          selectedVehicles: _selectedVehicle != null ? [_selectedVehicle!] : [],
           onVehiclesChanged: (vehicles) {
             setState(() {
-              _selectedVehicles = vehicles;
+              _selectedVehicle = vehicles.isNotEmpty ? vehicles.first : null;
             });
           },
         );

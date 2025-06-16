@@ -1,10 +1,10 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/domain/entity/customer_data_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 class CustomerDashboardWidget extends StatelessWidget {
-  final CustomerEntity customer;
+  final CustomerDataEntity customer;
   final bool isLoading;
 
   const CustomerDashboardWidget({
@@ -19,21 +19,14 @@ class CustomerDashboardWidget extends StatelessWidget {
       return _buildLoadingSkeleton(context);
     }
 
-    // Get the latest delivery status
-    String deliveryStatus = "No Status";
-    if (customer.deliveryStatus.isNotEmpty) {
-      // Get the last (most recent) status update
-      deliveryStatus = customer.deliveryStatus.last.title ?? "No Status";
-    }
-
     return DashboardSummary(
       title: 'Customer Details',
-      detailId: customer.storeName ?? 'N/A',
+      detailId: customer.name ?? 'N/A',
       items: [
         DashboardInfoItem(
           icon: Icons.person,
-          value: customer.ownerName ?? 'N/A',
-          label: 'Owner Name',
+          value: customer.name ?? 'N/A',
+          label: 'Customer Name',
           iconColor: Colors.orange,
         ),
         DashboardInfoItem(
@@ -43,47 +36,28 @@ class CustomerDashboardWidget extends StatelessWidget {
           iconColor: Colors.red,
         ),
         DashboardInfoItem(
-          icon: Icons.receipt,
-          value: customer.invoices.length.toString(),
-          label: 'Number of Invoices',
+          icon: Icons.numbers,
+          value: customer.refId ?? 'N/A',
+          label: 'Reference ID',
           iconColor: Colors.green,
         ),
         DashboardInfoItem(
-          icon: Icons.phone,
-          value: _formatContacts(),
-          label: 'Contact Numbers',
-          iconColor: Colors.green,
+          icon: Icons.map,
+          value: _formatCoordinates(),
+          label: 'Coordinates',
+          iconColor: Colors.blue,
         ),
         DashboardInfoItem(
-          icon: Icons.receipt_long,
-          value: customer.deliveryNumber ?? 'N/A',
-          label: 'Delivery Number',
+          icon: Icons.calendar_today,
+          value: _formatDate(customer.created),
+          label: 'Created Date',
           iconColor: Colors.purple,
         ),
         DashboardInfoItem(
-          icon: Icons.payment,
-          value: customer.modeOfPayment ?? 'N/A',
-          label: 'Payment Mode',
+          icon: Icons.update,
+          value: _formatDate(customer.updated),
+          label: 'Last Updated',
           iconColor: Colors.teal,
-        ),
-        DashboardInfoItem(
-          icon: Icons.attach_money,
-          value: _formatAmount(customer.totalAmount),
-          label: 'Total Amount',
-          iconColor: Colors.amber,
-        ),
-        // Added delivery status item
-        DashboardInfoItem(
-          icon: Icons.local_shipping,
-          value: deliveryStatus,
-          label: 'Delivery Status',
-          iconColor: _getStatusColor(deliveryStatus),
-        ),
-        DashboardInfoItem(
-          icon: Icons.numbers,
-          value: customer.trip?.tripNumberId ?? 'n/a',
-          label: 'Trip Number ID',
-          iconColor: _getStatusColor(deliveryStatus),
         ),
       ],
     );
@@ -140,7 +114,7 @@ class CustomerDashboardWidget extends StatelessWidget {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               children: List.generate(
-                9, // Same number as actual items
+                6, // Same number as actual items
                 (index) => _buildDashboardItemSkeleton(context),
               ),
             ),
@@ -209,63 +183,44 @@ class CustomerDashboardWidget extends StatelessWidget {
   }
 
   String _formatAddress() {
-    final parts =
-        [
-          customer.address,
-          customer.municipality,
-          customer.province,
-        ].where((part) => part != null && part.isNotEmpty).toList();
+    final parts = [
+      customer.barangay,
+      customer.municipality,
+      customer.province,
+    ].where((part) => part != null && part.isNotEmpty).toList();
 
-    return parts.join(', ');
+    return parts.isEmpty ? 'No address available' : parts.join(', ');
   }
 
-  String _formatContacts() {
-    if (customer.contactNumber == null || customer.contactNumber!.isEmpty) {
-      return 'No contacts';
+  String _formatCoordinates() {
+    if (customer.latitude != null && customer.longitude != null) {
+      return '${customer.latitude!.toStringAsFixed(6)}, ${customer.longitude!.toStringAsFixed(6)}';
     }
-    return customer.contactNumber!.join(', ');
+    return 'No coordinates available';
   }
 
-  String _formatAmount(dynamic amount) {
-    if (amount == null) return 'N/A';
-
-    if (amount is double) {
-      return '₱${amount.toStringAsFixed(2)}';
-    } else if (amount is String) {
-      try {
-        final numAmount = double.parse(amount);
-        return '₱${numAmount.toStringAsFixed(2)}';
-      } catch (_) {
-        return '₱$amount';
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'N/A';
+    
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        if (difference.inMinutes == 0) {
+          return 'Just now';
+        }
+        return '${difference.inMinutes} minutes ago';
       }
-    }
-
-    return '₱$amount';
-  }
-
-  // Helper method to get appropriate color for status
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'arrived':
-        return Colors.blue;
-      case 'unloading':
-        return Colors.amber;
-      case 'undelivered':
-      case 'mark as undelivered':
-        return Colors.red;
-      case 'in transit':
-        return Colors.indigo;
-      case 'delivered':
-        return Colors.green;
-      case 'received':
-      case 'mark as received':
-        return Colors.teal;
-      case 'completed':
-      case 'end delivery':
-        return Colors.green.shade800;
-      case 'pending':
-      default:
-        return Colors.orange;
+      return '${difference.inHours} hours ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      // Format as date
+      final day = date.day.toString().padLeft(2, '0');
+      final month = date.month.toString().padLeft(2, '0');
+      final year = date.year;
+      return '$day/$month/$year';
     }
   }
 }

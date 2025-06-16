@@ -1,11 +1,11 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
 import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/delivery_status_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class CustomerInformationTile extends StatelessWidget {
-  const CustomerInformationTile({super.key, required this.customer});
-  final CustomerEntity customer;
+  const CustomerInformationTile({super.key, required this.deliveryData});
+  final DeliveryDataEntity deliveryData;
 
   @override
   Widget build(BuildContext context) {
@@ -20,65 +20,60 @@ class CustomerInformationTile extends StatelessWidget {
               width: 40,
               height: 5,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+               
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            customer.storeName ?? 'Unknown Store',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            deliveryData.customer?.name ?? 'Unknown Store',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Delivery #: ${customer.deliveryNumber ?? 'N/A'}',
-            style: Theme.of(context).textTheme.titleMedium,
+            'Delivery #: ${deliveryData.deliveryNumber ?? 'N/A'}',
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+            ),
           ),
           const Divider(height: 32),
           _buildDetailItem(
             context,
             'Trip ID',
-            customer.trip!.tripNumberId ?? 'N/A',
+            deliveryData.trip?.tripNumberId ?? 'N/A',
             Icons.receipt_long,
           ),
-          // _buildDetailItem(
-          //   context,
-          //   'Team Leader',
-          //   customer.trip!.user!.name ?? 'N/A',
-          //   Icons.verified_user,
-          // ),
           // Customer details
           _buildDetailItem(
             context,
             'Owner',
-            customer.ownerName ?? 'N/A',
+            deliveryData.customer?.ownerName ?? 'N/A',
             Icons.person,
           ),
           _buildDetailItem(
             context,
             'Contact',
-            customer.contactNumber?.join(', ') ?? 'N/A',
+            deliveryData.customer?.contactNumber ?? 'N/A',
             Icons.phone,
           ),
           _buildDetailItem(
             context,
             'Address',
-            '${customer.address ?? ''}, ${customer.municipality ?? ''}, ${customer.province ?? ''}',
+            ' ${deliveryData.customer?.municipality ?? ''}, ${deliveryData.customer?.province ?? ''}',
             Icons.location_on,
           ),
           _buildDetailItem(
             context,
             'Payment Mode',
-            customer.modeOfPayment ?? 'N/A',
+            deliveryData.customer?.paymentMode ?? 'N/A',
             Icons.payment,
           ),
           _buildDetailItem(
             context,
             'Total Amount',
-            '₱${customer.totalAmount}',
+            '₱${deliveryData.invoice?.totalAmount ?? 0}',
             Icons.attach_money,
           ),
 
@@ -93,23 +88,32 @@ class CustomerInformationTile extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          if (customer.deliveryStatus.isEmpty)
+          if (deliveryData.deliveryUpdates.isEmpty)
             const Text('No status updates available')
           else
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: customer.deliveryStatus.length,
+              itemCount: deliveryData.deliveryUpdates.length,
               itemBuilder: (context, index) {
-                final status = customer.deliveryStatus[index];
+                final status = deliveryData.deliveryUpdates[index];
                 final statusData = DeliveryStatusData.fromName(
                   status.title ?? 'Unknown',
                 );
 
                 return ListTile(
                   leading: Icon(statusData.icon, color: statusData.color),
-                  title: Text(status.title ?? 'Unknown Status'),
-                  subtitle: Text(status.subtitle ?? ''),
+                  title: Text(
+                    status.title ?? 'Unknown Status',
+                    style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: Text(
+                    status.subtitle ?? '',
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    ),
+                  ),
                   trailing: Text(
                     status.time != null ? _formatDateTime(status.time) : '',
                     style: Theme.of(context).textTheme.bodySmall,
@@ -126,8 +130,8 @@ class CustomerInformationTile extends StatelessWidget {
             children: [
               ElevatedButton.icon(
                 onPressed: () {
-                  if (customer.trip!.id != null) {
-                    context.go('/tripticket/${customer.trip!.id}');
+                  if (deliveryData.trip?.id != null) {
+                    context.go('/tripticket/${deliveryData.trip!.id}');
                   }
                 },
                 icon: const Icon(Icons.visibility),
@@ -135,8 +139,8 @@ class CustomerInformationTile extends StatelessWidget {
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  if (customer.id != null) {
-                    context.go('/customer/${customer.id}');
+                  if (deliveryData.customer?.id != null) {
+                    context.go('/customer/${deliveryData.customer!.id}');
                   }
                 },
                 icon: const Icon(Icons.visibility),
@@ -144,8 +148,6 @@ class CustomerInformationTile extends StatelessWidget {
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  // Navigate to update status screen
-
                   context.pop('/delivery-monitoring');
                 },
                 icon: const Icon(Icons.close),
@@ -202,12 +204,16 @@ class CustomerInformationTile extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  ),
                 ),
                 const SizedBox(height: 2),
-                Text(value, style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),

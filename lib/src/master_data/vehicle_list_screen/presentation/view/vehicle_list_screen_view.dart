@@ -1,7 +1,9 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/domain/entity/vehicle_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/domain/enitity/delivery_vehicle_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 
@@ -29,7 +31,9 @@ class _VehicleListScreenViewState extends State<VehicleListScreenView> {
   void initState() {
     super.initState();
     // Load vehicles when the screen initializes
-    context.read<VehicleBloc>().add(const GetVehiclesEvent());
+    context.read<DeliveryVehicleBloc>().add(
+      const LoadAllDeliveryVehiclesEvent(),
+    );
   }
 
   @override
@@ -60,16 +64,18 @@ class _VehicleListScreenViewState extends State<VehicleListScreenView> {
       onProfileTap: () {
         // Handle profile tap
       },
-      child: BlocBuilder<VehicleBloc, VehicleState>(
+      child: BlocBuilder<DeliveryVehicleBloc, DeliveryVehicleState>(
         builder: (context, state) {
           // Handle different states
-          if (state is VehicleInitial) {
+          if (state is DeliveryVehicleInitial) {
             // Initial state, trigger loading
-            context.read<VehicleBloc>().add(const GetVehiclesEvent());
+            context.read<DeliveryVehicleBloc>().add(
+              const LoadAllDeliveryVehiclesEvent(),
+            );
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is VehicleLoading) {
+          if (state is DeliveryVehicleLoading) {
             return VehicleDataTable(
               vehicles: [],
               isLoading: true,
@@ -90,28 +96,27 @@ class _VehicleListScreenViewState extends State<VehicleListScreenView> {
             );
           }
 
-          if (state is VehicleError) {
+          if (state is DeliveryVehicleError) {
             return VehicleErrorWidget(errorMessage: state.message);
           }
 
-          if (state is VehiclesLoaded) {
-            List<VehicleEntity> vehicles = state.vehicles;
+          if (state is DeliveryVehiclesLoaded) {
+            List<DeliveryVehicleEntity> vehicles = state.vehicles;
 
             // Filter vehicles based on search query
             if (_searchQuery.isNotEmpty) {
               vehicles =
                   vehicles.where((vehicle) {
                     final query = _searchQuery.toLowerCase();
-                    return (vehicle.vehicleName?.toLowerCase().contains(
-                              query,
-                            ) ??
+                    return (vehicle.name?.toLowerCase().contains(query) ??
                             false) ||
-                        (vehicle.vehiclePlateNumber?.toLowerCase().contains(
-                              query,
-                            ) ??
+                        (vehicle.plateNo?.toLowerCase().contains(query) ??
                             false) ||
-                        (vehicle.vehicleType?.toLowerCase().contains(query) ??
-                            false);
+                        (vehicle.make?.toLowerCase().contains(query) ??
+                            false) ||
+                        (vehicle.wheels?.toLowerCase().contains(query) ??
+                            false) ||
+                        (vehicle.type?.toLowerCase().contains(query) ?? false);
                   }).toList();
             }
 
@@ -126,13 +131,13 @@ class _VehicleListScreenViewState extends State<VehicleListScreenView> {
                     ? vehicles.length
                     : startIndex + _itemsPerPage;
 
-            final paginatedVehicles =
+            final List<DeliveryVehicleEntity> paginatedVehicles =
                 startIndex < vehicles.length
                     ? vehicles.sublist(startIndex, endIndex)
                     : [];
 
             return VehicleDataTable(
-              vehicles: paginatedVehicles as List<VehicleEntity>,
+              vehicles: paginatedVehicles,
               isLoading: false,
               currentPage: _currentPage,
               totalPages: _totalPages,

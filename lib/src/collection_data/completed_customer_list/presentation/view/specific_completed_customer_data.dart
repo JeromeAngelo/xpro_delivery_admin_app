@@ -1,10 +1,10 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_state.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/domain/entity/invoice_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/domain/entity/collection_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_event.dart';
+
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_list/presentation/widgets/specific_customer_data_widgets/completed_customer_dashboard_widget.dart';
@@ -14,9 +14,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 class SpecificCompletedCustomerData extends StatefulWidget {
-  final String customerId;
+  final String collectionId;
 
-  const SpecificCompletedCustomerData({super.key, required this.customerId});
+  const SpecificCompletedCustomerData({super.key, required this.collectionId});
 
   @override
   State<SpecificCompletedCustomerData> createState() =>
@@ -26,7 +26,7 @@ class SpecificCompletedCustomerData extends StatefulWidget {
 class _SpecificCompletedCustomerDataState
     extends State<SpecificCompletedCustomerData> {
   int _currentPage = 1;
-  int _totalPages = 1;
+  final int _totalPages = 1;
   final int _itemsPerPage = 10;
 
   @override
@@ -34,34 +34,33 @@ class _SpecificCompletedCustomerDataState
     super.initState();
 
     // Extract the actual ID if needed
-    String customerId = widget.customerId;
-    if (customerId.contains('CompletedCustomerModel')) {
+    String collectionId = widget.collectionId;
+    if (collectionId.contains('CollectionEntity')) {
       // Extract just the ID
       final idMatch = RegExp(
-        r'CompletedCustomerModel\(([^,]+)',
-      ).firstMatch(customerId);
+        r'CollectionEntity\(([^,]+)',
+      ).firstMatch(collectionId);
       if (idMatch != null && idMatch.groupCount >= 1) {
-        customerId = idMatch.group(1)!;
+        collectionId = idMatch.group(1)!;
       } else {
         // Fallback
-        customerId =
-            customerId
+        collectionId =
+            collectionId
                 .split(',')
                 .first
-                .replaceAll('CompletedCustomerModel(', '')
+                .replaceAll('CollectionEntity(', '')
                 .trim();
       }
     }
 
-    // Load completed customer details
-    context.read<CompletedCustomerBloc>().add(
-      GetCompletedCustomerByIdEvent(customerId),
+    debugPrint('🔍 Loading collection details for ID: $collectionId');
+
+    // Load collection details
+    context.read<CollectionsBloc>().add(
+      GetCollectionByIdEvent(collectionId),
     );
 
-    // Load invoices for this completed customer
-    context.read<InvoiceBloc>().add(
-      GetInvoicesByCompletedCustomerEvent(customerId),
-    );
+    
   }
 
   @override
@@ -85,13 +84,15 @@ class _SpecificCompletedCustomerDataState
         // Handle profile tap
       },
       disableScrolling: true,
-      child: BlocBuilder<CompletedCustomerBloc, CompletedCustomerState>(
+      child: BlocBuilder<CollectionsBloc, CollectionsState>(
         builder: (context, state) {
-          if (state is CompletedCustomerLoading) {
+          debugPrint('🔄 Current collections state: ${state.runtimeType}');
+
+          if (state is CollectionsLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is CompletedCustomerError) {
+          if (state is CollectionsError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -105,8 +106,8 @@ class _SpecificCompletedCustomerDataState
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () {
-                      context.read<CompletedCustomerBloc>().add(
-                        GetCompletedCustomerByIdEvent(widget.customerId),
+                      context.read<CollectionsBloc>().add(
+                        GetCollectionByIdEvent(widget.collectionId),
                       );
                     },
                     icon: const Icon(Icons.refresh),
@@ -117,8 +118,8 @@ class _SpecificCompletedCustomerDataState
             );
           }
 
-          if (state is CompletedCustomerByIdLoaded) {
-            final customer = state.customer;
+          if (state is CollectionLoaded) {
+            final collection = state.collection;
 
             return CustomScrollView(
               slivers: [
@@ -132,10 +133,10 @@ class _SpecificCompletedCustomerDataState
                       IconButton(
                         icon: const Icon(Icons.arrow_back),
                         onPressed: () {
-                          context.go('/completed-customers');
+                          context.go('/completed-collections');
                         },
                       ),
-                      Text('Customer: ${customer.storeName ?? 'N/A'}'),
+                      Text('Collection: ${collection.collectionName ?? 'N/A'}'),
                     ],
                   ),
                   actions: [
@@ -143,22 +144,39 @@ class _SpecificCompletedCustomerDataState
                       icon: const Icon(Icons.refresh),
                       tooltip: 'Refresh',
                       onPressed: () {
-                        context.read<CompletedCustomerBloc>().add(
-                          GetCompletedCustomerByIdEvent(widget.customerId),
+                        context.read<CollectionsBloc>().add(
+                          GetCollectionByIdEvent(widget.collectionId),
                         );
-                        context.read<InvoiceBloc>().add(
-                          GetInvoicesByCompletedCustomerEvent(
-                            widget.customerId,
+                        if (collection.customer?.id != null) {
+                          context.read<InvoiceDataBloc>().add(
+                            GetInvoiceDataByCustomerIdEvent(collection.customer!.id!),
+                          );
+                        }
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.print),
+                      tooltip: 'Print Collection Receipt',
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Printing receipt for ${collection.collectionName ?? 'collection'}...',
+                            ),
                           ),
                         );
                       },
                     ),
                     IconButton(
-                      icon: const Icon(Icons.print),
-                      tooltip: 'Print Receipt',
+                      icon: const Icon(Icons.picture_as_pdf),
+                      tooltip: 'Export PDF',
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Printing receipt...')),
+                          SnackBar(
+                            content: Text(
+                              'Exporting PDF for ${collection.collectionName ?? 'collection'}...',
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -170,25 +188,65 @@ class _SpecificCompletedCustomerDataState
                   padding: const EdgeInsets.all(16.0),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      // // Customer Header
-                      // CompletedCustomerHeaderWidget(
-                      //   customer: customer,
-                      //   onPrintReceipt: () {
-                      //     ScaffoldMessenger.of(context).showSnackBar(
-                      //       const SnackBar(content: Text('Printing receipt...')),
-                      //     );
-                      //   },
-                      // ),
-
-                      // const SizedBox(height: 16),
-
-                      // Customer Dashboard
-                      CompletedCustomerDashboardWidget(customer: customer),
+                      // Collection Dashboard
+                      CompletedCustomerDashboardWidget(collection: collection),
 
                       const SizedBox(height: 16),
 
+                      // Customer Information Card
+                      if (collection.customer != null)
+                        Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Customer Information',
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ListTile(
+                                        leading: const Icon(
+                                          Icons.store,
+                                          color: Colors.blue,
+                                        ),
+                                        title: Text(
+                                          'Store: ${collection.customer?.name ?? 'N/A'}',
+                                        ),
+                                        subtitle: Text(
+                                          'Owner: ${collection.customer?.ownerName ?? 'N/A'}',
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: ListTile(
+                                        leading: const Icon(
+                                          Icons.phone,
+                                          color: Colors.green,
+                                        ),
+                                        title: Text(
+                                          'Contact: ${collection.customer?.contactNumber ?? 'N/A'}',
+                                        ),
+                                        subtitle: Text(
+                                          'Address: ${collection.customer?.province ?? 'N/A'}',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
                       // Trip Information Card
-                      if (customer.trip != null)
+                      if (collection.trip != null)
                         Card(
                           margin: const EdgeInsets.only(bottom: 16),
                           child: Padding(
@@ -204,20 +262,20 @@ class _SpecificCompletedCustomerDataState
                                 const SizedBox(height: 16),
                                 ListTile(
                                   leading: const Icon(
-                                    Icons.receipt_long,
-                                    color: Colors.blue,
+                                    Icons.local_shipping,
+                                    color: Colors.orange,
                                   ),
                                   title: Text(
-                                    'Trip Number: ${customer.trip?.tripNumberId ?? 'N/A'}',
+                                    'Trip Number: ${collection.trip?.tripNumberId ?? 'N/A'}',
                                   ),
                                   subtitle: Text(
-                                    'View complete trip details including all collections',
+                                    'Status: ${collection.trip?.isEndTrip == true ? 'Completed' : 'Active'}',
                                   ),
                                   trailing: ElevatedButton(
                                     onPressed: () {
-                                      if (customer.trip?.id != null) {
+                                      if (collection.trip?.id != null) {
                                         context.go(
-                                          '/collections/${customer.trip!.id}',
+                                          '/collections/${collection.trip!.id}',
                                         );
                                       }
                                     },
@@ -229,7 +287,86 @@ class _SpecificCompletedCustomerDataState
                           ),
                         ),
 
-                      // Invoices Table
+                      // Invoice Information Card
+                      if (collection.invoice != null)
+                        Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Invoice Information',
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ListTile(
+                                        leading: const Icon(
+                                          Icons.receipt,
+                                          color: Colors.purple,
+                                        ),
+                                        title: Text(
+                                          'Invoice: ${collection.invoice?.refId ?? 'N/A'}',
+                                        ),
+                                        subtitle: Text(
+                                          'Amount: ₱${collection.invoice?.totalAmount?.toStringAsFixed(2) ?? '0.00'}',
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: ListTile(
+                                        leading: const Icon(
+                                          Icons.verified,
+                                          color: Colors.teal,
+                                        ),
+                                        title: Text(
+                                          'Confirmed: ₱${collection.invoice?.totalAmount?.toStringAsFixed(2) ?? '0.00'}',
+                                        ),
+                                        subtitle: Text(
+                                          'Ref id: ${collection.invoice?.refId ?? 'N/A'}',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        if (collection.invoice?.id != null) {
+                                          context.go('/invoice/${collection.invoice!.id}');
+                                        }
+                                      },
+                                      icon: const Icon(Icons.visibility),
+                                      label: const Text('View Invoice'),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Printing invoice...'),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.print),
+                                      label: const Text('Print Invoice'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                      // Related Collections Table (if needed)
                       Card(
                         margin: const EdgeInsets.symmetric(vertical: 16),
                         child: Padding(
@@ -242,7 +379,7 @@ class _SpecificCompletedCustomerDataState
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'Invoices',
+                                    'Collection Details',
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleLarge
@@ -250,14 +387,14 @@ class _SpecificCompletedCustomerDataState
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.print),
-                                    tooltip: 'Print All Invoices',
+                                    tooltip: 'Print Collection Report',
                                     onPressed: () {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
                                         const SnackBar(
                                           content: Text(
-                                            'Printing all invoices...',
+                                            'Printing collection report...',
                                           ),
                                         ),
                                       );
@@ -266,254 +403,238 @@ class _SpecificCompletedCustomerDataState
                                 ],
                               ),
                               const SizedBox(height: 16),
-                              BlocBuilder<InvoiceBloc, InvoiceState>(
-                                builder: (context, invoiceState) {
-                                  debugPrint(
-                                    '🔄 Current invoice state: ${invoiceState.runtimeType}',
-                                  );
+                              // Collection Invoice Table
+                                                            // Collection Invoice Table
+                              BlocBuilder<CollectionsBloc, CollectionsState>(
+                                builder: (context, collectionState) {
+                                  List<CollectionEntity> collections = [];
+                                  bool isLoadingCollections = false;
+                                  String? collectionError;
 
-                                  if (invoiceState is InvoiceLoading) {
-                                    return const Center(
-                                      child: Padding(
-                                        padding: EdgeInsets.all(32.0),
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    );
+                                  if (collectionState is CollectionsLoading) {
+                                    isLoadingCollections = true;
+                                  } else if (collectionState is CollectionLoaded) {
+                                    // Use the current collection from the state
+                                    collections = [collectionState.collection];
+                                  } else if (collectionState is CollectionsLoaded) {
+                                    // If multiple collections are loaded, use them
+                                    collections = collectionState.collections;
+                                  } else if (collectionState is CollectionsError) {
+                                    collectionError = collectionState.message;
                                   }
 
-                                  if (invoiceState is InvoiceError) {
-                                    return Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(32.0),
-                                        child: Column(
-                                          children: [
-                                            Icon(
-                                              Icons.error_outline,
-                                              size: 48,
-                                              color: Colors.red[300],
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Text(
-                                              'Error loading invoices: ${invoiceState.message}',
-                                              style: TextStyle(
-                                                color: Colors.red[700],
-                                              ),
-                                            ),
-                                            const SizedBox(height: 16),
-                                            ElevatedButton.icon(
-                                              onPressed: () {
-                                                // Extract ID again to ensure we're using the correct format
-                                                String customerId =
-                                                    widget.customerId;
-                                                if (customerId.contains(
-                                                  'CompletedCustomerModel',
-                                                )) {
-                                                  final idMatch = RegExp(
-                                                    r'CompletedCustomerModel\(([^,]+)',
-                                                  ).firstMatch(customerId);
-                                                  if (idMatch != null &&
-                                                      idMatch.groupCount >= 1) {
-                                                    customerId =
-                                                        idMatch.group(1)!;
-                                                  } else {
-                                                    customerId =
-                                                        customerId
-                                                            .split(',')
-                                                            .first
-                                                            .replaceAll(
-                                                              'CompletedCustomerModel(',
-                                                              '',
-                                                            )
-                                                            .trim();
-                                                  }
-                                                }
-
-                                                context.read<InvoiceBloc>().add(
-                                                  GetInvoicesByCompletedCustomerEvent(
-                                                    customerId,
-                                                  ),
-                                                );
-                                              },
-                                              icon: const Icon(Icons.refresh),
-                                              label: const Text('Retry'),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  }
-
-                                  if (invoiceState
-                                      is CompletedCustomerInvoicesLoaded) {
-                                    // Check if this state is for our customer
-                                    String currentCustomerId =
-                                        widget.customerId;
-                                    if (currentCustomerId.contains(
-                                      'CompletedCustomerModel',
-                                    )) {
-                                      final idMatch = RegExp(
-                                        r'CompletedCustomerModel\(([^,]+)',
-                                      ).firstMatch(currentCustomerId);
-                                      if (idMatch != null &&
-                                          idMatch.groupCount >= 1) {
-                                        currentCustomerId = idMatch.group(1)!;
-                                      } else {
-                                        currentCustomerId =
-                                            currentCustomerId
-                                                .split(',')
-                                                .first
-                                                .replaceAll(
-                                                  'CompletedCustomerModel(',
-                                                  '',
-                                                )
-                                                .trim();
-                                      }
-                                    }
-
-                                    // If the state is for a different customer, request data for this customer
-                                    if (invoiceState.completedCustomerId !=
-                                        currentCustomerId) {
-                                      debugPrint(
-                                        '🔄 State is for a different customer, requesting data for current customer',
+                                  return CompletedCustomerInvoiceTable(
+                                    collections: collections,
+                                    isLoading: isLoadingCollections,
+                                    currentPage: _currentPage,
+                                    totalPages: _totalPages,
+                                    onPageChanged: (page) {
+                                      setState(() {
+                                        _currentPage = page;
+                                      });
+                                    },
+                                    completedCustomerId: collection.id,
+                                    errorMessage: collectionError,
+                                    onRetry: () {
+                                      // Retry loading the collection
+                                      context.read<CollectionsBloc>().add(
+                                        GetCollectionByIdEvent(widget.collectionId),
                                       );
-                                      // Request data for this customer
-                                      WidgetsBinding.instance
-                                          .addPostFrameCallback((_) {
-                                            context.read<InvoiceBloc>().add(
-                                              GetInvoicesByCompletedCustomerEvent(
-                                                currentCustomerId,
-                                              ),
-                                            );
-                                          });
-
-                                      return const Center(
-                                        child: Padding(
-                                          padding: EdgeInsets.all(32.0),
-                                          child: CircularProgressIndicator(),
-                                        ),
-                                      );
-                                    }
-
-                                    final invoices = invoiceState.invoices;
-
-                                    // Calculate total pages
-                                    _totalPages =
-                                        (invoices.length / _itemsPerPage)
-                                            .ceil();
-                                    if (_totalPages == 0) _totalPages = 1;
-
-                                    // Paginate invoices
-                                    final startIndex =
-                                        (_currentPage - 1) * _itemsPerPage;
-                                    final endIndex =
-                                        startIndex + _itemsPerPage >
-                                                invoices.length
-                                            ? invoices.length
-                                            : startIndex + _itemsPerPage;
-
-                                    final paginatedInvoices =
-                                        startIndex < invoices.length
-                                            ? invoices.sublist(
-                                              startIndex,
-                                              endIndex,
-                                            )
-                                            : [];
-
-                                    return CompletedCustomerInvoiceTable(
-                                      invoices:
-                                          paginatedInvoices
-                                              as List<InvoiceEntity>,
-                                      isLoading: false,
-                                      currentPage: _currentPage,
-                                      totalPages: _totalPages,
-                                      onPageChanged: (page) {
-                                        setState(() {
-                                          _currentPage = page;
-                                        });
-                                      },
-                                      completedCustomerId: currentCustomerId,
-                                      onRetry: () {
-                                        context.read<InvoiceBloc>().add(
-                                          GetInvoicesByCompletedCustomerEvent(
-                                            currentCustomerId,
+                                      
+                                      // Also retry loading invoices if customer ID exists
+                                      if (collection.customer?.id != null) {
+                                        context.read<InvoiceDataBloc>().add(
+                                          GetInvoiceDataByCustomerIdEvent(
+                                            collection.customer!.id!,
                                           ),
                                         );
-                                      },
-                                    );
-                                  }
-
-                                  // Default case - no invoices loaded yet
-                                  // Add a button to explicitly load invoices
-                                  return Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(32.0),
-                                      child: Column(
-                                        children: [
-                                          Icon(
-                                            Icons.receipt_long_outlined,
-                                            size: 48,
-                                            color: Colors.grey[400],
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            'No invoices data available',
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          ElevatedButton.icon(
-                                            onPressed: () {
-                                              // Extract ID again to ensure we're using the correct format
-                                              String customerId =
-                                                  widget.customerId;
-                                              if (customerId.contains(
-                                                'CompletedCustomerModel',
-                                              )) {
-                                                final idMatch = RegExp(
-                                                  r'CompletedCustomerModel\(([^,]+)',
-                                                ).firstMatch(customerId);
-                                                if (idMatch != null &&
-                                                    idMatch.groupCount >= 1) {
-                                                  customerId =
-                                                      idMatch.group(1)!;
-                                                } else {
-                                                  customerId =
-                                                      customerId
-                                                          .split(',')
-                                                          .first
-                                                          .replaceAll(
-                                                            'CompletedCustomerModel(',
-                                                            '',
-                                                          )
-                                                          .trim();
-                                                }
-                                              }
-
-                                              debugPrint(
-                                                '🔍 Manually loading invoices for customer ID: $customerId',
-                                              );
-                                              context.read<InvoiceBloc>().add(
-                                                GetInvoicesByCompletedCustomerEvent(
-                                                  customerId,
-                                                ),
-                                              );
-                                            },
-                                            icon: const Icon(Icons.refresh),
-                                            label: const Text('Load Invoices'),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                      }
+                                    },
                                   );
                                 },
+                              ),
+
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // // Delivery Information Card
+                      // if (collection.deliveryData != null)
+                      //   Card(
+                      //     margin: const EdgeInsets.only(bottom: 16),
+                      //     child: Padding(
+                      //       padding: const EdgeInsets.all(16.0),
+                      //       child: Column(
+                      //         crossAxisAlignment: CrossAxisAlignment.start,
+                      //         children: [
+                      //           Text(
+                      //             'Delivery Information',
+                      //             style: Theme.of(context).textTheme.titleLarge
+                      //                 ?.copyWith(fontWeight: FontWeight.bold),
+                      //           ),
+                      //           const SizedBox(height: 16),
+                      //           Row(
+                      //             children: [
+                      //               Expanded(
+                      //                 child: ListTile(
+                      //                   leading: const Icon(
+                      //                     Icons.local_shipping,
+                      //                     color: Colors.indigo,
+                      //                   ),
+                      //                   title: Text(
+                      //                     'Delivery #: ${collection.deliveryData?.deliveryNumber ?? 'N/A'}',
+                      //                   ),
+                      //                   subtitle: Text(
+                      //                     'Status: ${collection.deliveryData?.status ?? 'N/A'}',
+                      //                   ),
+                      //                 ),
+                      //               ),
+                      //               Expanded(
+                      //                 child: ListTile(
+                      //                   leading: const Icon(
+                      //                     Icons.access_time,
+                      //                     color: Colors.amber,
+                      //                   ),
+                      //                   title: Text(
+                      //                     'Delivered At: ${collection.deliveryData?.deliveredAt != null ? collection.deliveryData!.deliveredAt.toString() : 'N/A'}',
+                      //                   ),
+                      //                   subtitle: Text(
+                      //                     'Driver: ${collection.deliveryData?.driverName ?? 'N/A'}',
+                      //                   ),
+                      //                 ),
+                      //               ),
+                      //             ],
+                      //           ),
+                      //         ],
+                      //       ),
+                      //     ),
+                      //   ),
+
+                      // Action Buttons Card
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Actions',
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 16),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Printing receipt for ${collection.collectionName ?? 'collection'}...',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.print),
+                                    label: const Text('Print Receipt'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Exporting PDF for ${collection.collectionName ?? 'collection'}...',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.picture_as_pdf),
+                                    label: const Text('Export PDF'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Sending email for ${collection.collectionName ?? 'collection'}...',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.email),
+                                    label: const Text('Send Email'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                  if (collection.invoice != null)
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        if (collection.invoice?.id != null) {
+                                          context.go('/invoice/${collection.invoice!.id}');
+                                        }
+                                      },
+                                      icon: const Icon(Icons.receipt_long),
+                                      label: const Text('View Invoice'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.purple,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  if (collection.trip != null)
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        if (collection.trip?.id != null) {
+                                          context.go('/trips/${collection.trip!.id}');
+                                        }
+                                      },
+                                      icon: const Icon(Icons.local_shipping),
+                                      label: const Text('View Trip'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orange,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      context.read<CollectionsBloc>().add(
+                                        GetCollectionByIdEvent(widget.collectionId),
+                                      );
+                                      if (collection.customer?.id != null) {
+                                        context.read<InvoiceDataBloc>().add(
+                                          GetInvoiceDataByCustomerIdEvent(
+                                            collection.customer!.id!,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text('Refresh Data'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.grey,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ),
                       ),
 
-                      // Add some bottom padding
                       const SizedBox(height: 32),
                     ]),
                   ),
@@ -522,7 +643,8 @@ class _SpecificCompletedCustomerDataState
             );
           }
 
-          return const Center(child: Text('Select a customer to view details'));
+          // Default state - show loading
+          return const Center(child: CircularProgressIndicator());
         },
       ),
     );

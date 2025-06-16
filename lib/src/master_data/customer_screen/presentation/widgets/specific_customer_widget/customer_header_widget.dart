@@ -1,9 +1,9 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/domain/entity/customer_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/domain/entity/customer_data_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_header.dart';
 import 'package:flutter/material.dart';
 
 class CustomerHeaderWidget extends StatelessWidget {
-  final CustomerEntity customer;
+  final CustomerDataEntity customer;
   final VoidCallback? onEditPressed;
   final VoidCallback? onOptionsPressed;
 
@@ -27,7 +27,7 @@ class CustomerHeaderWidget extends StatelessWidget {
             // Store Name Header
             DetailedDesktopHeader(
               title: 'Store',
-              subtitle: customer.storeName ?? 'N/A',
+              subtitle: customer.name ?? 'N/A',
               leadingIcon: Container(
                 width: 48,
                 height: 48,

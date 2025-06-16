@@ -1,7 +1,6 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/domain/entity/completed_customer_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/domain/entity/collection_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_list/presentation/widgets/completed_customer_list_widgets/completed_customer_error_widget.dart';
@@ -9,6 +8,8 @@ import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_l
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../../core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_event.dart';
 
 class CompletedCustomerListScreen extends StatefulWidget {
   const CompletedCustomerListScreen({super.key});
@@ -30,9 +31,7 @@ class _CompletedCustomerListScreenState
   void initState() {
     super.initState();
     // Load completed customers when the screen initializes
-    context.read<CompletedCustomerBloc>().add(
-      const GetAllCompletedCustomersEvent(),
-    );
+    context.read<CollectionsBloc>().add(const GetAllCollectionsEvent());
   }
 
   @override
@@ -63,20 +62,18 @@ class _CompletedCustomerListScreenState
         // Handle profile tap
       },
 
-      child: BlocBuilder<CompletedCustomerBloc, CompletedCustomerState>(
+      child: BlocBuilder<CollectionsBloc, CollectionsState>(
         builder: (context, state) {
           // Handle different states
-          if (state is CompletedCustomerInitial) {
+          if (state is CollectionsInitial) {
             // Initial state, trigger loading
-            context.read<CompletedCustomerBloc>().add(
-              const GetAllCompletedCustomersEvent(),
-            );
+            context.read<CollectionsBloc>().add(const GetAllCollectionsEvent());
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is CompletedCustomerLoading) {
+          if (state is CollectionsLoading) {
             return CompletedCustomerDataTable(
-              completedCustomers: [],
+              collections: [],
               isLoading: true,
               currentPage: _currentPage,
               totalPages: _totalPages,
@@ -95,29 +92,27 @@ class _CompletedCustomerListScreenState
             );
           }
 
-          if (state is CompletedCustomerError) {
+          if (state is CollectionsError) {
             return CompletedCustomerErrorWidget(errorMessage: state.message);
           }
 
-          if (state is AllCompletedCustomersLoaded) {
-            List<CompletedCustomerEntity> completedCustomers = state.customers;
+          if (state is AllCollectionsLoaded) {
+            List<CollectionEntity> completedCustomers = state.collections;
 
             // Filter completed customers based on search query
             if (_searchQuery.isNotEmpty) {
               completedCustomers =
                   completedCustomers.where((customer) {
                     final query = _searchQuery.toLowerCase();
-                    return (customer.storeName?.toLowerCase().contains(query) ??
-                            false) ||
-                        (customer.deliveryNumber?.toLowerCase().contains(
+                    return (customer.customer!.name?.toLowerCase().contains(
                               query,
                             ) ??
                             false) ||
-                        (customer.ownerName?.toLowerCase().contains(query) ??
-                            false) ||
-                        (customer.address?.toLowerCase().contains(query) ??
-                            false) ||
                         (customer.trip?.tripNumberId?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (customer.customer!.ownerName?.toLowerCase().contains(
                               query,
                             ) ??
                             false);
@@ -141,8 +136,8 @@ class _CompletedCustomerListScreenState
                     : [];
 
             return CompletedCustomerDataTable(
-              completedCustomers:
-                  paginatedCustomers as List<CompletedCustomerEntity>,
+              collections:
+                  paginatedCustomers as List<CollectionEntity>,
               isLoading: false,
               currentPage: _currentPage,
               totalPages: _totalPages,
@@ -160,16 +155,16 @@ class _CompletedCustomerListScreenState
 
                 if (value.isEmpty) {
                   // If search query is cleared, load all completed customers
-                  context.read<CompletedCustomerBloc>().add(
-                    const GetAllCompletedCustomersEvent(),
-                  );
+                   context.read<CollectionsBloc>().add(
+                  const GetAllCollectionsEvent(),
+                );
                 }
                 // Search functionality can be implemented later if needed
               },
               errorMessage: null,
               onRetry: () {
-                context.read<CompletedCustomerBloc>().add(
-                  const GetAllCompletedCustomersEvent(),
+                context.read<CollectionsBloc>().add(
+                  const GetAllCollectionsEvent(),
                 );
               },
             );

@@ -1,29 +1,23 @@
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/delivery_team/data/models/delivery_team_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/data/models/personel_models.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/data/model/vehicle_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/data/models/completed_customer_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/data/model/return_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/transaction/data/model/transaction_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/data/model/trip_update_model.dart' show TripUpdateModel;
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/undeliverable_customer/data/model/undeliverable_customer_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/data/model/checklist_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/data/models/auth_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/data/model/end_trip_checklist_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/data/model/end_trip_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cancelled_invoices/data/model/cancelled_invoice_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/otp/data/models/otp_models.dart';
-import 'package:xpro_delivery_admin_app/core/enums/mode_of_payment.dart';
-import 'package:xpro_delivery_admin_app/core/enums/transaction_status.dart';
+
 import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
 
+// New imports for the updated model relationships
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/data/model/delivery_data_model.dart';
 
 class TripModel extends TripEntity {
-  int objectBoxId = 0;
-
   String? pocketbaseId;
 
   TripModel({
@@ -31,20 +25,20 @@ class TripModel extends TripEntity {
     super.collectionId,
     super.collectionName,
     super.tripNumberId,
-    List<CustomerModel>? customersList,
     List<PersonelModel>? personelsList,
     List<ChecklistModel>? checklistItems,
-    List<VehicleModel>? vehicleList,
-    List<CompletedCustomerModel>? completedCustomersList,
-    List<ReturnModel>? returnsList,
-    List<UndeliverableCustomerModel>? undeliverableCustomersList,
-    List<TransactionModel>? transactionsList,
+    DeliveryVehicleModel? vehicleModel, // Updated: Changed from List<VehicleModel> to DeliveryVehicleModel
+    List<DeliveryDataModel>? deliveryDataList, // Added: New parameter for delivery data
     List<EndTripChecklistModel>? endTripChecklistItems,
     List<DeliveryTeamModel>? deliveryTeamList,
     List<TripUpdateModel>? tripUpdateList,
-    List<InvoiceModel>? invoicesList,
-    super.latitude,  // Added to constructor
-    super.longitude, // Added to constructor
+    List<CollectionModel>? deliveryCollectionList,
+    List<CancelledInvoiceModel>? cancelledInvoiceList, 
+    super.latitude,
+    super.longitude,
+    super.averageFillRate,
+    super.volumeRate,
+    super.weightRate,
     super.user,
     super.totalTripDistance,
     super.otp,
@@ -57,19 +51,13 @@ class TripModel extends TripEntity {
     super.updated,
     super.qrCode,
     super.isAccepted,
-    this.objectBoxId = 0,
   }) : super(
           tripUpdates: tripUpdateList,
-          customers: customersList,
-          invoices: invoicesList,
-          personels: personelsList,
-          checklist: checklistItems,
-          vehicle: vehicleList,
-          completedCustomers: completedCustomersList,
-          returns: returnsList,
-          undeliverableCustomers: undeliverableCustomersList,
-          transactions: transactionsList,
-          endTripChecklist: endTripChecklistItems,
+          personels: personelsList ?? [],
+          checklist: checklistItems ?? [],
+          vehicle: vehicleModel, // Updated: Changed from vehicleList to vehicleModel
+          deliveryData: deliveryDataList ?? [], // Added: Initialize delivery data list
+          endTripChecklist: endTripChecklistItems ?? [],
         );
 
   factory TripModel.fromJson(dynamic json) {
@@ -82,21 +70,6 @@ class TripModel extends TripEntity {
 
     final expandedData = json['expand'] as Map<String, dynamic>?;
 
-    // Handle Customers
-    final customersData = expandedData?['customers'] ?? json['customers'];
-    List<CustomerModel> customersList = [];
-    if (customersData != null) {
-      if (customersData is List) {
-        customersList = customersData.map((customer) {
-          if (customer is String) {
-            return CustomerModel(id: customer);
-          }
-          return CustomerModel.fromJson(customer);
-        }).toList();
-      } else if (customersData is Map<String, dynamic>) {
-        customersList = [CustomerModel.fromJson(customersData)];
-      }
-    }
 
     // Handle delivery team data
     final deliveryTeamData = expandedData?['deliveryTeam'];
@@ -116,24 +89,24 @@ class TripModel extends TripEntity {
     }
 
     // Handle user data
-  final userData = expandedData?['user'] ?? json['user'];
-  GeneralUserModel? usersModel;
-  if (userData != null) {
-    debugPrint('✅ MODEL: Processing user data: $userData');
-    if (userData is RecordModel) {
-      usersModel = GeneralUserModel.fromJson({
-        'id': userData.id,
-        'collectionId': userData.collectionId,
-        'collectionName': userData.collectionName,
-        ...userData.data
-      });
-    } else if (userData is Map) {
-      usersModel = GeneralUserModel.fromJson(userData as DataMap);
+    final userData = expandedData?['user'] ?? json['user'];
+    GeneralUserModel? usersModel;
+    if (userData != null) {
+      debugPrint('✅ MODEL: Processing user data: $userData');
+      if (userData is RecordModel) {
+        usersModel = GeneralUserModel.fromJson({
+          'id': userData.id,
+          'collectionId': userData.collectionId,
+          'collectionName': userData.collectionName,
+          ...userData.data
+        });
+      } else if (userData is Map) {
+        usersModel = GeneralUserModel.fromJson(userData as DataMap);
+      }
+      debugPrint('✅ MODEL: User name: ${usersModel?.name}');
+    } else {
+      debugPrint('⚠️ MODEL: No user data found');
     }
-    debugPrint('✅ MODEL: User name: ${usersModel?.name}');
-  } else {
-    debugPrint('⚠️ MODEL: No user data found');
-  }
 
     // Handle Personels
     final personelsData = expandedData?['personels'] ?? json['personels'];
@@ -151,21 +124,71 @@ class TripModel extends TripEntity {
       }
     }
 
-    // Handle Vehicle
+    // Handle Vehicle - Updated to handle a single DeliveryVehicleModel
     final vehicleData = expandedData?['vehicle'] ?? json['vehicle'];
-    List<VehicleModel> vehicleList = [];
+    DeliveryVehicleModel? vehicleModel;
     if (vehicleData != null) {
-      if (vehicleData is List) {
-        vehicleList = vehicleData.map((vehicle) {
-          if (vehicle is String) {
-            return VehicleModel(id: vehicle);
-          }
-          return VehicleModel.fromJson(vehicle);
-        }).toList();
+      if (vehicleData is String) {
+        vehicleModel = DeliveryVehicleModel(id: vehicleData);
       } else if (vehicleData is Map<String, dynamic>) {
-        vehicleList = [VehicleModel.fromJson(vehicleData)];
+        vehicleModel = DeliveryVehicleModel.fromJson(vehicleData);
+      } else if (vehicleData is RecordModel) {
+        vehicleModel = DeliveryVehicleModel.fromJson({
+          'id': vehicleData.id,
+          'collectionId': vehicleData.collectionId,
+          'collectionName': vehicleData.collectionName,
+          ...vehicleData.data,
+        });
       }
     }
+
+    // Handle DeliveryData - New relationship
+    final deliveryDataList = expandedData?['deliveryData'] ?? json['deliveryData'];
+    List<DeliveryDataModel> deliveryDataModels = [];
+    if (deliveryDataList != null) {
+      if (deliveryDataList is List) {
+        deliveryDataModels = deliveryDataList.map((data) {
+          if (data is String) {
+            return DeliveryDataModel(id: data);
+          }
+          return DeliveryDataModel.fromJson(data);
+        }).toList();
+      } else if (deliveryDataList is Map<String, dynamic>) {
+        deliveryDataModels = [DeliveryDataModel.fromJson(deliveryDataList)];
+      }
+    }
+
+    final deliveryCollectionList = expandedData?['deliveryCollection'] ?? json['deliveryCollection'];
+    List<CollectionModel> deliveryCollectionModels = [];
+    if (deliveryCollectionList != null) {
+      if (deliveryCollectionList is List) {
+        deliveryCollectionModels = deliveryCollectionList.map((data) {
+          if (data is String) {
+            return CollectionModel(id: data);
+          }
+          return CollectionModel.fromJson(data);
+        }).toList();    
+          }else if (deliveryCollectionList is Map<String, dynamic>) {
+            deliveryCollectionModels = [CollectionModel.fromJson(deliveryCollectionList)];
+          }
+        }
+
+        final cancelledInvoiceList = expandedData?['cancelledInvoice'] ?? json['cancelledInvoice'];
+        List<CancelledInvoiceModel> cancelledInvoiceModels = [];
+        if (cancelledInvoiceList != null) {
+          if (cancelledInvoiceList is List) {
+            cancelledInvoiceModels = cancelledInvoiceList.map((data) {
+              if (data is String) {
+                return CancelledInvoiceModel(id: data);
+              }
+              return CancelledInvoiceModel.fromJson(data);
+            }).toList();
+          } else if (cancelledInvoiceList is Map<String, dynamic>) {
+            cancelledInvoiceModels = [CancelledInvoiceModel.fromJson(cancelledInvoiceList)];
+          }
+        }
+      
+    
 
     // Handle Checklist
     final checklistData = expandedData?['checklist'] ?? json['checklist'];
@@ -183,96 +206,7 @@ class TripModel extends TripEntity {
       }
     }
 
-    // Handle CompletedCustomers
-    final completedCustomersData =
-        expandedData?['completedCustomers'] ?? json['completedCustomers'];
-    List<CompletedCustomerModel> completedCustomersList = [];
-    if (completedCustomersData != null) {
-      if (completedCustomersData is List) {
-        completedCustomersList = completedCustomersData.map((customer) {
-          if (customer is String) {
-            return CompletedCustomerModel(id: customer);
-          }
-          return CompletedCustomerModel.fromJson(customer);
-        }).toList();
-      } else if (completedCustomersData is Map<String, dynamic>) {
-        completedCustomersList = [
-          CompletedCustomerModel.fromJson(completedCustomersData)
-        ];
-      }
-    }
-
-    // Handle Returns
-    final returnsData = expandedData?['returns'] ?? json['returns'];
-    List<ReturnModel> returnsList = [];
-    if (returnsData != null) {
-      if (returnsData is List) {
-        returnsList = returnsData.map((returnItem) {
-          if (returnItem is String) {
-            return ReturnModel(id: returnItem);
-          }
-          return ReturnModel.fromJson(returnItem);
-        }).toList();
-      } else if (returnsData is Map<String, dynamic>) {
-        returnsList = [ReturnModel.fromJson(returnsData)];
-      }
-    }
-
-    // Handle UndeliverableCustomers
-    final undeliverableData = expandedData?['undeliverableCustomers'] ??
-        json['undeliverableCustomers'];
-    List<UndeliverableCustomerModel> undeliverableList = [];
-    if (undeliverableData != null) {
-      if (undeliverableData is List) {
-        undeliverableList = undeliverableData.map((customer) {
-          if (customer is String) {
-            return UndeliverableCustomerModel(id: customer);
-          }
-          return UndeliverableCustomerModel.fromJson(customer);
-        }).toList();
-      } else if (undeliverableData is Map<String, dynamic>) {
-        undeliverableList = [
-          UndeliverableCustomerModel.fromJson(undeliverableData)
-        ];
-      }
-    }
-
-    // Handle Transactions
-    final transactionsData =
-        expandedData?['transactions'] ?? json['transactions'];
-    List<TransactionModel> transactionsList = [];
-    if (transactionsData != null) {
-      if (transactionsData is List) {
-        transactionsList = transactionsData.map((transaction) {
-          if (transaction is String) {
-            return TransactionModel(
-                id: transaction,
-                customerModel: null,
-                customerName: '',
-                totalAmount: '',
-                deliveryNumber: '',
-                collectionId: '',
-                collectionName: '',
-                refNumber: '',
-                signature: null,
-                customerImage: '',
-                invoices: const [],
-                transactionDate: null,
-                transactionStatus: TransactionStatus.pending,
-                createdAt: null,
-                updatedAt: null,
-                modeOfPayment: ModeOfPayment.cashOnDelivery,
-                isCompleted: null,
-                pdf: null,
-                trip: null);
-          }
-          return TransactionModel.fromJson(transaction);
-        }).toList();
-      } else if (transactionsData is Map<String, dynamic>) {
-        transactionsList = [TransactionModel.fromJson(transactionsData)];
-      }
-    }
-
+   
     // Handle EndTripChecklist
     final endTripData =
         expandedData?['endTripChecklist'] ?? json['endTripChecklist'];
@@ -290,85 +224,91 @@ class TripModel extends TripEntity {
       }
     }
 
-    final tripUpdatesData = expandedData?['tripUpdates'] as List?;
+        // Handle Trip Updates
+    final tripUpdatesData =
+        expandedData?['trip_update_list'] ?? json['trip_update_list'];
     List<TripUpdateModel> tripUpdatesList = [];
     if (tripUpdatesData != null) {
-      tripUpdatesList = tripUpdatesData.map((update) {
-        if (update is String) {
-          return TripUpdateModel(id: update);
-        }
-        return TripUpdateModel.fromJson(update);
-      }).toList();
+      if (tripUpdatesData is List) {
+        tripUpdatesList = tripUpdatesData.map((update) {
+          if (update is String) {
+            return TripUpdateModel(id: update);
+          }
+          return TripUpdateModel.fromJson(update);
+        }).toList();
+      } else if (tripUpdatesData is Map<String, dynamic>) {
+        tripUpdatesList = [TripUpdateModel.fromJson(tripUpdatesData)];
+      }
     }
 
-  // Parse date fields
-  DateTime? timeAccepted;
-  if (json['timeAccepted'] != null) {
-    try {
-      timeAccepted = DateTime.parse(json['timeAccepted'].toString());
-      debugPrint('✅ MODEL: Parsed timeAccepted: $timeAccepted');
-    } catch (e) {
-      debugPrint('❌ MODEL: Failed to parse timeAccepted: ${e.toString()}');
+    // Handle OTP
+    final otpData = expandedData?['otp'] ?? json['otp'];
+    OtpModel? otpModel;
+    if (otpData != null) {
+      if (otpData is String) {
+        otpModel = OtpModel(id: otpData);
+      } else if (otpData is Map<String, dynamic>) {
+        otpModel = OtpModel.fromJson(otpData);
+      }
     }
+
+    // Handle End Trip OTP
+    final endTripOtpData = expandedData?['endTripOtp'] ?? json['endTripOtp'];
+    EndTripOtpModel? endTripOtpModel;
+    if (endTripOtpData != null) {
+      if (endTripOtpData is String) {
+        endTripOtpModel = EndTripOtpModel(id: endTripOtpData);
+      } else if (endTripOtpData is Map<String, dynamic>) {
+        endTripOtpModel = EndTripOtpModel.fromJson(endTripOtpData);
+      }
+    }
+
+  
+
+    return TripModel(
+      id: json['id']?.toString(),
+      collectionId: json['collectionId']?.toString(),
+      collectionName: json['collectionName']?.toString(),
+      tripNumberId: json['tripNumberId']?.toString(),
+      personelsList: personelsList,
+      checklistItems: checklistItems,
+      vehicleModel: vehicleModel, // Updated: Changed from vehicleList to vehicleModel
+      deliveryDataList: deliveryDataModels, // Added: Initialize delivery data list
+      endTripChecklistItems: endTripList,
+      cancelledInvoiceList: cancelledInvoiceModels,
+      deliveryCollectionList: deliveryCollectionModels,
+      tripUpdateList: tripUpdatesList,
+      latitude: json['latitude'] != null
+          ? double.tryParse(json['latitude'].toString())
+          : null,
+      longitude: json['longitude'] != null
+          ? double.tryParse(json['longitude'].toString())
+          : null,
+       volumeRate: json['volumeRate'] != null ? double.tryParse(json['volumeRate'].toString()) : null,
+       weightRate: json['weightRate'] != null ? double.tryParse(json['weightRate'].toString()) : null,
+       averageFillRate: json['averageFillRate'] != null ? double.tryParse(json['averageFillRate'].toString()) : null,   
+      user: usersModel,
+      totalTripDistance: json['totalTripDistance']?.toString(),
+      otp: otpModel,
+      endTripOtp: endTripOtpModel,
+      deliveryTeam: deliveryTeamModel,
+      timeAccepted: json['timeAccepted'] != null
+          ? DateTime.parse(json['timeAccepted'].toString())
+          : null,
+      isEndTrip: json['isEndTrip'] as bool?,
+      timeEndTrip: json['timeEndTrip'] != null
+          ? DateTime.parse(json['timeEndTrip'].toString())
+          : null,
+      created: json['created'] != null
+          ? DateTime.parse(json['created'].toString())
+          : null,
+      updated: json['updated'] != null
+          ? DateTime.parse(json['updated'].toString())
+          : null,
+      qrCode: json['qrCode']?.toString(),
+      isAccepted: json['isAccepted'] as bool?,
+    );
   }
-
-  DateTime? timeEndTrip;
-  if (json['timeEndTrip'] != null) {
-    try {
-      timeEndTrip = DateTime.parse(json['timeEndTrip'].toString());
-      debugPrint('✅ MODEL: Parsed timeEndTrip: $timeEndTrip');
-    } catch (e) {
-      debugPrint('❌ MODEL: Failed to parse timeEndTrip: ${e.toString()}');
-    }
-  }
-
-  DateTime? created;
-  if (json['created'] != null) {
-    try {
-      created = DateTime.parse(json['created'].toString());
-    } catch (e) {
-      debugPrint('❌ MODEL: Failed to parse created: ${e.toString()}');
-    }
-  }
-
-  DateTime? updated;
-  if (json['updated'] != null) {
-    try {
-      updated = DateTime.parse(json['updated'].toString());
-    } catch (e) {
-      debugPrint('❌ MODEL: Failed to parse updated: ${e.toString()}');
-    }
-  }
-
-  return TripModel(
-    id: json['id']?.toString(),
-    collectionId: json['collectionId']?.toString(),
-    collectionName: json['collectionName']?.toString(),
-    tripNumberId: json['tripNumberId']?.toString(),
-    qrCode: json['qrCode']?.toString(),
-    customersList: customersList,
-    deliveryTeam: deliveryTeamModel,
-    user: usersModel,
-    totalTripDistance: json['totalTripDistance']?.toString(),
-    personelsList: personelsList,
-    vehicleList: vehicleList,
-    checklistItems: checklistItems,
-    completedCustomersList: completedCustomersList,
-    returnsList: returnsList,
-    undeliverableCustomersList: undeliverableList,
-    transactionsList: transactionsList,
-    endTripChecklistItems: endTripList,
-    tripUpdateList: tripUpdatesList,
-    timeAccepted: timeAccepted,
-    isEndTrip: json['isEndTrip'] as bool? ?? false,
-    timeEndTrip: timeEndTrip,
-    created: created,
-    updated: updated,
-    isAccepted: json['isAccepted'] as bool? ?? false,
-    latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,  // Parse latitude
-      longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null, // Parse longitude
-  );
-}
 
   DataMap toJson() {
     return {
@@ -376,32 +316,67 @@ class TripModel extends TripEntity {
       'collectionId': collectionId,
       'collectionName': collectionName,
       'tripNumberId': tripNumberId,
-      'qrCode': qrCode,
-      'customers': customers.map((c) => c.toJson()).toList(),
-      'checklist': checklist.map((c) => c.toJson()).toList(),
-      'deliveryTeam': deliveryTeam?.toJson(),
-      'user': user?.toJson(),
-      'personels': personels.map((p) => p.toJson()).toList(),
-      'invoices': invoices.map((i) => i.toJson()).toList(),
-      'vehicle': vehicle.map((v) => v.toJson()).toList(),
-      'completedCustomers': completedCustomers.map((c) => c.toJson()).toList(),
-      'returns': returns.map((r) => r.toJson()).toList(),
-      'undeliverableCustomers':
-          undeliverableCustomers.map((u) => u.toJson()).toList(),
-      'transactions': transactions.map((t) => t.toJson()).toList(),
-      'endTripChecklist': endTripChecklist.map((e) => e.toJson()).toList(),
-      'created': created?.toIso8601String(),
-      'updated': updated?.toIso8601String(),
-      'timeAccepted': timeAccepted?.toIso8601String(),
+      'personels': personels.map((personel) => personel.id).toList(),
+      'checklist': checklist.map((item) => item.id).toList(),
+      'vehicle': vehicle?.id, // Updated: Changed from vehicle.map to vehicle?.id
+      'deliveryData': deliveryData.map((data) => data.id).toList(), // Added: Map deliveryData to IDs
+     'deliveryCollection': deliveryCollection!.map((collection) => collection.id).toList(),
+      'cancelledInvoice': cancelledInvoice!.map((invoice) => invoice.id).toList(),
+      'returns': returns.map((returnItem) => returnItem.id).toList(),
+     
+      'endTripChecklist':
+          endTripChecklist.map((item) => item.id).toList(),
+      'trip_update_list': tripUpdates.map((update) => update.id).toList(),
+      'latitude': latitude,
+      'longitude': longitude,
+      'volumeRate': volumeRate,
+      'weightRate': weightRate,
+      'averageFillRate': averageFillRate,
+      'user': user?.id,
       'totalTripDistance': totalTripDistance,
+      'otp': otp?.id,
+      'endTripOtp': endTripOtp?.id,
+      'deliveryTeam': deliveryTeam?.id,
+      'timeAccepted': timeAccepted?.toIso8601String(),
       'isEndTrip': isEndTrip,
       'timeEndTrip': timeEndTrip?.toIso8601String(),
+      'created': created?.toIso8601String(),
+      'updated': updated?.toIso8601String(),
+      'qrCode': qrCode,
       'isAccepted': isAccepted,
-      'otp': otp?.toJson(),
-      'endTripOtp': endTripOtp?.toJson(),
-       'latitude': latitude?.toString(),  // Added latitude to JSON
-      'longitude': longitude?.toString(), // Added longitude to JSON
     };
+  }
+
+  factory TripModel.fromEntity(TripEntity entity) {
+    return TripModel(
+      id: entity.id,
+      collectionId: entity.collectionId,
+      collectionName: entity.collectionName,
+      tripNumberId: entity.tripNumberId,
+      personelsList: entity.personels,
+      checklistItems: entity.checklist,
+      vehicleModel: entity.vehicle as DeliveryVehicleModel?, // Updated: Changed from vehicleList to vehicleModel
+      deliveryDataList: entity.deliveryData.cast<DeliveryDataModel>(), // Added: Cast deliveryData to DeliveryDataModel
+      endTripChecklistItems: entity.endTripChecklist,
+      tripUpdateList: entity.tripUpdates,
+      latitude: entity.latitude,
+      longitude: entity.longitude,
+      volumeRate: entity.volumeRate,
+      weightRate: entity.weightRate,
+      averageFillRate: entity.averageFillRate,
+      user: entity.user,
+      totalTripDistance: entity.totalTripDistance,
+      otp: entity.otp,
+      endTripOtp: entity.endTripOtp,
+      deliveryTeam: entity.deliveryTeam,
+      timeAccepted: entity.timeAccepted,
+      isEndTrip: entity.isEndTrip,
+      timeEndTrip: entity.timeEndTrip,
+      created: entity.created,
+      updated: entity.updated,
+      qrCode: entity.qrCode,
+      isAccepted: entity.isAccepted,
+    );
   }
 
   TripModel copyWith({
@@ -409,61 +384,64 @@ class TripModel extends TripEntity {
     String? collectionId,
     String? collectionName,
     String? tripNumberId,
-    String? totalTripDistance,
-    String? qrCode,
-    List<InvoiceModel>? invoicesList,
-    List<CustomerModel>? customersList,
     List<PersonelModel>? personelsList,
     List<ChecklistModel>? checklistItems,
-    List<VehicleModel>? vehicleList,
-    List<CompletedCustomerModel>? completedCustomersList,
-    List<ReturnModel>? returnsList,
-    List<UndeliverableCustomerModel>? undeliverableCustomersList,
-    List<TransactionModel>? transactionsList,
+    DeliveryVehicleModel? vehicleModel, // Updated: Changed from List<VehicleModel> to DeliveryVehicleModel
+    List<DeliveryDataModel>? deliveryDataList, // Added: New parameter for delivery data
     List<EndTripChecklistModel>? endTripChecklistItems,
     List<TripUpdateModel>? tripUpdateList,
+    List<CollectionModel>? deliveryCollection, // Added: New parameter for delivery collection>
+    List<CancelledInvoiceModel>? cancelledInvoice, // Added: New parameter for cancelled invoice>
+    double? latitude,
+    double? longitude,
+    double? volumeRate,
+    double? weightRate,
+    double? averageFillRate,
     GeneralUserModel? user,
+    String? totalTripDistance,
     OtpModel? otp,
     EndTripOtpModel? endTripOtp,
+    DeliveryTeamModel? deliveryTeam,
+    DateTime? timeAccepted,
     bool? isEndTrip,
     DateTime? timeEndTrip,
     DateTime? created,
     DateTime? updated,
-    DateTime? timeAccepted,
-     double? latitude,  // Added to copyWith
-    double? longitude, // Added to copyWith
+    String? qrCode,
     bool? isAccepted,
+    int? objectBoxId,
   }) {
     return TripModel(
       id: id ?? this.id,
-      totalTripDistance: totalTripDistance ?? this.totalTripDistance,
       collectionId: collectionId ?? this.collectionId,
       collectionName: collectionName ?? this.collectionName,
       tripNumberId: tripNumberId ?? this.tripNumberId,
-      qrCode: qrCode ?? this.qrCode,
-      customersList: customersList ?? customers.toList(),
-      personelsList: personelsList ?? personels.toList(),
-      checklistItems: checklistItems ?? checklist.toList(),
-      vehicleList: vehicleList ?? vehicle.toList(),
-      completedCustomersList:
-          completedCustomersList ?? completedCustomers.toList(),
-      returnsList: returnsList ?? returns.toList(),
-      undeliverableCustomersList:
-          undeliverableCustomersList ?? undeliverableCustomers.toList(),
-      transactionsList: transactionsList ?? transactions.toList(),
-      endTripChecklistItems: endTripChecklistItems ?? endTripChecklist.toList(),
-      invoicesList: invoicesList ?? invoices.toList(),
-      timeAccepted: timeAccepted ?? this.timeAccepted,
-      created: created ?? this.created,
-      updated: updated ?? this.updated,
-      isAccepted: isAccepted ?? this.isAccepted,
+      personelsList: personelsList ?? personels,
+      checklistItems: checklistItems ?? checklist,
+      vehicleModel: vehicleModel ?? vehicle as DeliveryVehicleModel?, // Updated: Changed from vehicleList to vehicleModel
+      deliveryDataList: deliveryDataList ?? deliveryData.cast<DeliveryDataModel>(), // Added: Cast deliveryData to DeliveryDataModel
+      cancelledInvoiceList: cancelledInvoice ?? cancelledInvoice!.cast<CancelledInvoiceModel>(),
+      deliveryCollectionList: deliveryCollection ?? deliveryCollection!.cast<CollectionModel>(),
+      endTripChecklistItems: endTripChecklistItems ?? endTripChecklist,
+      tripUpdateList: tripUpdateList ?? tripUpdates,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      volumeRate: volumeRate ?? this.volumeRate,
+      weightRate: weightRate ?? this.weightRate,
+      averageFillRate: averageFillRate ?? this.averageFillRate,
       user: user ?? this.user,
+      totalTripDistance: totalTripDistance ?? this.totalTripDistance,
       otp: otp ?? this.otp,
       endTripOtp: endTripOtp ?? this.endTripOtp,
+      deliveryTeam: deliveryTeam ?? this.deliveryTeam,
+      timeAccepted: timeAccepted ?? this.timeAccepted,
       isEndTrip: isEndTrip ?? this.isEndTrip,
       timeEndTrip: timeEndTrip ?? this.timeEndTrip,
-      latitude: latitude ?? this.latitude,  // Added to copyWith implementation
-      longitude: longitude ?? this.longitude, // Added to copyWith implementation
+      created: created ?? this.created,
+      updated: updated ?? this.updated,
+      qrCode: qrCode ?? this.qrCode,
+      isAccepted: isAccepted ?? this.isAccepted,
     );
   }
 }
+

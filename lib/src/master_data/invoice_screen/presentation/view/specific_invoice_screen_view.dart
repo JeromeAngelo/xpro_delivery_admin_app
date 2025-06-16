@@ -1,10 +1,11 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/presentation/bloc/invoice_state.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/domain/entity/product_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/products/presentation/bloc/products_state.dart';
+
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_items/domain/entity/invoice_items_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_items/presentation/bloc/invoice_items_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_items/presentation/bloc/invoice_items_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_items/presentation/bloc/invoice_items_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/invoice_screen/presentation/widgets/invoice_specific_widgets/invoice_dashboard.dart';
@@ -35,10 +36,10 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
   void initState() {
     super.initState();
     // Load invoice details using the new GetInvoiceByIdEvent
-    context.read<InvoiceBloc>().add(GetInvoiceByIdEvent(widget.invoiceId));
+    context.read<InvoiceDataBloc>().add(GetInvoiceDataByIdEvent(widget.invoiceId));
     // Load products for this invoice
-    context.read<ProductsBloc>().add(
-      GetProductsByInvoiceIdEvent(widget.invoiceId),
+    context.read<InvoiceItemsBloc>().add(
+      GetInvoiceItemsByInvoiceDataIdEvent(widget.invoiceId),
     );
   }
 
@@ -69,13 +70,13 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
         // Handle profile tap
       },
       disableScrolling: true,
-      child: BlocBuilder<InvoiceBloc, InvoiceState>(
+      child: BlocBuilder<InvoiceDataBloc, InvoiceDataState>(
         builder: (context, state) {
-          if (state is InvoiceLoading) {
+          if (state is InvoiceDataLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is InvoiceError) {
+          if (state is InvoiceDataError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -89,8 +90,8 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () {
-                      context.read<InvoiceBloc>().add(
-                        GetInvoiceByIdEvent(widget.invoiceId),
+                      context.read<InvoiceDataBloc>().add(
+                        GetInvoiceDataByIdEvent(widget.invoiceId),
                       );
                     },
                     icon: const Icon(Icons.refresh),
@@ -102,8 +103,8 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
           }
 
           // Use the new SingleInvoiceLoaded state to display invoice details
-          if (state is SingleInvoiceLoaded) {
-            final invoice = state.invoice;
+          if (state is InvoiceDataLoaded) {
+            final invoice = state.invoiceData;
 
             return CustomScrollView(
               slivers: [
@@ -120,7 +121,7 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
                           context.go('/invoices');
                         },
                       ),
-                      Text('Invoice: ${invoice.invoiceNumber ?? 'N/A'}'),
+                      Text('Invoice: ${invoice.name ?? 'N/A'}'),
                     ],
                   ),
                   actions: [
@@ -128,11 +129,11 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
                       icon: const Icon(Icons.refresh),
                       tooltip: 'Refresh',
                       onPressed: () {
-                        context.read<InvoiceBloc>().add(
-                          GetInvoiceByIdEvent(widget.invoiceId),
+                        context.read<InvoiceDataBloc>().add(
+                          GetInvoiceDataByIdEvent(widget.invoiceId),
                         );
-                        context.read<ProductsBloc>().add(
-                          GetProductsByInvoiceIdEvent(widget.invoiceId),
+                        context.read<InvoiceItemsBloc>().add(
+                          GetInvoiceItemsByInvoiceDataIdEvent(widget.invoiceId),
                         );
                       },
                     ),
@@ -173,9 +174,9 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
                       const SizedBox(height: 16),
 
                       // Products Table
-                      BlocBuilder<ProductsBloc, ProductsState>(
+                      BlocBuilder<InvoiceItemsBloc, InvoiceItemsState>(
                         builder: (context, state) {
-                          if (state is ProductsLoading) {
+                          if (state is InvoiceItemsLoading) {
                             return const Center(
                               child: Padding(
                                 padding: EdgeInsets.all(32.0),
@@ -184,7 +185,7 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
                             );
                           }
 
-                          if (state is ProductsError) {
+                          if (state is InvoiceItemsError) {
                             return Center(
                               child: Padding(
                                 padding: const EdgeInsets.all(32.0),
@@ -203,8 +204,8 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
                                     const SizedBox(height: 16),
                                     ElevatedButton.icon(
                                       onPressed: () {
-                                        context.read<ProductsBloc>().add(
-                                          GetProductsByInvoiceIdEvent(
+                                        context.read<InvoiceItemsBloc>().add(
+                                          GetInvoiceItemsByInvoiceDataIdEvent(
                                             widget.invoiceId,
                                           ),
                                         );
@@ -218,9 +219,9 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
                             );
                           }
 
-                          if (state is InvoiceProductsLoaded &&
-                              state.invoiceId == widget.invoiceId) {
-                            final products = state.products;
+                          if (state is InvoiceItemsByInvoiceDataIdLoaded &&
+                              state.invoiceDataId == widget.invoiceId) {
+                            final products = state.invoiceItems;
 
                             // Filter products based on search query
                             var filteredProducts = products;
@@ -232,7 +233,7 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
                                                 ?.toLowerCase()
                                                 .contains(query) ??
                                             false) ||
-                                        (product.description
+                                        (product.brand
                                                 ?.toLowerCase()
                                                 .contains(query) ??
                                             false);
@@ -264,7 +265,7 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
 
                             return InvoiceProductsDataTable(
                               products:
-                                  paginatedProducts as List<ProductEntity>,
+                                  paginatedProducts as List<InvoiceItemsEntity>,
                               isLoading: false,
                               currentPage: _currentPage,
                               totalPages: _totalPages,
@@ -335,26 +336,7 @@ class _SpecificInvoiceScreenViewState extends State<SpecificInvoiceScreenView> {
             );
           }
 
-          // Handle InvoiceLoaded state as a fallback (if we get a list of invoices instead of a single one)
-          if (state is InvoiceLoaded) {
-            // Find the specific invoice in the loaded invoices
-            state.invoices.firstWhere(
-              (inv) => inv.id == widget.invoiceId,
-              orElse: () => throw Exception('Invoice not found'),
-            );
-
-            // Rest of the code is the same as for SingleInvoiceLoaded...
-            // (For brevity, I'm not duplicating the entire UI code here)
-
-            // Instead, trigger the GetInvoiceByIdEvent to get the proper state
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              context.read<InvoiceBloc>().add(
-                GetInvoiceByIdEvent(widget.invoiceId),
-              );
-            });
-
-            return const Center(child: CircularProgressIndicator());
-          }
+         
 
           return const Center(child: Text('Select an invoice to view details'));
         },

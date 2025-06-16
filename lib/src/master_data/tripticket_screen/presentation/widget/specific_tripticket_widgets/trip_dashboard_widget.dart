@@ -204,14 +204,10 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
             ),
             DashboardInfoItem(
               icon: Icons.people,
-              value: widget.trip?.customers.length.toString() ?? '0',
-              label: 'Customers',
+              value: widget.trip?.deliveryData.length.toString() ?? '0',
+              label: 'Deliveries',
             ),
-            DashboardInfoItem(
-              icon: Icons.receipt,
-              value: widget.trip?.invoices.length.toString() ?? '0',
-              label: 'Invoices',
-            ),
+
             DashboardInfoItem(
               icon: Icons.play_circle_filled,
               value: formatDate(widget.trip?.timeAccepted),
@@ -224,13 +220,13 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
             ),
             DashboardInfoItem(
               icon: Icons.check_circle,
-              value: widget.trip?.completedCustomers.length.toString() ?? '0',
+              value: widget.trip?.deliveryCollection?.length.toString() ?? '0',
               label: 'Completed Deliveries',
             ),
             DashboardInfoItem(
               icon: Icons.cancel,
               value:
-                  widget.trip?.undeliverableCustomers.length.toString() ?? '0',
+                  widget.trip?.cancelledInvoice?.length.toString() ?? '0',
               label: 'Undelivered',
             ),
             DashboardInfoItem(

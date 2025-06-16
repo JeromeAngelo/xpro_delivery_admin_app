@@ -1,5 +1,3 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer/data/model/customer_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice/data/models/invoice_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/entity/return_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
 import 'package:xpro_delivery_admin_app/core/enums/product_return_reason.dart';
@@ -28,8 +26,7 @@ class ReturnModel extends ReturnEntity {
     super.isPcs,
     super.isBox,
     super.isPack,
-    super.invoice,
-    super.customer,
+   
     super.trip,
     this.tripId,
     this.objectBoxId = 0,
@@ -37,27 +34,7 @@ class ReturnModel extends ReturnEntity {
 factory ReturnModel.fromJson(DataMap json) {
   final expandedData = json['expand'] as Map<String, dynamic>?;
 
-  final invoice = expandedData?['invoice'] != null
-      ? InvoiceModel.fromJson(expandedData!['invoice'] is RecordModel
-          ? {
-              'id': expandedData['invoice'].id,
-              'collectionId': expandedData['invoice'].collectionId,
-              'collectionName': expandedData['invoice'].collectionName,
-              ...expandedData['invoice'].data,
-            }
-          : expandedData['invoice'] as DataMap)
-      : null;
-
-  final customer = expandedData?['customer'] != null
-      ? CustomerModel.fromJson(expandedData!['customer'] is RecordModel
-          ? {
-              'id': expandedData['customer'].id,
-              'collectionId': expandedData['customer'].collectionId,
-              'collectionName': expandedData['customer'].collectionName,
-              ...expandedData['customer'].data,
-            }
-          : expandedData['customer'] as DataMap)
-      : null;
+  
 
   final trip = expandedData?['trip'] != null
       ? TripModel.fromJson(expandedData!['trip'] is RecordModel
@@ -93,8 +70,7 @@ factory ReturnModel.fromJson(DataMap json) {
     returnDate: json['returnDate'] != null 
         ? DateTime.parse(json['returnDate'].toString())
         : null,
-    invoice: invoice,
-    customer: customer,
+   
     trip: trip,
     tripId: trip?.id,
   );
@@ -118,8 +94,7 @@ factory ReturnModel.fromJson(DataMap json) {
       'isPack': isPack,
       'reason': reason?.toString(),
       'returnDate': returnDate?.toIso8601String(),
-      'invoice': invoice?.id,
-      'customer': customer?.id,
+      
       'trip': trip?.id ?? tripId,
     };
   }
@@ -140,8 +115,7 @@ factory ReturnModel.fromJson(DataMap json) {
     bool? isPcs,
     bool? isBox,
     bool? isPack,
-    InvoiceModel? invoice,
-    CustomerModel? customer,
+  
     TripModel? trip,
     String? tripId,
   }) {
@@ -161,8 +135,7 @@ factory ReturnModel.fromJson(DataMap json) {
       isPcs: isPcs ?? this.isPcs,
       isBox: isBox ?? this.isBox,
       isPack: isPack ?? this.isPack,
-      invoice: invoice ?? this.invoice,
-      customer: customer ?? this.customer,
+      
       trip: trip ?? this.trip,
       tripId: tripId ?? this.tripId,
       objectBoxId: this.objectBoxId,

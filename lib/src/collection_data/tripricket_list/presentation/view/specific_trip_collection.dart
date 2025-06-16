@@ -1,9 +1,10 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/completed_customer/presentation/bloc/completed_customer_state.dart';
+
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:xpro_delivery_admin_app/src/collection_data/tripricket_list/presentation/widgets/specific_tripticket_collection_widgets/collection_completed_customer_table.dart';
@@ -28,7 +29,7 @@ class _SpecificTripCollectionState extends State<SpecificTripCollection> {
     // Load trip details
     context.read<TripBloc>().add(GetTripTicketByIdEvent(widget.tripId));
     // Load completed customers for this trip
-    context.read<CompletedCustomerBloc>().add(GetCompletedCustomerEvent(widget.tripId));
+    context.read<CollectionsBloc>().add(GetCollectionByIdEvent(widget.tripId));
   }
 
   @override
@@ -109,7 +110,7 @@ class _SpecificTripCollectionState extends State<SpecificTripCollection> {
                       tooltip: 'Refresh',
                       onPressed: () {
                         context.read<TripBloc>().add(GetTripTicketByIdEvent(widget.tripId));
-                        context.read<CompletedCustomerBloc>().add(GetCompletedCustomerEvent(widget.tripId));
+                        context.read<CollectionsBloc>().add(GetCollectionByIdEvent(widget.tripId));
                       },
                     ),
                     IconButton(
@@ -142,9 +143,9 @@ class _SpecificTripCollectionState extends State<SpecificTripCollection> {
                       const SizedBox(height: 16),
 
                       // Collection Dashboard - using BlocBuilder for CompletedCustomerBloc
-                      BlocBuilder<CompletedCustomerBloc, CompletedCustomerState>(
+                      BlocBuilder<CollectionsBloc, CollectionsState>(
                         builder: (context, completedState) {
-                          if (completedState is CompletedCustomerLoading) {
+                          if (completedState is CollectionsLoading) {
                             return const Center(
                               child: Padding(
                                 padding: EdgeInsets.all(32.0),
@@ -153,7 +154,7 @@ class _SpecificTripCollectionState extends State<SpecificTripCollection> {
                             );
                           }
 
-                          if (completedState is CompletedCustomerError) {
+                          if (completedState is CollectionsError) {
                             return Center(
                               child: Padding(
                                 padding: const EdgeInsets.all(32.0),
@@ -172,8 +173,8 @@ class _SpecificTripCollectionState extends State<SpecificTripCollection> {
                                     const SizedBox(height: 16),
                                     ElevatedButton.icon(
                                       onPressed: () {
-                                        context.read<CompletedCustomerBloc>().add(
-                                          GetCompletedCustomerEvent(widget.tripId),
+                                        context.read<CollectionsBloc>().add(
+                                          GetCollectionByIdEvent(widget.tripId),
                                         );
                                       },
                                       icon: const Icon(Icons.refresh),
@@ -185,10 +186,10 @@ class _SpecificTripCollectionState extends State<SpecificTripCollection> {
                             );
                           }
 
-                          if (completedState is CompletedCustomerLoaded) {
+                          if (completedState is CollectionsLoaded) {
                             return CollectionTripDashboardWidget(
                               trip: trip,
-                              completedCustomers: completedState.customers,
+                              completedCustomers: completedState.collections,
                               isLoading: false,
                             );
                           }
@@ -205,9 +206,9 @@ class _SpecificTripCollectionState extends State<SpecificTripCollection> {
                       const SizedBox(height: 16),
 
                       // Completed Customers Table
-                      BlocBuilder<CompletedCustomerBloc, CompletedCustomerState>(
+                      BlocBuilder<CollectionsBloc, CollectionsState>(
                         builder: (context, completedState) {
-                          if (completedState is CompletedCustomerLoading) {
+                          if (completedState is CollectionsLoading) {
                             return const CollectionCompletedCustomersTable(
                               tripId: '',
                               completedCustomers: [],
@@ -215,7 +216,7 @@ class _SpecificTripCollectionState extends State<SpecificTripCollection> {
                             );
                           }
 
-                          if (completedState is CompletedCustomerError) {
+                          if (completedState is CollectionsError) {
                             return Center(
                               child: Padding(
                                 padding: const EdgeInsets.all(32.0),
@@ -234,8 +235,8 @@ class _SpecificTripCollectionState extends State<SpecificTripCollection> {
                                     const SizedBox(height: 16),
                                     ElevatedButton.icon(
                                       onPressed: () {
-                                        context.read<CompletedCustomerBloc>().add(
-                                          GetCompletedCustomerEvent(widget.tripId),
+                                        context.read<CollectionsBloc>().add(
+                                          GetCollectionByIdEvent(widget.tripId),
                                         );
                                       },
                                       icon: const Icon(Icons.refresh),
@@ -247,10 +248,10 @@ class _SpecificTripCollectionState extends State<SpecificTripCollection> {
                             );
                           }
 
-                          if (completedState is CompletedCustomerLoaded) {
+                          if (completedState is CollectionsLoaded) {
                             return CollectionCompletedCustomersTable(
                               tripId: widget.tripId,
-                              completedCustomers: completedState.customers,
+                              completedCustomers: completedState.collections,
                               isLoading: false,
                             );
                           }

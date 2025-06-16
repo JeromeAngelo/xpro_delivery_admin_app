@@ -62,10 +62,21 @@ class AppNavigationItems {
             icon: Icons.trip_origin,
             route: '/tripticket',
           ),
+
           NavigationItem(
             title: 'Customers',
             icon: Icons.people,
             route: '/customer-list',
+          ),
+           NavigationItem(
+            title: 'Delivery Data',
+            icon: Icons.people,
+            route: '/delivery-list',
+          ),
+          NavigationItem(
+            title: 'Invoice Preset',
+            icon: Icons.list_alt_rounded,
+            route: '/invoice-preset-groups',
           ),
           NavigationItem(
             title: 'Invoices',
@@ -160,7 +171,7 @@ class AppNavigationItems {
         title: 'Master Data',
         icon: Icons.storage,
         children: [
-           NavigationItem(
+          NavigationItem(
             title: 'Collection Overview',
             icon: Icons.summarize,
             route: '/collections-overview',
@@ -192,15 +203,16 @@ class AppNavigationItems {
         icon: Icons.storage,
         children: [
           NavigationItem(
+            title: 'Cancelled Invoices',
+            icon: Icons.error,
+            route: '/undeliverable-customers',
+          ),
+          NavigationItem(
             title: 'Return Products',
             icon: Icons.keyboard_return,
             route: '/returns',
           ),
-          NavigationItem(
-            title: 'Undelivered Customers',
-            icon: Icons.error,
-            route: '/undeliverable-customers',
-          ),
+          
         ],
       ),
     ];
@@ -217,7 +229,6 @@ class AppNavigationItems {
         title: 'Master Data',
         icon: Icons.storage,
         children: [
-          
           NavigationItem(
             title: 'All Users',
             icon: Icons.person,
