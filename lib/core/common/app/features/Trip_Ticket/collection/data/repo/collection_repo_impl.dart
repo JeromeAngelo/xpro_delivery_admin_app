@@ -96,4 +96,32 @@ ResultFuture<List<CollectionEntity>> getAllCollections() async {
   }
 }
 
+@override
+ResultFuture<List<CollectionEntity>> filterCollectionsByDate({
+  required DateTime startDate,
+  required DateTime endDate,
+}) async {
+  try {
+    debugPrint('🔄 REPO: Filtering collections by date range');
+    debugPrint('📅 REPO: Start Date: ${startDate.toIso8601String()}');
+    debugPrint('📅 REPO: End Date: ${endDate.toIso8601String()}');
+    
+    final remoteCollections = await _remoteDataSource.filterCollectionsByDate(
+      startDate: startDate,
+      endDate: endDate,
+    );
+    
+    debugPrint('✅ REPO: Successfully filtered ${remoteCollections.length} collections by date range');
+    return Right(remoteCollections);
+
+  } on ServerException catch (e) {
+    debugPrint('❌ REPO: Date filtering failed: ${e.message}');
+    return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+  } catch (e) {
+    debugPrint('❌ REPO: Unexpected error during date filtering: ${e.toString()}');
+    return Left(ServerFailure(message: e.toString(), statusCode: '500'));
+  }
+}
+
+
 }

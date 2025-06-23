@@ -100,3 +100,21 @@ class AllCollectionsLoaded extends CollectionsState {
   List<Object?> get props => [collections, isFromCache];
 }
 
+class CollectionsFilteredByDate extends CollectionsState {
+  final List<CollectionEntity> collections;
+  final DateTime startDate;
+  final DateTime endDate;
+  final bool isFromCache;
+
+  const CollectionsFilteredByDate({
+    required this.collections,
+    required this.startDate,
+    required this.endDate,
+    this.isFromCache = false,
+  });
+
+  @override
+  List<Object?> get props => [collections, startDate, endDate, isFromCache];
+}
+
+

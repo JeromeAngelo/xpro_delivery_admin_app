@@ -15,4 +15,10 @@ abstract class CollectionRepo {
 
   /// Delete collection
   ResultFuture<bool> deleteCollection(String collectionId);
+
+   /// Filter collections by date range
+  ResultFuture<List<CollectionEntity>> filterCollectionsByDate({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
 }

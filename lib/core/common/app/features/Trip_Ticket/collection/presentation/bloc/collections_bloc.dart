@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/usecases/delete_collection.dart';
+import '../../domain/usecases/filter_collection_by_date.dart';
 import '../../domain/usecases/get_all_collections.dart';
 import '../../domain/usecases/get_collection_by_id.dart';
 import '../../domain/usecases/get_collection_by_trip_id.dart';
@@ -13,7 +14,7 @@ class CollectionsBloc extends Bloc<CollectionsEvent, CollectionsState> {
   final GetCollectionById _getCollectionById;
   final DeleteCollection _deleteCollection;
   final GetAllCollections _getAllCollections;
-
+  final FilterCollectionsByDate _filterCollectionsByDate; // Add this line
 
   CollectionsState? _cachedState;
 
@@ -22,20 +23,21 @@ class CollectionsBloc extends Bloc<CollectionsEvent, CollectionsState> {
     required GetCollectionById getCollectionById,
     required DeleteCollection deleteCollection,
     required GetAllCollections getAllCollections,
-
+    required FilterCollectionsByDate filterCollectionsByDate, // Add this line
   })  : _getCollectionsByTripId = getCollectionsByTripId,
         _getCollectionById = getCollectionById,
         _deleteCollection = deleteCollection,
         _getAllCollections = getAllCollections,
-
+        _filterCollectionsByDate = filterCollectionsByDate, // Add this line
         super(const CollectionsInitial()) {
     on<GetCollectionsByTripIdEvent>(_onGetCollectionsByTripId);
     on<GetCollectionByIdEvent>(_onGetCollectionById);
     on<DeleteCollectionEvent>(_onDeleteCollection);
     on<RefreshCollectionsEvent>(_onRefreshCollections);
     on<GetAllCollectionsEvent>(_onGetAllCollections);
-
+    on<FilterCollectionsByDateEvent>(_onFilterCollectionsByDate); // Add this line
   }
+
 
   Future<void> _onGetAllCollections(
   GetAllCollectionsEvent event,
@@ -199,6 +201,53 @@ class CollectionsBloc extends Bloc<CollectionsEvent, CollectionsState> {
       },
     );
   }
+
+  Future<void> _onFilterCollectionsByDate(
+  FilterCollectionsByDateEvent event,
+  Emitter<CollectionsState> emit,
+) async {
+  debugPrint('🔄 BLoC: Filtering collections by date range');
+  debugPrint('📅 BLoC: Start Date: ${event.startDate.toIso8601String()}');
+  debugPrint('📅 BLoC: End Date: ${event.endDate.toIso8601String()}');
+  
+  emit(const CollectionsLoading());
+
+  final result = await _filterCollectionsByDate(
+    FilterCollectionsByDateParams(
+      startDate: event.startDate,
+      endDate: event.endDate,
+    ),
+  );
+
+  result.fold(
+    (failure) {
+      debugPrint('❌ BLoC: Failed to filter collections by date: ${failure.message}');
+      emit(CollectionsError(
+        message: failure.message,
+        errorCode: failure.statusCode,
+      ));
+    },
+    (collections) {
+      debugPrint('✅ BLoC: Successfully filtered ${collections.length} collections by date');
+      
+      if (collections.isEmpty) {
+        emit(CollectionsError(
+          message: 'No collections found for the selected date range',
+        ));
+      } else {
+        final newState = CollectionsFilteredByDate(
+          collections: collections,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          isFromCache: false,
+        );
+        emit(newState);
+        _cachedState = newState;
+      }
+    },
+  );
+}
+
 
   @override
   Future<void> close() {

@@ -329,10 +329,10 @@ class _MainScreenViewState extends State<MainScreenView> {
                       _buildCategoryCard(
                         context,
                         icon: Icons.assignment_return,
-                        title: 'Returns',
+                        title: 'Cancelled Deliveries',
                         subtitle: 'Process and track returned items',
                         color: Colors.orange,
-                        onTap: () => context.go('/returns'),
+                        onTap: () => context.go('/undeliverable-customers'),
                         iconSize: iconSize,
                       ),
                     ],

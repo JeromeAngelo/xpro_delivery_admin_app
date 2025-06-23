@@ -30,6 +30,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/v
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/load_vehicle_by_trip_id.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/domain/usecase/update_vehicle.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/presentation/bloc/vehicle_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cancelled_invoices/domain/usecases/resassign_trip_for_cancelled_invoice.dart';
 
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/datasource/remote_datasource/delivery_update_datasource.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/repo/delivery_update_repo_impl.dart';
@@ -232,6 +233,7 @@ import '../common/app/features/Trip_Ticket/cancelled_invoices/domain/usecases/lo
 import '../common/app/features/Trip_Ticket/collection/data/datasource/remote_datasource/collection_remote_datasource.dart';
 import '../common/app/features/Trip_Ticket/collection/domain/repo/collection_repo.dart';
 import '../common/app/features/Trip_Ticket/collection/domain/usecases/delete_collection.dart';
+import '../common/app/features/Trip_Ticket/collection/domain/usecases/filter_collection_by_date.dart';
 import '../common/app/features/Trip_Ticket/collection/domain/usecases/get_collection_by_id.dart';
 import '../common/app/features/Trip_Ticket/collection/domain/usecases/get_collection_by_trip_id.dart'
     show GetCollectionsByTripId;
@@ -590,7 +592,6 @@ Future<void> initEndTripOtp() async {
   );
 }
 
-
 Future<void> initDeliveryUpdateStatus() async {
   // BLoC
   sl.registerLazySingleton(
@@ -666,7 +667,6 @@ Future<void> initReturns() async {
     () => ReturnRemoteDatasourceImpl(pocketBaseClient: sl()),
   );
 }
-
 
 Future<void> initTripUpdate() async {
   // BLoC
@@ -862,8 +862,8 @@ Future<void> initDeliveryData() async {
       getAllDeliveryData: sl(),
       getDeliveryDataByTripId: sl(),
       getDeliveryDataById: sl(),
-      deleteDeliveryData: sl(), getAllDeliveryDataWithTrips: sl(),
-      
+      deleteDeliveryData: sl(),
+      getAllDeliveryDataWithTrips: sl(),
     ),
   );
 
@@ -910,15 +910,17 @@ Future<void> initDeliveryCollectionsData() async {
     () => CollectionsBloc(
       deleteCollection: sl(),
       getCollectionById: sl(),
-      getCollectionsByTripId: sl(), getAllCollections: sl(),
+      getCollectionsByTripId: sl(),
+      getAllCollections: sl(),
+      filterCollectionsByDate: sl(),
     ),
   );
 
   sl.registerLazySingleton(() => DeleteCollection(sl()));
   sl.registerLazySingleton(() => GetCollectionById(sl()));
   sl.registerLazySingleton(() => GetCollectionsByTripId(sl()));
-    sl.registerLazySingleton(() => GetAllCollections(sl()));
-
+  sl.registerLazySingleton(() => GetAllCollections(sl()));
+  sl.registerLazySingleton(() => FilterCollectionsByDate(sl()));
 
   sl.registerLazySingleton<CollectionRepo>(
     () => CollectionRepoImpl(remoteDataSource: sl()),
@@ -935,7 +937,9 @@ Future<void> initCancelledInvoiceData() async {
       loadCancelledInvoicesByTripId: sl(),
       loadCancelledInvoicesById: sl(),
       createCancelledInvoiceByDeliveryDataId: sl(),
-      deleteCancelledInvoice: sl(), getAllCancelledInvoices: sl(),
+      deleteCancelledInvoice: sl(),
+      getAllCancelledInvoices: sl(),
+      reassignTripForCancelledInvoice: sl(),
     ),
   );
 
@@ -944,6 +948,7 @@ Future<void> initCancelledInvoiceData() async {
   sl.registerLazySingleton(() => CreateCancelledInvoiceByDeliveryDataId(sl()));
   sl.registerLazySingleton(() => DeleteCancelledInvoice(sl()));
   sl.registerLazySingleton(() => GetAllCancelledInvoices(sl()));
+  sl.registerLazySingleton(() => ReassignTripForCancelledInvoice(sl()));
 
   sl.registerLazySingleton<CancelledInvoiceRepo>(
     () => CancelledInvoiceRepoImpl(remoteDataSource: sl()),

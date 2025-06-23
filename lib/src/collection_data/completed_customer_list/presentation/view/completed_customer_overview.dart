@@ -9,6 +9,7 @@ import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_l
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/common/app/features/Trip_Ticket/collection/presentation/bloc/collections_event.dart';
 
@@ -21,12 +22,277 @@ class CompletedCustomerOverview extends StatefulWidget {
 }
 
 class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
+  DateTime? _selectedStartDate;
+  DateTime? _selectedEndDate;
+  bool _isDateFiltered = false;
+
   @override
   void initState() {
     super.initState();
-    // Load completed customers when the screen initializes
+    // Load all collections when the screen initializes
+    _loadAllCollections();
+  }
+
+  void _loadAllCollections() {
     context.read<CollectionsBloc>().add(
       const GetAllCollectionsEvent(),
+    );
+    setState(() {
+      _isDateFiltered = false;
+      _selectedStartDate = null;
+      _selectedEndDate = null;
+    });
+  }
+
+  void _showDateRangePickerDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        DateTime? tempStartDate = _selectedStartDate;
+        DateTime? tempEndDate = _selectedEndDate;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.date_range, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('Filter by Date Range'),
+                ],
+              ),
+              content: SizedBox(
+                width: 400,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Select date range to filter collections:',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Start Date Picker
+                    Row(
+                      children: [
+                        const SizedBox(
+                          width: 80,
+                          child: Text(
+                            'From:',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () async {
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate: tempStartDate ?? DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime.now(),
+                              );
+                              if (date != null) {
+                                setDialogState(() {
+                                  tempStartDate = date;
+                                  // Reset end date if it's before start date
+                                  if (tempEndDate != null && tempEndDate!.isBefore(date)) {
+                                    tempEndDate = null;
+                                  }
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    tempStartDate != null
+                                        ? DateFormat('MMM dd, yyyy').format(tempStartDate!)
+                                        : 'Select start date',
+                                    style: TextStyle(
+                                      color: tempStartDate != null
+                                          ? Colors.black
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                  const Icon(Icons.calendar_today, size: 16),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // End Date Picker
+                    Row(
+                      children: [
+                        const SizedBox(
+                          width: 80,
+                          child: Text(
+                            'To:',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        Expanded(
+                          child: InkWell(
+                            onTap: tempStartDate == null
+                                ? null
+                                : () async {
+                                    final date = await showDatePicker(
+                                      context: context,
+                                      initialDate: tempEndDate ?? tempStartDate!,
+                                      firstDate: tempStartDate!,
+                                      lastDate: DateTime.now(),
+                                    );
+                                    if (date != null) {
+                                      setDialogState(() {
+                                        tempEndDate = date;
+                                      });
+                                    }
+                                  },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: tempStartDate == null
+                                      ? Colors.grey.shade200
+                                      : Colors.grey.shade300,
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                                color: tempStartDate == null
+                                    ? Colors.grey.shade50
+                                    : Colors.white,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    tempEndDate != null
+                                        ? DateFormat('MMM dd, yyyy').format(tempEndDate!)
+                                        : 'Select end date',
+                                    style: TextStyle(
+                                      color: tempStartDate == null
+                                          ? Colors.grey.shade400
+                                          : tempEndDate != null
+                                              ? Colors.black
+                                              : Colors.grey,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 16,
+                                    color: tempStartDate == null
+                                        ? Colors.grey.shade400
+                                        : Colors.grey,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    if (tempStartDate != null && tempEndDate != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline, 
+                                color: Colors.blue.shade700, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Date range: ${DateFormat('MMM dd').format(tempStartDate!)} - ${DateFormat('MMM dd, yyyy').format(tempEndDate!)}',
+                                  style: TextStyle(
+                                    color: Colors.blue.shade700,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                if (_isDateFiltered)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _loadAllCollections();
+                    },
+                    child: const Text('View All'),
+                  ),
+                ElevatedButton(
+                  onPressed: tempStartDate == null || tempEndDate == null
+                      ? null
+                      : () {
+                          Navigator.of(context).pop();
+                          _filterByDateRange(tempStartDate!, tempEndDate!);
+                        },
+                  child: const Text('Apply Filter'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _filterByDateRange(DateTime startDate, DateTime endDate) {
+    // Set end date to end of day to include full day
+    final endOfDay = DateTime(
+      endDate.year,
+      endDate.month,
+      endDate.day,
+      23,
+      59,
+      59,
+      999,
+    );
+
+    setState(() {
+      _selectedStartDate = startDate;
+      _selectedEndDate = endOfDay;
+      _isDateFiltered = true;
+    });
+
+    // Dispatch filter event
+    context.read<CollectionsBloc>().add(
+      FilterCollectionsByDateEvent(
+        startDate: startDate,
+        endDate: endOfDay,
+      ),
     );
   }
 
@@ -63,28 +329,84 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
           }
 
           final bool isLoading = state is CollectionsLoading;
-          final List<CollectionEntity> customers =
-              state is AllCollectionsLoaded ? state.collections : [];
+          List<CollectionEntity> customers = [];
+          String pageTitle = 'Completed Customers Overview';
+          String pageSubtitle = 'View and manage all completed customer transactions';
+
+          // Handle different state types
+          if (state is AllCollectionsLoaded) {
+            customers = state.collections;
+          } else if (state is CollectionsFilteredByDate) {
+            customers = state.collections;
+            pageTitle = 'Filtered Collections';
+            pageSubtitle = 'Collections from ${DateFormat('MMM dd').format(state.startDate)} to ${DateFormat('MMM dd, yyyy').format(state.endDate)}';
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Page Title
-                Text(
-                  'Completed Customers Overview',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'View and manage all completed customer transactions',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+                // Page Title with Filter Status
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            pageTitle,
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            pageSubtitle,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Filter Status and Actions
+                    if (_isDateFiltered)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.filter_alt, size: 16, color: Colors.blue.shade700),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Date Filtered',
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: _loadAllCollections,
+                              child: Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 24),
 
@@ -109,24 +431,155 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                       const SnackBar(content: Text('Generating report...')),
                     );
                   },
-                  onFilterData: () {
-                    // Handle filter data
-                    _showFilterDialog(context);
-                  },
+                  onFilterData: _showDateRangePickerDialog, // Updated to use date picker
                   onSearchCustomers: () {
                     // Handle search customers
                     _showSearchDialog(context);
                   },
                 ),
-                const SizedBox(height: 24),
+                                const SizedBox(height: 24),
 
-                // Recent Completed Customers
+                // Recent Customers List
                 RecentCompletedCustomers(
                   collections: customers,
                   isLoading: isLoading,
                 ),
 
-                const SizedBox(height: 24),
+                // Loading overlay
+                if (isLoading)
+                  Container(
+                    margin: const EdgeInsets.only(top: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _isDateFiltered 
+                              ? 'Filtering collections by date...' 
+                              : 'Loading collections...',
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Error handling
+                if (state is CollectionsError)
+                  Container(
+                    margin: const EdgeInsets.only(top: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.error_outline, color: Colors.red.shade700),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Error Loading Collections',
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          state.message,
+                          style: TextStyle(color: Colors.red.shade600),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: _loadAllCollections,
+                              icon: const Icon(Icons.refresh, size: 16),
+                              label: const Text('Retry'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade600,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                            if (_isDateFiltered) ...[
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed: _loadAllCollections,
+                                child: const Text('View All Collections'),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Empty state
+                if (!isLoading && customers.isEmpty && state is! CollectionsError)
+                  Container(
+                    margin: const EdgeInsets.only(top: 32),
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            _isDateFiltered ? Icons.date_range : Icons.inbox_outlined,
+                            size: 64,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _isDateFiltered 
+                                ? 'No collections found for selected date range'
+                                : 'No collections available',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _isDateFiltered
+                                ? 'Try selecting a different date range or view all collections'
+                                : 'Collections will appear here once they are created',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey.shade500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          if (_isDateFiltered)
+                            ElevatedButton.icon(
+                              onPressed: _loadAllCollections,
+                              icon: const Icon(Icons.view_list),
+                              label: const Text('View All Collections'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           );
@@ -135,93 +588,60 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
     );
   }
 
-  void _showFilterDialog(BuildContext context) {
+  void _showSearchDialog(BuildContext context) {
+    final searchController = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Filter Completed Customers'),
-          content: SingleChildScrollView(
+          title: const Row(
+            children: [
+              Icon(Icons.search, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('Search Collections'),
+            ],
+          ),
+          content: SizedBox(
+            width: 300,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Date range picker
-                ListTile(
-                  leading: const Icon(Icons.date_range),
-                  title: const Text('Date Range'),
-                  subtitle: const Text('Filter by completion date'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Show date range picker
-                  },
+                TextField(
+                  controller: searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Search by customer name, invoice number...',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  autofocus: true,
                 ),
-
-                // Payment mode filter
-                ListTile(
-                  leading: const Icon(Icons.payments),
-                  title: const Text('Payment Mode'),
-                  subtitle: const Text('Filter by payment method'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Show payment mode filter options
-                  },
-                ),
-
-                // Amount range filter
-                ListTile(
-                  leading: const Icon(Icons.monetization_on),
-                  title: const Text('Amount Range'),
-                  subtitle: const Text('Filter by transaction amount'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Show amount range filter
-                  },
+                const SizedBox(height: 16),
+                const Text(
+                  'Search functionality will be implemented in future updates.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ],
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('Cancel'),
             ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showSearchDialog(BuildContext context) {
-    final TextEditingController searchController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Search Completed Customers'),
-          content: TextField(
-            controller: searchController,
-            decoration: const InputDecoration(
-              hintText: 'Enter store name, address, or ID',
-              prefixIcon: Icon(Icons.search),
-            ),
-            autofocus: true,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
+            ElevatedButton(
               onPressed: () {
-                final query = searchController.text.trim();
-                if (query.isNotEmpty) {
-                  Navigator.pop(context);
-                  // Trigger search event
-                  // context.read<CompletedCustomerBloc>().add(
-                  //   SearchCompletedCustomersEvent(query),
-                  // );
-                }
+                Navigator.of(context).pop();
+                // TODO: Implement search functionality
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Search functionality coming soon!'),
+                  ),
+                );
               },
               child: const Text('Search'),
             ),
@@ -231,3 +651,4 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
     );
   }
 }
+

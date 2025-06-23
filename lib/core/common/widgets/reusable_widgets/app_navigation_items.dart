@@ -68,9 +68,9 @@ class AppNavigationItems {
             icon: Icons.people,
             route: '/customer-list',
           ),
-           NavigationItem(
+          NavigationItem(
             title: 'Delivery Data',
-            icon: Icons.people,
+            icon: Icons.dataset,
             route: '/delivery-list',
           ),
           NavigationItem(
@@ -212,7 +212,6 @@ class AppNavigationItems {
             icon: Icons.keyboard_return,
             route: '/returns',
           ),
-          
         ],
       ),
     ];

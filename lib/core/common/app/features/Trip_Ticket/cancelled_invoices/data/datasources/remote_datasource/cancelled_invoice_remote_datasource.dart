@@ -16,13 +16,14 @@ import '../../../../delivery_data/data/model/delivery_data_model.dart';
 import '../../../../invoice_data/data/model/invoice_data_model.dart';
 import '../../model/cancelled_invoice_model.dart';
 
-
 abstract class CancelledInvoiceRemoteDataSource {
   /// Get all cancelled invoices
   Future<List<CancelledInvoiceModel>> getAllCancelledInvoices();
 
   /// Load cancelled invoices by trip ID
-  Future<List<CancelledInvoiceModel>> loadCancelledInvoicesByTripId(String tripId);
+  Future<List<CancelledInvoiceModel>> loadCancelledInvoicesByTripId(
+    String tripId,
+  );
 
   /// Load cancelled invoice by ID
   Future<CancelledInvoiceModel> loadCancelledInvoiceById(String id);
@@ -33,16 +34,58 @@ abstract class CancelledInvoiceRemoteDataSource {
     String deliveryDataId,
   );
 
+  Future<bool> reassignTripForCancelledInvoice(String deliveryDataId);
+
   /// Delete cancelled invoice
   Future<bool> deleteCancelledInvoice(String cancelledInvoiceId);
 }
 
-class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteDataSource {
-  CancelledInvoiceRemoteDataSourceImpl({
-    required PocketBase pocketBaseClient,
-  }) : _pocketBaseClient = pocketBaseClient;
+class CancelledInvoiceRemoteDataSourceImpl
+    implements CancelledInvoiceRemoteDataSource {
+  CancelledInvoiceRemoteDataSourceImpl({required PocketBase pocketBaseClient})
+    : _pocketBaseClient = pocketBaseClient;
 
   final PocketBase _pocketBaseClient;
+
+  @override
+  Future<bool> reassignTripForCancelledInvoice(String deliveryDataId) async {
+    try {
+      debugPrint(
+        '🔄 Reassigning trip for cancelled invoice with delivery data ID: $deliveryDataId',
+      );
+
+      // Update the delivery data to remove trip assignment
+      await _pocketBaseClient
+          .collection('deliveryData')
+          .update(
+            deliveryDataId,
+            body: {
+              'hasTrip': false,
+              'trip': null,
+              'updated': DateTime.now().toUtc().toIso8601String(),
+            },
+          );
+
+      debugPrint(
+        '✅ Successfully reassigned trip for delivery data: $deliveryDataId',
+      );
+      debugPrint('📋 Updated fields:');
+      debugPrint('   - hasTrip: false');
+      debugPrint('   - trip: null');
+      debugPrint('   - updated: ${DateTime.now().toUtc().toIso8601String()}');
+
+      return true;
+    } catch (e) {
+      debugPrint(
+        '❌ Failed to reassign trip for cancelled invoice: ${e.toString()}',
+      );
+      throw ServerException(
+        message:
+            'Failed to reassign trip for cancelled invoice: ${e.toString()}',
+        statusCode: '500',
+      );
+    }
+  }
 
   @override
   Future<List<CancelledInvoiceModel>> getAllCancelledInvoices() async {
@@ -64,7 +107,9 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
         cancelledInvoices.add(_processCancelledInvoiceRecord(record));
       }
 
-      debugPrint('✨ Successfully processed ${cancelledInvoices.length} cancelled invoices');
+      debugPrint(
+        '✨ Successfully processed ${cancelledInvoices.length} cancelled invoices',
+      );
       return cancelledInvoices;
     } catch (e) {
       debugPrint('❌ Failed to fetch all cancelled invoices: ${e.toString()}');
@@ -76,7 +121,9 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
   }
 
   @override
-  Future<List<CancelledInvoiceModel>> loadCancelledInvoicesByTripId(String tripId) async {
+  Future<List<CancelledInvoiceModel>> loadCancelledInvoicesByTripId(
+    String tripId,
+  ) async {
     try {
       // Extract trip ID if we received a JSON object
       String actualTripId;
@@ -105,10 +152,14 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
         cancelledInvoices.add(_processCancelledInvoiceRecord(record));
       }
 
-      debugPrint('✨ Successfully processed ${cancelledInvoices.length} cancelled invoices');
+      debugPrint(
+        '✨ Successfully processed ${cancelledInvoices.length} cancelled invoices',
+      );
       return cancelledInvoices;
     } catch (e) {
-      debugPrint('❌ Failed to load cancelled invoices by trip ID: ${e.toString()}');
+      debugPrint(
+        '❌ Failed to load cancelled invoices by trip ID: ${e.toString()}',
+      );
       throw ServerException(
         message: 'Failed to load cancelled invoices: ${e.toString()}',
         statusCode: '500',
@@ -123,10 +174,7 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
 
       final record = await _pocketBaseClient
           .collection('cancelledInvoice')
-          .getOne(
-            id,
-            expand: 'deliveryData,trip,invoice,customer',
-          );
+          .getOne(id, expand: 'deliveryData,trip,invoice,customer');
 
       debugPrint('✅ Retrieved cancelled invoice from API: ${record.id}');
 
@@ -139,14 +187,19 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
       );
     }
   }
+
   @override
   Future<CancelledInvoiceModel> createCancelledInvoice(
     CancelledInvoiceModel cancelledInvoice,
     String deliveryDataId,
   ) async {
     try {
-      debugPrint('🔄 Creating cancelled invoice for delivery data: $deliveryDataId');
-      debugPrint('📝 Reason: ${cancelledInvoice.reason.toString().split('.').last}');
+      debugPrint(
+        '🔄 Creating cancelled invoice for delivery data: $deliveryDataId',
+      );
+      debugPrint(
+        '📝 Reason: ${cancelledInvoice.reason.toString().split('.').last}',
+      );
 
       // First, get the delivery data to extract trip, customer, and invoice information
       final deliveryDataRecord = await _pocketBaseClient
@@ -169,7 +222,7 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
         final customerData = deliveryDataRecord.expand['customer'];
         if (customerData is List && customerData!.isNotEmpty) {
           customerId = customerData[0].id;
-        } 
+        }
       } else if (deliveryDataRecord.data['customer'] != null) {
         customerId = deliveryDataRecord.data['customer'].toString();
       }
@@ -182,7 +235,7 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
         final invoiceData = deliveryDataRecord.expand['invoice'];
         if (invoiceData is List && invoiceData!.isNotEmpty) {
           invoiceId = invoiceData[0].id;
-        } 
+        }
       } else if (deliveryDataRecord.data['invoice'] != null) {
         invoiceId = deliveryDataRecord.data['invoice'].toString();
       }
@@ -218,59 +271,70 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
 
       // Prepare optimized files if image is provided
       final files = <MultipartFile>[];
-      if (cancelledInvoice.image != null && cancelledInvoice.image!.isNotEmpty) {
+      if (cancelledInvoice.image != null &&
+          cancelledInvoice.image!.isNotEmpty) {
         debugPrint('📷 Optimizing and adding image to cancelled invoice');
-        
+
         try {
           // Read and compress the image
           final originalFile = File(cancelledInvoice.image!);
           final originalBytes = await originalFile.readAsBytes();
-          
-          debugPrint('📊 Original image size: ${(originalBytes.length / 1024).toStringAsFixed(2)} KB');
-          
+
+          debugPrint(
+            '📊 Original image size: ${(originalBytes.length / 1024).toStringAsFixed(2)} KB',
+          );
+
           // Compress image if it's larger than 500KB
           Uint8List compressedBytes = originalBytes;
           if (originalBytes.length > 500 * 1024) {
             debugPrint('🗜️ Compressing image for faster upload');
-            
+
             // Decode and resize image
             final image = img.decodeImage(originalBytes);
             if (image != null) {
               // Resize to max 1024px width while maintaining aspect ratio
               final resized = img.copyResize(
-                image, 
+                image,
                 width: image.width > 1024 ? 1024 : image.width,
                 interpolation: img.Interpolation.linear,
               );
-              
+
               // Compress as JPEG with 70% quality
               compressedBytes = Uint8List.fromList(
-                img.encodeJpg(resized, quality: 70)
+                img.encodeJpg(resized, quality: 70),
               );
-              
-              debugPrint('📊 Compressed image size: ${(compressedBytes.length / 1024).toStringAsFixed(2)} KB');
-              debugPrint('📉 Size reduction: ${((1 - compressedBytes.length / originalBytes.length) * 100).toStringAsFixed(1)}%');
+
+              debugPrint(
+                '📊 Compressed image size: ${(compressedBytes.length / 1024).toStringAsFixed(2)} KB',
+              );
+              debugPrint(
+                '📉 Size reduction: ${((1 - compressedBytes.length / originalBytes.length) * 100).toStringAsFixed(1)}%',
+              );
             }
           }
-          
+
           files.add(
             MultipartFile.fromBytes(
               'image',
               compressedBytes,
-              filename: 'cancelled_invoice_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              filename:
+                  'cancelled_invoice_${DateTime.now().millisecondsSinceEpoch}.jpg',
             ),
           );
-          
+
           debugPrint('✅ Image prepared for upload');
         } catch (imageError) {
-          debugPrint('⚠️ Image processing failed, uploading original: $imageError');
+          debugPrint(
+            '⚠️ Image processing failed, uploading original: $imageError',
+          );
           // Fallback to original file if compression fails
           final imageBytes = await File(cancelledInvoice.image!).readAsBytes();
           files.add(
             MultipartFile.fromBytes(
               'image',
               imageBytes,
-              filename: 'cancelled_invoice_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              filename:
+                  'cancelled_invoice_${DateTime.now().millisecondsSinceEpoch}.jpg',
             ),
           );
         }
@@ -280,16 +344,14 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
       final startTime = DateTime.now();
 
       // Create the cancelled invoice record
-      final record = files.isNotEmpty 
-          ? await _pocketBaseClient
-              .collection('cancelledInvoice')
-              .create(
-                body: body,
-                files: files,
-              )
-          : await _pocketBaseClient
-              .collection('cancelledInvoice')
-              .create(body: body);
+      final record =
+          files.isNotEmpty
+              ? await _pocketBaseClient
+                  .collection('cancelledInvoice')
+                  .create(body: body, files: files)
+              : await _pocketBaseClient
+                  .collection('cancelledInvoice')
+                  .create(body: body);
 
       final uploadTime = DateTime.now().difference(startTime).inMilliseconds;
       debugPrint('⚡ Upload completed in ${uploadTime}ms');
@@ -309,30 +371,46 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
       // Fetch the created record with expanded relations including customer and invoice
       final createdRecord = await _pocketBaseClient
           .collection('cancelledInvoice')
-          .getOne(
-            record.id,
-            expand: 'deliveryData,trip,invoice,customer',
-          );
+          .getOne(record.id, expand: 'deliveryData,trip,invoice,customer');
 
       debugPrint('🔍 Expanded record verification:');
-      debugPrint('   - Has deliveryData expand: ${createdRecord.expand['deliveryData'] != null}');
-      debugPrint('   - Has trip expand: ${createdRecord.expand['trip'] != null}');
-      debugPrint('   - Has customer expand: ${createdRecord.expand['customer'] != null}');
-      debugPrint('   - Has invoice expand: ${createdRecord.expand['invoice'] != null}');
+      debugPrint(
+        '   - Has deliveryData expand: ${createdRecord.expand['deliveryData'] != null}',
+      );
+      debugPrint(
+        '   - Has trip expand: ${createdRecord.expand['trip'] != null}',
+      );
+      debugPrint(
+        '   - Has customer expand: ${createdRecord.expand['customer'] != null}',
+      );
+      debugPrint(
+        '   - Has invoice expand: ${createdRecord.expand['invoice'] != null}',
+      );
 
-      final cancelledInvoiceModel = _processCancelledInvoiceRecord(createdRecord);
+      final cancelledInvoiceModel = _processCancelledInvoiceRecord(
+        createdRecord,
+      );
 
-      debugPrint('✨ Successfully created cancelled invoice with customer and invoice relations');
+      debugPrint(
+        '✨ Successfully created cancelled invoice with customer and invoice relations',
+      );
       debugPrint('📊 Final model verification:');
       debugPrint('   - Model ID: ${cancelledInvoiceModel.id}');
-      debugPrint('   - Has Customer: ${cancelledInvoiceModel.customer != null}');
-      debugPrint('   - Customer Name: ${cancelledInvoiceModel.customer!.name ?? "null"}');
-      debugPrint('   - Has Invoice: ${cancelledInvoiceModel.invoice!= null}');
-      debugPrint('   - Invoice ID: ${cancelledInvoiceModel.invoice!.id ?? "null"}');
-      debugPrint('   - Has Delivery Data: ${cancelledInvoiceModel.deliveryData != null}');
-      
-      return cancelledInvoiceModel;
+      debugPrint(
+        '   - Has Customer: ${cancelledInvoiceModel.customer != null}',
+      );
+      debugPrint(
+        '   - Customer Name: ${cancelledInvoiceModel.customer!.name ?? "null"}',
+      );
+      debugPrint('   - Has Invoice: ${cancelledInvoiceModel.invoice != null}');
+      debugPrint(
+        '   - Invoice ID: ${cancelledInvoiceModel.invoice!.id ?? "null"}',
+      );
+      debugPrint(
+        '   - Has Delivery Data: ${cancelledInvoiceModel.deliveryData != null}',
+      );
 
+      return cancelledInvoiceModel;
     } catch (e) {
       debugPrint('❌ Failed to create cancelled invoice: ${e.toString()}');
       throw ServerException(
@@ -341,7 +419,6 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
       );
     }
   }
-
 
   @override
   Future<bool> deleteCancelledInvoice(String cancelledInvoiceId) async {
@@ -354,7 +431,6 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
 
       debugPrint('✅ Successfully deleted cancelled invoice');
       return true;
-
     } catch (e) {
       debugPrint('❌ Failed to delete cancelled invoice: ${e.toString()}');
       throw ServerException(
@@ -385,8 +461,12 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
         debugPrint('✅ Processed delivery data: ${deliveryDataModel.id}');
       }
     } else if (record.data['deliveryData'] != null) {
-      deliveryDataModel = DeliveryDataModel(id: record.data['deliveryData'].toString());
-      debugPrint('📋 Using delivery data ID reference: ${deliveryDataModel.id}');
+      deliveryDataModel = DeliveryDataModel(
+        id: record.data['deliveryData'].toString(),
+      );
+      debugPrint(
+        '📋 Using delivery data ID reference: ${deliveryDataModel.id}',
+      );
     }
 
     // Process trip data
@@ -404,7 +484,9 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
           'isAccepted': tripRecord.data['isAccepted'],
           'isEndTrip': tripRecord.data['isEndTrip'],
         });
-        debugPrint('✅ Processed trip: ${tripModel.id} - ${tripModel.tripNumberId}');
+        debugPrint(
+          '✅ Processed trip: ${tripModel.id} - ${tripModel.tripNumberId}',
+        );
       }
     } else if (record.data['trip'] != null) {
       tripModel = TripModel(id: record.data['trip'].toString());
@@ -423,9 +505,11 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
           'collectionName': invoiceRecord.collectionName,
           ...invoiceRecord.data,
         });
-        debugPrint('✅ Processed invoice: ${invoiceModel.id} - Amount: ${invoiceModel.totalAmount}');
+        debugPrint(
+          '✅ Processed invoice: ${invoiceModel.id} - Amount: ${invoiceModel.totalAmount}',
+        );
       }
-        } else if (record.data['invoice'] != null) {
+    } else if (record.data['invoice'] != null) {
       invoiceModel = InvoiceDataModel(id: record.data['invoice'].toString());
       debugPrint('📋 Using invoice ID reference: ${invoiceModel.id}');
     }
@@ -442,7 +526,9 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
           'collectionName': customerRecord.collectionName,
           ...customerRecord.data,
         });
-        debugPrint('✅ Processed customer: ${customerModel.id} - ${customerModel.name}');
+        debugPrint(
+          '✅ Processed customer: ${customerModel.id} - ${customerModel.name}',
+        );
       }
     } else if (record.data['customer'] != null) {
       customerModel = CustomerDataModel(id: record.data['customer'].toString());
@@ -469,14 +555,17 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
           orElse: () => UndeliverableReason.none,
         );
       } catch (e) {
-        debugPrint('⚠️ Failed to parse reason: $reasonString, defaulting to other');
+        debugPrint(
+          '⚠️ Failed to parse reason: $reasonString, defaulting to other',
+        );
         return UndeliverableReason.none;
       }
     }
 
     // Process image URL
     String? imageUrl;
-    if (record.data['image'] != null && record.data['image'].toString().isNotEmpty) {
+    if (record.data['image'] != null &&
+        record.data['image'].toString().isNotEmpty) {
       final baseUrl = _pocketBaseClient.baseUrl;
       final collectionId = record.collectionId;
       final recordId = record.id;
@@ -499,15 +588,21 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
       updated: parseDate(record.updated),
     );
 
-    debugPrint('✅ Successfully processed cancelled invoice: ${cancelledInvoice.id}');
+    debugPrint(
+      '✅ Successfully processed cancelled invoice: ${cancelledInvoice.id}',
+    );
     debugPrint('📊 Cancelled Invoice summary:');
     debugPrint('   - ID: ${cancelledInvoice.id}');
-    debugPrint('   - Reason: ${cancelledInvoice.reason.toString().split('.').last}');
+    debugPrint(
+      '   - Reason: ${cancelledInvoice.reason.toString().split('.').last}',
+    );
     debugPrint('   - Has Image: ${cancelledInvoice.image != null}');
     debugPrint('   - Customer: ${cancelledInvoice.customer!.name ?? "null"}');
     debugPrint('   - Invoice: ${cancelledInvoice.invoice!.id ?? "null"}');
     debugPrint('   - Trip: ${cancelledInvoice.trip!.tripNumberId ?? "null"}');
-    debugPrint('   - Delivery Data: ${cancelledInvoice.deliveryData!.id ?? "null"}');
+    debugPrint(
+      '   - Delivery Data: ${cancelledInvoice.deliveryData!.id ?? "null"}',
+    );
 
     return cancelledInvoice;
   }
@@ -535,18 +630,19 @@ class CancelledInvoiceRemoteDataSourceImpl implements CancelledInvoiceRemoteData
       int newUndelivered = currentUndelivered + 1;
 
       // Update delivery team with new undelivered count
-      await _pocketBaseClient.collection('delivery_team').update(
-        deliveryTeam.id,
-        body: {
-          'undeliveredCustomers': newUndelivered,
-          'updated': DateTime.now().toUtc().toIso8601String(),
-        },
-      );
+      await _pocketBaseClient
+          .collection('delivery_team')
+          .update(
+            deliveryTeam.id,
+            body: {
+              'undeliveredCustomers': newUndelivered,
+              'updated': DateTime.now().toUtc().toIso8601String(),
+            },
+          );
 
       debugPrint('✅ Updated delivery team stats:');
       debugPrint('   - Previous undelivered: $currentUndelivered');
       debugPrint('   - New undelivered: $newUndelivered');
-
     } catch (e) {
       debugPrint('⚠️ Failed to update delivery team stats: ${e.toString()}');
       // Don't throw error as this is not critical for the main operation

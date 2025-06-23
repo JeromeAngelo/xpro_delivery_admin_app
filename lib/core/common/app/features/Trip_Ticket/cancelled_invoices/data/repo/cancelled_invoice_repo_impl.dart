@@ -122,5 +122,31 @@ ResultFuture<List<CancelledInvoiceEntity>> getAllCancelledInvoices() async {
     return Left(ServerFailure(message: e.toString(), statusCode: '500'));
   }
 }
+@override
+ResultFuture<bool> reassignTripForCancelledInvoice(String deliveryDataId) async {
+  try {
+    debugPrint('🔄 REPO: Reassigning trip for cancelled invoice with delivery data ID: $deliveryDataId');
+    
+    final result = await _remoteDataSource.reassignTripForCancelledInvoice(deliveryDataId);
+    
+    if (result) {
+      debugPrint('✅ REPO: Successfully reassigned trip for delivery data: $deliveryDataId');
+      return const Right(true);
+    } else {
+      debugPrint('⚠️ REPO: Trip reassignment returned false for delivery data: $deliveryDataId');
+      return Left(ServerFailure(
+        message: 'Failed to reassign trip for cancelled invoice', 
+        statusCode: '500'
+      ));
+    }
+  } on ServerException catch (e) {
+    debugPrint('❌ REPO: Trip reassignment failed: ${e.message}');
+    return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+  } catch (e) {
+    debugPrint('❌ REPO: Unexpected error during trip reassignment: ${e.toString()}');
+    return Left(ServerFailure(message: e.toString(), statusCode: '500'));
+  }
+}
+
 
 }

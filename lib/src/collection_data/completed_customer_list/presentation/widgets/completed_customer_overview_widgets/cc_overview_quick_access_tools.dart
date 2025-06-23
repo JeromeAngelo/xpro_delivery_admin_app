@@ -7,12 +7,12 @@ class QuickAccessTools extends StatelessWidget {
   final VoidCallback? onSearchCustomers;
 
   const QuickAccessTools({
-    Key? key,
+    super.key,
     this.onExportData,
     this.onGenerateReport,
     this.onFilterData,
     this.onSearchCustomers,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

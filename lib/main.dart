@@ -66,7 +66,7 @@ class MyApp extends StatelessWidget {
             BlocProvider(create: (_) => sl<UserRolesBloc>()),
 
             BlocProvider(create: (_) => sl<TripBloc>()),
-     
+
             BlocProvider(create: (_) => sl<TripUpdatesBloc>()),
             BlocProvider(create: (_) => sl<ReturnBloc>()),
             BlocProvider(create: (_) => sl<DeliveryUpdateBloc>()),

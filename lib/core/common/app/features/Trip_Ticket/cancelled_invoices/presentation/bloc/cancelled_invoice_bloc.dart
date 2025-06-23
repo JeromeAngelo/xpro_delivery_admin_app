@@ -8,7 +8,7 @@ import '../../domain/usecases/delete_cancelled_invoice.dart';
 import '../../domain/usecases/get_all_cancelled_invoice.dart';
 import '../../domain/usecases/load_cancelled_invoice_by_id.dart';
 import '../../domain/usecases/load_cancelled_invoice_by_trip_id.dart';
-
+import '../../domain/usecases/resassign_trip_for_cancelled_invoice.dart';
 
 class CancelledInvoiceBloc extends Bloc<CancelledInvoiceEvent, CancelledInvoiceState> {
   final LoadCancelledInvoicesByTripId _loadCancelledInvoicesByTripId;
@@ -16,7 +16,7 @@ class CancelledInvoiceBloc extends Bloc<CancelledInvoiceEvent, CancelledInvoiceS
   final CreateCancelledInvoiceByDeliveryDataId _createCancelledInvoiceByDeliveryDataId;
   final DeleteCancelledInvoice _deleteCancelledInvoice;
   final GetAllCancelledInvoices _getAllCancelledInvoices;
-
+  final ReassignTripForCancelledInvoice _reassignTripForCancelledInvoice; // Add this line
 
   CancelledInvoiceState? _cachedState;
 
@@ -24,15 +24,15 @@ class CancelledInvoiceBloc extends Bloc<CancelledInvoiceEvent, CancelledInvoiceS
     required LoadCancelledInvoicesByTripId loadCancelledInvoicesByTripId,
     required LoadCancelledInvoiceById loadCancelledInvoicesById,
     required GetAllCancelledInvoices getAllCancelledInvoices,
-
     required CreateCancelledInvoiceByDeliveryDataId createCancelledInvoiceByDeliveryDataId,
     required DeleteCancelledInvoice deleteCancelledInvoice,
+    required ReassignTripForCancelledInvoice reassignTripForCancelledInvoice, // Add this line
   }) : _loadCancelledInvoicesByTripId = loadCancelledInvoicesByTripId,
        _loadCancelledInvoicesById = loadCancelledInvoicesById,
        _createCancelledInvoiceByDeliveryDataId = createCancelledInvoiceByDeliveryDataId,
        _getAllCancelledInvoices = getAllCancelledInvoices,
-
        _deleteCancelledInvoice = deleteCancelledInvoice,
+       _reassignTripForCancelledInvoice = reassignTripForCancelledInvoice, // Add this line
        super(const CancelledInvoiceInitial()) {
     
     on<LoadCancelledInvoicesByTripIdEvent>(_onLoadCancelledInvoicesByTripId);
@@ -41,8 +41,9 @@ class CancelledInvoiceBloc extends Bloc<CancelledInvoiceEvent, CancelledInvoiceS
     on<DeleteCancelledInvoiceEvent>(_onDeleteCancelledInvoice);
     on<RefreshCancelledInvoicesEvent>(_onRefreshCancelledInvoices);
     on<GetAllCancelledInvoicesEvent>(_onGetAllCancelledInvoices);
-
+    on<ReassignTripForCancelledInvoiceEvent>(_onReassignTripForCancelledInvoice); // Add this line
   }
+
 
   Future<void> _onGetAllCancelledInvoices(
   GetAllCancelledInvoicesEvent event,
@@ -72,6 +73,38 @@ class CancelledInvoiceBloc extends Bloc<CancelledInvoiceEvent, CancelledInvoiceS
     },
   );
 }
+
+Future<void> _onReassignTripForCancelledInvoice(
+  ReassignTripForCancelledInvoiceEvent event,
+  Emitter<CancelledInvoiceState> emit,
+) async {
+  debugPrint('🔄 BLoC: Reassigning trip for cancelled invoice with delivery data: ${event.deliveryDataId}');
+  
+  emit(const CancelledInvoiceLoading());
+
+  final result = await _reassignTripForCancelledInvoice(
+    ReassignTripForCancelledInvoiceParams(
+      deliveryDataId: event.deliveryDataId,
+    ),
+  );
+  
+  result.fold(
+    (failure) {
+      debugPrint('❌ BLoC: Failed to reassign trip for cancelled invoice: ${failure.message}');
+      emit(CancelledInvoiceError(failure.message));
+    },
+    (success) {
+      if (success) {
+        debugPrint('✅ BLoC: Successfully reassigned trip for delivery data: ${event.deliveryDataId}');
+        emit(CancelledInvoiceTripReassigned(event.deliveryDataId));
+      } else {
+        debugPrint('❌ BLoC: Trip reassignment returned false');
+        emit(const CancelledInvoiceError('Failed to reassign trip for cancelled invoice'));
+      }
+    },
+  );
+}
+
 
 
   Future<void> _onLoadCancelledInvoicesByTripId(

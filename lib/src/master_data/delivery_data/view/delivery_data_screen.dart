@@ -28,7 +28,9 @@ class _DeliveryDataScreenState extends State<DeliveryDataScreen> {
   void initState() {
     super.initState();
     // Load delivery data when the screen initializes
-    context.read<DeliveryDataBloc>().add(const GetAllDeliveryDataWithTripsEvent());
+    context.read<DeliveryDataBloc>().add(
+      const GetAllDeliveryDataWithTripsEvent(),
+    );
   }
 
   @override
@@ -42,7 +44,6 @@ class _DeliveryDataScreenState extends State<DeliveryDataScreen> {
     final navigationItems = AppNavigationItems.generalTripItems();
 
     return DesktopLayout(
-      title: 'Admin User',
       navigationItems: navigationItems,
       currentRoute: '/delivery-list',
       onNavigate: (route) {
@@ -63,7 +64,9 @@ class _DeliveryDataScreenState extends State<DeliveryDataScreen> {
           // Handle different states - SAME FORMAT AS INVOICE PRESET GROUPS
           if (state is DeliveryDataInitial) {
             // Initial state, trigger loading
-            context.read<DeliveryDataBloc>().add(const GetAllDeliveryDataWithTripsEvent());
+            context.read<DeliveryDataBloc>().add(
+              const GetAllDeliveryDataWithTripsEvent(),
+            );
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -105,15 +108,34 @@ class _DeliveryDataScreenState extends State<DeliveryDataScreen> {
 
             // Filter delivery data based on search query
             if (_searchQuery.isNotEmpty) {
-              deliveryData = deliveryData.where((delivery) {
-                final query = _searchQuery.toLowerCase();
-                return (delivery.deliveryNumber?.toLowerCase().contains(query) ?? false) ||
-                       (delivery.customer?.name?.toLowerCase().contains(query) ?? false) ||
-                       (delivery.invoice?.name?.toLowerCase().contains(query) ?? false) ||
-                       (delivery.trip?.tripNumberId?.toLowerCase().contains(query) ?? false) ||
-                       (delivery.customer?.municipality?.toLowerCase().contains(query) ?? false) ||
-                       (delivery.customer?.province?.toLowerCase().contains(query) ?? false);
-              }).toList();
+              deliveryData =
+                  deliveryData.where((delivery) {
+                    final query = _searchQuery.toLowerCase();
+                    return (delivery.deliveryNumber?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (delivery.customer?.name?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (delivery.invoice?.name?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (delivery.trip?.tripNumberId?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (delivery.customer?.municipality
+                                ?.toLowerCase()
+                                .contains(query) ??
+                            false) ||
+                        (delivery.customer?.province?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false);
+                  }).toList();
             }
 
             // Calculate total pages
@@ -122,13 +144,15 @@ class _DeliveryDataScreenState extends State<DeliveryDataScreen> {
 
             // Paginate delivery data
             final startIndex = (_currentPage - 1) * _itemsPerPage;
-            final endIndex = startIndex + _itemsPerPage > deliveryData.length
-                ? deliveryData.length
-                : startIndex + _itemsPerPage;
+            final endIndex =
+                startIndex + _itemsPerPage > deliveryData.length
+                    ? deliveryData.length
+                    : startIndex + _itemsPerPage;
 
-            final paginatedDeliveryData = startIndex < deliveryData.length
-                ? deliveryData.sublist(startIndex, endIndex)
-                : <DeliveryDataEntity>[];
+            final paginatedDeliveryData =
+                startIndex < deliveryData.length
+                    ? deliveryData.sublist(startIndex, endIndex)
+                    : <DeliveryDataEntity>[];
 
             // Return the table directly - NO WRAPPING WITH COLUMN/SINGLECHILDSCROLLVIEW
             return DeliveryDataTable(
@@ -159,15 +183,34 @@ class _DeliveryDataScreenState extends State<DeliveryDataScreen> {
 
             // Filter delivery data based on search query
             if (_searchQuery.isNotEmpty) {
-              deliveryData = deliveryData.where((delivery) {
-                final query = _searchQuery.toLowerCase();
-                return (delivery.deliveryNumber?.toLowerCase().contains(query) ?? false) ||
-                       (delivery.customer?.name?.toLowerCase().contains(query) ?? false) ||
-                       (delivery.invoice?.name?.toLowerCase().contains(query) ?? false) ||
-                       (delivery.trip?.tripNumberId?.toLowerCase().contains(query) ?? false) ||
-                       (delivery.customer?.municipality?.toLowerCase().contains(query) ?? false) ||
-                       (delivery.customer?.province?.toLowerCase().contains(query) ?? false);
-              }).toList();
+              deliveryData =
+                  deliveryData.where((delivery) {
+                    final query = _searchQuery.toLowerCase();
+                    return (delivery.deliveryNumber?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (delivery.customer?.name?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (delivery.invoice?.name?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (delivery.trip?.tripNumberId?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (delivery.customer?.municipality
+                                ?.toLowerCase()
+                                .contains(query) ??
+                            false) ||
+                        (delivery.customer?.province?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false);
+                  }).toList();
             }
 
             // Calculate total pages
@@ -176,13 +219,15 @@ class _DeliveryDataScreenState extends State<DeliveryDataScreen> {
 
             // Paginate delivery data
             final startIndex = (_currentPage - 1) * _itemsPerPage;
-            final endIndex = startIndex + _itemsPerPage > deliveryData.length
-                ? deliveryData.length
-                : startIndex + _itemsPerPage;
+            final endIndex =
+                startIndex + _itemsPerPage > deliveryData.length
+                    ? deliveryData.length
+                    : startIndex + _itemsPerPage;
 
-            final paginatedDeliveryData = startIndex < deliveryData.length
-                ? deliveryData.sublist(startIndex, endIndex)
-                : <DeliveryDataEntity>[];
+            final paginatedDeliveryData =
+                startIndex < deliveryData.length
+                    ? deliveryData.sublist(startIndex, endIndex)
+                    : <DeliveryDataEntity>[];
 
             // Return the table directly - NO WRAPPING
             return DeliveryDataTable(

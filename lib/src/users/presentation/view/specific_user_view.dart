@@ -92,7 +92,7 @@ class _SpecificUserViewState extends State<SpecificUserView> {
                   UserDetailsDashboard(
                     user: user,
                     onEdit: () {
-                      // Navigate to edit user screen
+                      context.go('/update-user/${user.id}', extra: user);
                     },
                     onDelete: () {
                       // Show delete confirmation dialog

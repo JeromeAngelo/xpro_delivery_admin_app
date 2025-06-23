@@ -29,6 +29,7 @@ import 'package:xpro_delivery_admin_app/src/users/presentation/view/specific_use
 import 'package:xpro_delivery_admin_app/src/users/presentation/view/update_user_view.dart';
 
 import '../../src/master_data/delivery_data/view/specific_delivery_data_screen.dart';
+import '../../src/return_data/undelivered_customer_data/presentation/view/specific_cancelled_invoice_view.dart';
 
 final router = GoRouter(
   routes: [
@@ -67,12 +68,12 @@ final router = GoRouter(
       builder: (context, state) => DeliveryDataScreen(),
     ),
     GoRoute(
-  path: '/delivery-details/:deliveryId',
-  builder: (context, state) {
-    final deliveryId = state.pathParameters['deliveryId']!;
-    return SpecificDeliveryDataScreen(deliveryId: deliveryId);
-  },
-),
+      path: '/delivery-details/:deliveryId',
+      builder: (context, state) {
+        final deliveryId = state.pathParameters['deliveryId']!;
+        return SpecificDeliveryDataScreen(deliveryId: deliveryId);
+      },
+    ),
 
     GoRoute(
       path: '/customer/:customerId',
@@ -181,10 +182,20 @@ final router = GoRouter(
       builder: (context, state) => const UndeliveredCustomerListView(),
     ),
 
+    GoRoute(
+      path: '/undeliverable-customers/:cancelledInvoiceId',
+      builder: (context, state) {
+        final invoiceId = state.pathParameters['cancelledInvoiceId']!;
+        return SpecificCancelledInvoiceView(cancelledInvoiceId: invoiceId);
+      },
+    ),
+
     // Add this route to your router configuration
     GoRoute(
       path: '/delivery-monitoring',
       builder: (context, state) => const DeliveryMonitoringScreen(),
     ),
+
+    // Add this route to your router configuration
   ],
 );

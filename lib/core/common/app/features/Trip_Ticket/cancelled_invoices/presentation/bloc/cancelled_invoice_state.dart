@@ -94,3 +94,12 @@ class CancelledInvoicesEmpty extends CancelledInvoiceState {
   @override
   List<Object> get props => [tripId];
 }
+
+class CancelledInvoiceTripReassigned extends CancelledInvoiceState {
+  final String deliveryDataId;
+
+  const CancelledInvoiceTripReassigned(this.deliveryDataId);
+
+  @override
+  List<Object> get props => [deliveryDataId];
+}

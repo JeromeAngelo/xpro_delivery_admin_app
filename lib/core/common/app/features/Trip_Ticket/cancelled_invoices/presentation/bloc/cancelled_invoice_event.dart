@@ -92,3 +92,12 @@ class RefreshCancelledInvoicesEvent extends CancelledInvoiceEvent {
   @override
   List<Object?> get props => [tripId];
 }
+
+class ReassignTripForCancelledInvoiceEvent extends CancelledInvoiceEvent {
+  final String deliveryDataId;
+
+  const ReassignTripForCancelledInvoiceEvent(this.deliveryDataId);
+
+  @override
+  List<Object?> get props => [deliveryDataId];
+}

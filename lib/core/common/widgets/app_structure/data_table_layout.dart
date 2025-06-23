@@ -22,6 +22,14 @@ class DataTableLayout extends StatefulWidget {
   final String dataLength;
   final List<FilterCategory>? filterCategories;
   final Function(Map<String, List<dynamic>>)? onFilterApplied;
+  // New parameters for custom actions
+  final Widget?
+  customActionWidget; // Custom widget to show when rows are selected
+  final bool showCustomAction; // Whether to show the custom action
+  final VoidCallback? onCustomAction; // Callback for custom action
+  final String? customActionTooltip; // Tooltip for custom action
+  final IconData? customActionIcon; // Icon for custom action
+  final Color? customActionColor; // Color for custom action
 
   const DataTableLayout({
     super.key,
@@ -44,6 +52,13 @@ class DataTableLayout extends StatefulWidget {
     required this.onDeleted,
     this.filterCategories,
     this.onFilterApplied,
+    // New parameters
+    this.customActionWidget,
+    this.showCustomAction = false,
+    this.onCustomAction,
+    this.customActionTooltip,
+    this.customActionIcon,
+    this.customActionColor,
   });
 
   @override
@@ -623,7 +638,43 @@ class _DataTableLayoutState extends State<DataTableLayout> {
                         ),
                       ),
 
-                      // Add this helper method to count active filters
+                      // Custom Action Widget (NEW)
+                      Visibility(
+                        visible:
+                            hasSelectedRows &&
+                            (widget.showCustomAction ||
+                                widget.customActionWidget != null),
+                        child:
+                            widget.customActionWidget ??
+                            GestureDetector(
+                              onTap: widget.onCustomAction,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Tooltip(
+                                  message:
+                                      widget.customActionTooltip ??
+                                      'Custom Action',
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Icon(
+                                        widget.customActionIcon ??
+                                            Icons.more_vert,
+                                        color:
+                                            hasSelectedRows
+                                                ? (widget.customActionColor ??
+                                                    Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary)
+                                                : null,
+                                      ),
+                                      Icon(Icons.arrow_drop_down),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                      ),
 
                       // Only show delete button when rows are selected
                       Visibility(

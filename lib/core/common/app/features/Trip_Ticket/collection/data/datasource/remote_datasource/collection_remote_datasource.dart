@@ -24,6 +24,12 @@ abstract class CollectionRemoteDataSource {
   /// Load all collections
 Future<List<CollectionModel>> getAllCollections();
 
+  /// Filter collections by date range using created field
+  Future<List<CollectionModel>> filterCollectionsByDate({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
+
 }
 
 class CollectionRemoteDataSourceImpl implements CollectionRemoteDataSource {
@@ -289,4 +295,78 @@ Future<List<CollectionModel>> getAllCollections() async {
 
     return collection;
   }
+   @override
+  Future<List<CollectionModel>> filterCollectionsByDate({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      // Format dates to ISO 8601 format for PocketBase
+      final formattedStartDate = _formatDateForPocketBase(startDate);
+      final formattedEndDate = _formatDateForPocketBase(endDate);
+
+      debugPrint('🔄 Filtering collections by date range');
+      debugPrint('📅 Start Date: $formattedStartDate');
+      debugPrint('📅 End Date: $formattedEndDate');
+
+      // Create filter query for date range
+      final filter = 'created >= "$formattedStartDate" && created <= "$formattedEndDate"';
+      
+      debugPrint('🔍 Filter query: $filter');
+
+      final records = await _pocketBaseClient
+          .collection('deliveryCollection')
+          .getFullList(
+            filter: filter,
+            expand: 'deliveryData,trip,customer,invoice',
+            sort: '-created',
+          );
+
+      debugPrint('✅ Retrieved ${records.length} collections from API for date range');
+
+      List<CollectionModel> collections = [];
+
+      for (var record in records) {
+        try {
+          collections.add(_processCollectionRecord(record));
+        } catch (e) {
+          debugPrint('⚠️ Error processing collection record ${record.id}: $e');
+          // Continue processing other records even if one fails
+          continue;
+        }
+      }
+
+      debugPrint('✨ Successfully processed ${collections.length} collections for date range');
+      return collections;
+    } catch (e) {
+      debugPrint('❌ Failed to filter collections by date: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to filter collections by date: ${e.toString()}',
+        statusCode: '500',
+      );
+    }
+  }
+
+   /// Helper method to format DateTime for PocketBase queries
+  String _formatDateForPocketBase(DateTime date) {
+    // Ensure the date is in UTC and formatted properly for PocketBase
+    final utcDate = date.toUtc();
+    
+    // Format: YYYY-MM-DD HH:MM:SS.sssZ
+    final formattedDate = utcDate.toIso8601String();
+    
+    debugPrint('🕐 Formatted date: $date -> $formattedDate');
+    return formattedDate;
+  }
+
+  /// Helper method to create date range for a specific day
+  // Map<String, DateTime> _createDayRange(DateTime date) {
+  //   final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
+  //   final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+    
+  //   return {
+  //     'start': startOfDay,
+  //     'end': endOfDay,
+  //   };
+  // }
 }
