@@ -39,6 +39,17 @@ abstract class TripRemoteDatasurce {
 
   // Delete all trip tickets
   Future<bool> deleteAllTripTickets();
+
+    // NEW: Filter by date range
+  Future<List<TripModel>> filterTripsByDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
+
+  // NEW: Filter by user
+  Future<List<TripModel>> filterTripsByUser({
+    required String userId,
+  });
 }
 
 class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
@@ -46,6 +57,87 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
     : _pocketBaseClient = pocketBaseClient;
 
   final PocketBase _pocketBaseClient;
+
+  @override
+Future<List<TripModel>> filterTripsByDateRange({
+  required DateTime startDate,
+  required DateTime endDate,
+}) async {
+  try {
+    debugPrint('🔍 Filtering trips by date range');
+    debugPrint('📅 Start Date: ${startDate.toIso8601String()}');
+    debugPrint('📅 End Date: ${endDate.toIso8601String()}');
+
+    // Build filter string for date range using timeAccepted and timeEndTrip
+    final startDateStr = startDate.toIso8601String();
+    final endDateStr = endDate.toIso8601String();
+    
+    final filterString = '(timeAccepted >= "$startDateStr" && timeAccepted <= "$endDateStr") || (timeEndTrip >= "$startDateStr" && timeEndTrip <= "$endDateStr")';
+    
+    debugPrint('🔍 Applied filter: $filterString');
+
+    final records = await _pocketBaseClient
+        .collection('tripticket')
+        .getFullList(
+          filter: filterString,
+          expand: 'customers,delivery_team,personels,vehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
+          sort: '-created',
+        );
+
+    debugPrint('✅ Found ${records.length} trips in date range');
+
+    return records.map((record) {
+      return _mapRecordToTripModel(record);
+    }).toList();
+  } catch (e) {
+    debugPrint('❌ Failed to filter trips by date range: ${e.toString()}');
+    throw ServerException(
+      message: 'Failed to filter trips by date range: ${e.toString()}',
+      statusCode: '500',
+    );
+  }
+}
+
+@override
+Future<List<TripModel>> filterTripsByUser({
+  required String userId,
+}) async {
+  try {
+    debugPrint('🔍 Filtering trips by user ID: $userId');
+
+    final filterString = 'user = "$userId"';
+    debugPrint('🔍 Applied filter: $filterString');
+
+    final records = await _pocketBaseClient
+        .collection('tripticket')
+        .getFullList(
+          filter: filterString,
+          expand: 'customers,delivery_team,personels,vehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
+          sort: '-created',
+        );
+
+    debugPrint('✅ Found ${records.length} trips for user: $userId');
+
+    // Debug print user information for each trip
+    for (var record in records) {
+      final userData = record.expand['user'];
+      if (userData != null) {
+        debugPrint('📄 Trip: ${record.data['tripNumberId']} ');
+      }
+    }
+
+    return records.map((record) {
+      return _mapRecordToTripModel(record);
+    }).toList();
+  } catch (e) {
+    debugPrint('❌ Failed to filter trips by user: ${e.toString()}');
+    throw ServerException(
+      message: 'Failed to filter trips by user: ${e.toString()}',
+      statusCode: '500',
+    );
+  }
+}
+
 
   @override
   Future<List<TripModel>> getAllTripTickets() async {

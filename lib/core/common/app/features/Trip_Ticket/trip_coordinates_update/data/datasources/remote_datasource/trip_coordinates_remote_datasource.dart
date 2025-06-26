@@ -43,7 +43,8 @@ class TripCoordinatesRemoteDataSourceImpl
           .getFullList(
             filter: 'trip = "$actualTripId"',
             expand: 'trip',
-            sort: '-created', // Sort by creation time to get chronological order
+            sort:
+                '-created', // Sort by creation time to get chronological order
           );
 
       debugPrint(
@@ -95,10 +96,137 @@ class TripCoordinatesRemoteDataSourceImpl
           }
         }
 
-        // Parse dates
-        DateTime? created;
+        // Enhanced safe date parsing function with multiple fallbacks
+        DateTime? parseDate(dynamic value) {
+          if (value == null) return null;
 
-        DateTime? updated;
+          String strValue = value.toString().trim();
+          if (strValue.isEmpty) return null;
+
+          try {
+            // Try standard ISO format first
+            return DateTime.parse(strValue);
+          } catch (e) {
+            debugPrint(
+              '⚠️ Standard date parsing failed: $e for value: $strValue',
+            );
+
+            try {
+              // Try Unix timestamp (milliseconds or seconds)
+              if (strValue.length >= 10 &&
+                  RegExp(r'^\d+$').hasMatch(strValue)) {
+                int timestamp = int.parse(strValue);
+                // If it's in seconds (10 digits), convert to milliseconds
+                if (strValue.length == 10) {
+                  timestamp *= 1000;
+                }
+                return DateTime.fromMillisecondsSinceEpoch(timestamp);
+              }
+
+              // Try various date formats
+              final formats = [
+                {
+                  'pattern': RegExp(
+                    r'^(\d{1,2})/(\d{1,2})/(\d{4})$',
+                  ), // MM/DD/YYYY
+                  'parser':
+                      (Match match) => DateTime(
+                        int.parse(match.group(3)!), // year
+                        int.parse(match.group(1)!), // month
+                        int.parse(match.group(2)!), // day
+                      ),
+                },
+                {
+                  'pattern': RegExp(
+                    r'^(\d{4})-(\d{1,2})-(\d{1,2})$',
+                  ), // YYYY-MM-DD
+                  'parser':
+                      (Match match) => DateTime(
+                        int.parse(match.group(1)!), // year
+                        int.parse(match.group(2)!), // month
+                        int.parse(match.group(3)!), // day
+                      ),
+                },
+                {
+                  'pattern': RegExp(
+                    r'^(\d{1,2})-(\d{1,2})-(\d{4})$',
+                  ), // DD-MM-YYYY
+                  'parser':
+                      (Match match) => DateTime(
+                        int.parse(match.group(3)!), // year
+                        int.parse(match.group(2)!), // month
+                        int.parse(match.group(1)!), // day
+                      ),
+                },
+                {
+                  'pattern': RegExp(
+                    r'^(\d{1,2})\.(\d{1,2})\.(\d{4})$',
+                  ), // DD.MM.YYYY
+                  'parser':
+                      (Match match) => DateTime(
+                        int.parse(match.group(3)!), // year
+                        int.parse(match.group(2)!), // month
+                        int.parse(match.group(1)!), // day
+                      ),
+                },
+                {
+                  'pattern': RegExp(
+                    r'^(\d{4})\/(\d{1,2})\/(\d{1,2})$',
+                  ), // YYYY/MM/DD
+                  'parser':
+                      (Match match) => DateTime(
+                        int.parse(match.group(1)!), // year
+                        int.parse(match.group(2)!), // month
+                        int.parse(match.group(3)!), // day
+                      ),
+                },
+              ];
+
+              for (var format in formats) {
+                final pattern = format['pattern'] as RegExp;
+                final parser = format['parser'] as DateTime Function(Match);
+
+                if (pattern.hasMatch(strValue)) {
+                  final match = pattern.firstMatch(strValue)!;
+                  try {
+                    return parser(match);
+                  } catch (e) {
+                    debugPrint(
+                      '⚠️ Error parsing date with pattern ${pattern.pattern}: $e',
+                    );
+                    continue;
+                  }
+                }
+              }
+
+              // Try to parse as ISO string with different variations
+              final isoVariations = [
+                strValue.replaceAll(' ', 'T'), // Replace space with T
+                '${strValue}T00:00:00.000Z', // Add time if missing
+                '${strValue}Z', // Add Z if missing
+              ];
+
+              for (var variation in isoVariations) {
+                try {
+                  return DateTime.parse(variation);
+                } catch (e) {
+                  continue;
+                }
+              }
+
+              // If all else fails, return current time as fallback
+              debugPrint(
+                '⚠️ All date parsing attempts failed for: $strValue, using current time',
+              );
+              return DateTime.now();
+            } catch (e2) {
+              debugPrint(
+                '⚠️ Alternative date parsing failed: $e2 for value: $strValue, using current time',
+              );
+              return DateTime.now();
+            }
+          }
+        }
 
         // Create model from record
         coordinates.add(
@@ -110,8 +238,8 @@ class TripCoordinatesRemoteDataSourceImpl
             tripId: actualTripId,
             latitude: latitude,
             longitude: longitude,
-            created: created,
-            updated: updated,
+            created: parseDate(record.created),
+            updated: parseDate(record.updated),
           ),
         );
       }

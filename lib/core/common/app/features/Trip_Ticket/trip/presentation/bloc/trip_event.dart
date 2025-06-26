@@ -88,3 +88,28 @@ class DeleteAllTripTicketsEvent extends TripEvent {
   @override
   List<Object?> get props => [];
 }
+
+class FilterTripsByDateRangeEvent extends TripEvent {
+  final DateTime startDate;
+  final DateTime endDate;
+  
+  const FilterTripsByDateRangeEvent({
+    required this.startDate,
+    required this.endDate,
+  });
+  
+  @override
+  List<Object?> get props => [startDate, endDate];
+}
+
+class FilterTripsByUserEvent extends TripEvent {
+  final String userId;
+  
+  const FilterTripsByUserEvent(this.userId);
+  
+  @override
+  List<Object?> get props => [userId];
+}
+
+
+

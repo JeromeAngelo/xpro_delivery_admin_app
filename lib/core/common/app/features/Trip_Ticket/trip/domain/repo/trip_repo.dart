@@ -33,4 +33,17 @@ abstract class TripRepo {
   
   /// Delete all trip tickets
   ResultFuture<bool> deleteAllTripTickets();
+
+   // NEW: Filter by date range
+  ResultFuture<List<TripEntity>> filterTripsByDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
+
+  // NEW: Filter by user
+  ResultFuture<List<TripEntity>> filterTripsByUser({
+    required String userId,
+  });
+
+
 }

@@ -46,7 +46,6 @@ class CancelledInvoiceRemoteDataSourceImpl
     : _pocketBaseClient = pocketBaseClient;
 
   final PocketBase _pocketBaseClient;
-
   @override
   Future<bool> reassignTripForCancelledInvoice(String deliveryDataId) async {
     try {
@@ -54,31 +53,91 @@ class CancelledInvoiceRemoteDataSourceImpl
         '🔄 Reassigning trip for cancelled invoice with delivery data ID: $deliveryDataId',
       );
 
-      // Update the delivery data to remove trip assignment
+      // Step 1: Update the delivery data to remove trip assignment
       await _pocketBaseClient
           .collection('deliveryData')
           .update(
             deliveryDataId,
             body: {
               'hasTrip': false,
+              'deliveryUpdates': null,
               'trip': null,
               'updated': DateTime.now().toUtc().toIso8601String(),
             },
           );
 
-      debugPrint(
-        '✅ Successfully reassigned trip for delivery data: $deliveryDataId',
-      );
-      debugPrint('📋 Updated fields:');
+      debugPrint('✅ Successfully updated delivery data: $deliveryDataId');
+      debugPrint('📋 Updated delivery data fields:');
       debugPrint('   - hasTrip: false');
       debugPrint('   - trip: null');
       debugPrint('   - updated: ${DateTime.now().toUtc().toIso8601String()}');
+
+      // Step 2: Find and update the cancelled invoice with matching deliveryData
+      debugPrint(
+        '🔍 Searching for cancelled invoice with deliveryData: $deliveryDataId',
+      );
+
+      final cancelledInvoiceRecords = await _pocketBaseClient
+          .collection('cancelledInvoice')
+          .getFullList(filter: 'deliveryData = "$deliveryDataId"');
+
+      if (cancelledInvoiceRecords.isEmpty) {
+        debugPrint(
+          '⚠️ No cancelled invoice found with deliveryData: $deliveryDataId',
+        );
+        // Still return true as the delivery data was updated successfully
+        return true;
+      }
+
+      debugPrint(
+        '📋 Found ${cancelledInvoiceRecords.length} cancelled invoice(s) to update',
+      );
+
+      // Step 3: Update each found cancelled invoice
+      for (var cancelledInvoiceRecord in cancelledInvoiceRecords) {
+        debugPrint(
+          '🔄 Updating cancelled invoice: ${cancelledInvoiceRecord.id}',
+        );
+
+        await _pocketBaseClient
+            .collection('cancelledInvoice')
+            .update(
+              cancelledInvoiceRecord.id,
+              body: {
+                'reason': 'rescheduled', // Change reason to rescheduled
+                'trip': null, // Remove trip reference
+                'updated': DateTime.now().toUtc().toIso8601String(),
+              },
+            );
+
+        debugPrint(
+          '✅ Successfully updated cancelled invoice: ${cancelledInvoiceRecord.id}',
+        );
+        debugPrint('📋 Updated cancelled invoice fields:');
+        debugPrint('   - reason: rescheduled');
+        debugPrint('   - trip: null');
+        debugPrint('   - updated: ${DateTime.now().toUtc().toIso8601String()}');
+      }
+
+      debugPrint(
+        '🎉 Successfully completed reassignment process for delivery data: $deliveryDataId',
+      );
+      debugPrint('📊 Summary:');
+      debugPrint('   - Delivery data updated: ✅');
+      debugPrint(
+        '   - Cancelled invoices updated: ${cancelledInvoiceRecords.length}',
+      );
+      debugPrint('   - All invoices marked as rescheduled: ✅');
 
       return true;
     } catch (e) {
       debugPrint(
         '❌ Failed to reassign trip for cancelled invoice: ${e.toString()}',
       );
+      debugPrint('🔍 Error details:');
+      debugPrint('   - Delivery Data ID: $deliveryDataId');
+      debugPrint('   - Error: ${e.toString()}');
+
       throw ServerException(
         message:
             'Failed to reassign trip for cancelled invoice: ${e.toString()}',

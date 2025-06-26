@@ -42,6 +42,11 @@ class TripDataTable extends StatefulWidget {
 class _TripDataTableState extends State<TripDataTable> {
   List<int> _selectedRows = [];
 
+  DateTime? _filterStartDate;
+  DateTime? _filterEndDate;
+
+  
+
   @override
   Widget build(BuildContext context) {
     final headerStyle = TextStyle(
@@ -50,11 +55,13 @@ class _TripDataTableState extends State<TripDataTable> {
     );
 
     return DataTableLayout(
+
       title: 'Trip Tickets',
       searchBar: TripSearchBar(
         controller: widget.searchController,
         searchQuery: widget.searchQuery,
         onSearchChanged: widget.onSearchChanged,
+      
       ),
       onCreatePressed: () {
         context.go('/tripticket-create');

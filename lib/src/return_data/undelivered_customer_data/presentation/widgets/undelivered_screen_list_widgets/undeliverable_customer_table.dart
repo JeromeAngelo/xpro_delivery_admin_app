@@ -33,7 +33,8 @@ class UndeliveredCustomerTable extends StatefulWidget {
   });
 
   @override
-  State<UndeliveredCustomerTable> createState() => _UndeliveredCustomerTableState();
+  State<UndeliveredCustomerTable> createState() =>
+      _UndeliveredCustomerTableState();
 }
 
 class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
@@ -55,22 +56,35 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
         if (state is CancelledInvoiceTripReassigned) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                'Successfully reassigned ${_selectedRows.length} invoice(s) to trip',
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Successfully reassigned delivery: ${state.deliveryDataId}',
+                    ),
+                  ),
+                ],
               ),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
             ),
           );
-          // Clear selection after successful reassignment
-          setState(() {
-            _selectedRows.clear();
-            _selectAll = false;
-          });
+
+          context.go('/tripticket-create');
         } else if (state is CancelledInvoiceError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: ${state.message}'),
+              content: Row(
+                children: [
+                  Icon(Icons.error, color: Colors.white),
+                  SizedBox(width: 8),
+                  Expanded(child: Text('Error: ${state.message}')),
+                ],
+              ),
               backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
             ),
           );
         }
@@ -83,7 +97,6 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
           onSearchChanged: widget.onSearchChanged,
         ),
         onCreatePressed: () {
-          // Navigate to create undeliverable customer screen
           context.go('/undeliverable-customers/create');
         },
         createButtonText: 'Add Undeliverable Customer',
@@ -94,20 +107,36 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
         onPageChanged: widget.onPageChanged,
         isLoading: widget.isLoading,
         onFiltered: () {
-          // Show filter dialog
           _showFilterDialog(context);
         },
         dataLength: '${widget.cancelledInvoices.length}',
         onDeleted: () {
           _showBulkDeleteDialog(context);
         },
-        
-        // NEW: Custom action for re-assigning trips
+
+        // Add this callback to sync selection states
+        onRowsSelected: (selectedRowIndices) {
+          setState(() {
+            _selectedRows.clear();
+            for (int index in selectedRowIndices) {
+              if (index < widget.cancelledInvoices.length) {
+                final invoice = widget.cancelledInvoices[index];
+                if (invoice.id != null) {
+                  _selectedRows.add(invoice.id!);
+                }
+              }
+            }
+            _selectAll =
+                _selectedRows.length == widget.cancelledInvoices.length;
+          });
+        },
+
+        // Custom action for bulk reassign
         showCustomAction: true,
         customActionIcon: Icons.assignment_return,
         customActionTooltip: 'Re-assign Selected to Trip',
         customActionColor: Colors.orange,
-        onCustomAction: () => _showBulkReassignDialog(context),
+        onCustomAction: _handleBulkReassignFromTable,
       ),
     );
   }
@@ -115,24 +144,6 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
   List<DataColumn> _buildColumns() {
     return [
       // Select All Checkbox
-      DataColumn(
-        label: Checkbox(
-          value: _selectAll,
-          onChanged: (value) {
-            setState(() {
-              _selectAll = value ?? false;
-              if (_selectAll) {
-                _selectedRows = widget.cancelledInvoices
-                    .where((invoice) => invoice.id != null)
-                    .map((invoice) => invoice.id!)
-                    .toSet();
-              } else {
-                _selectedRows.clear();
-              }
-            });
-          },
-        ),
-      ),
       const DataColumn(label: Text('Store Name')),
       const DataColumn(label: Text('Delivery Number')),
       const DataColumn(label: Text('Address')),
@@ -145,7 +156,7 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
   List<DataRow> _buildRows() {
     return widget.cancelledInvoices.map((cancelledInvoice) {
       final isSelected = _selectedRows.contains(cancelledInvoice.id);
-      
+
       return DataRow(
         selected: isSelected,
         onSelectChanged: (selected) {
@@ -156,63 +167,52 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
               } else {
                 _selectedRows.remove(cancelledInvoice.id!);
               }
-              _selectAll = _selectedRows.length == widget.cancelledInvoices.length;
+              _selectAll =
+                  _selectedRows.length == widget.cancelledInvoices.length;
             });
           }
         },
         cells: [
           // Checkbox Cell
           DataCell(
-            Checkbox(
-              value: isSelected,
-              onChanged: (selected) {
-                if (cancelledInvoice.id != null) {
-                  setState(() {
-                    if (selected == true) {
-                      _selectedRows.add(cancelledInvoice.id!);
-                    } else {
-                      _selectedRows.remove(cancelledInvoice.id!);
-                    }
-                    _selectAll = _selectedRows.length == widget.cancelledInvoices.length;
-                  });
-                }
-              },
-            ),
-          ),
-          DataCell(
             Text(cancelledInvoice.customer?.name ?? 'N/A'),
-            onTap: () => _onNavigateToSpecificCancelledInvoice(
-              cancelledInvoice,
-              context,
-            ),
+            onTap:
+                () => _onNavigateToSpecificCancelledInvoice(
+                  cancelledInvoice,
+                  context,
+                ),
           ),
           DataCell(
             Text(cancelledInvoice.deliveryData?.deliveryNumber ?? 'N/A'),
-            onTap: () => _onNavigateToSpecificCancelledInvoice(
-              cancelledInvoice,
-              context,
-            ),
+            onTap:
+                () => _onNavigateToSpecificCancelledInvoice(
+                  cancelledInvoice,
+                  context,
+                ),
           ),
           DataCell(
             Text(_formatAddress(cancelledInvoice)),
-            onTap: () => _onNavigateToSpecificCancelledInvoice(
-              cancelledInvoice,
-              context,
-            ),
+            onTap:
+                () => _onNavigateToSpecificCancelledInvoice(
+                  cancelledInvoice,
+                  context,
+                ),
           ),
           DataCell(
             _buildReasonChip(cancelledInvoice.reason),
-            onTap: () => _onNavigateToSpecificCancelledInvoice(
-              cancelledInvoice,
-              context,
-            ),
+            onTap:
+                () => _onNavigateToSpecificCancelledInvoice(
+                  cancelledInvoice,
+                  context,
+                ),
           ),
           DataCell(
             Text(_formatDate(cancelledInvoice.created)),
-            onTap: () => _onNavigateToSpecificCancelledInvoice(
-              cancelledInvoice,
-              context,
-            ),
+            onTap:
+                () => _onNavigateToSpecificCancelledInvoice(
+                  cancelledInvoice,
+                  context,
+                ),
           ),
           DataCell(
             Row(
@@ -230,7 +230,10 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.assignment_return, color: Colors.orange),
+                  icon: const Icon(
+                    Icons.assignment_return,
+                    color: Colors.orange,
+                  ),
                   tooltip: 'Re-assign to Trip',
                   onPressed: () {
                     _showSingleReassignDialog(context, cancelledInvoice);
@@ -253,10 +256,7 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
                   tooltip: 'Delete',
                   onPressed: () {
                     // Show confirmation dialog before deleting
-                    _showDeleteConfirmationDialog(
-                      context,
-                      cancelledInvoice,
-                    );
+                    _showDeleteConfirmationDialog(context, cancelledInvoice);
                   },
                 ),
               ],
@@ -267,8 +267,8 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
     }).toList();
   }
 
-  // NEW: Show bulk re-assign dialog
-  void _showBulkReassignDialog(BuildContext context) {
+  // Add this method to handle bulk reassign from DataTableLayout's custom action
+  void _handleBulkReassignFromTable() {
     if (_selectedRows.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -279,53 +279,146 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
       return;
     }
 
-    final selectedInvoices = widget.cancelledInvoices
-        .where((invoice) => _selectedRows.contains(invoice.id))
-        .toList();
+    final selectedInvoices =
+        widget.cancelledInvoices
+            .where((invoice) => _selectedRows.contains(invoice.id))
+            .toList();
+
+    _showBulkReassignDialog(context, selectedInvoices);
+  }
+
+  // Update the existing _showBulkReassignDialog to accept selectedInvoices parameter
+  void _showBulkReassignDialog(
+    BuildContext context, [
+    List<CancelledInvoiceEntity>? selectedInvoices,
+  ]) {
+    final invoicesToProcess =
+        selectedInvoices ??
+        widget.cancelledInvoices
+            .where((invoice) => _selectedRows.contains(invoice.id))
+            .toList();
+
+    if (invoicesToProcess.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one invoice to re-assign'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Re-assign to Trip'),
+          title: Row(
+            children: [
+              Icon(Icons.assignment_return, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Re-assign to Trip'),
+            ],
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Are you sure you want to re-assign ${_selectedRows.length} cancelled invoice(s) back to their respective trips?',
+                  'Are you sure you want to re-assign ${invoicesToProcess.length} cancelled invoice(s) back to their respective trips?',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: Colors.orange[50],
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange[200]!),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Selected Invoices:',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.orange[700],
+                            size: 16,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Selected Invoices (${invoicesToProcess.length}):',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange[700],
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
-                      ...selectedInvoices.take(5).map((invoice) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Text(
-                          '• ${invoice.customer?.name ?? 'Unknown'} - ${invoice.invoice?.name ?? 'N/A'}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      )),
-                      if (selectedInvoices.length > 5)
-                        Text(
-                          '... and ${selectedInvoices.length - 5} more',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontStyle: FontStyle.italic,
+                      ...invoicesToProcess
+                          .take(5)
+                          .map(
+                            (invoice) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.arrow_right,
+                                    size: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                  SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      '${invoice.customer?.name ?? 'Unknown'} - ${invoice.invoice?.name ?? 'N/A'}',
+                                      style:
+                                          Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      if (invoicesToProcess.length > 5)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '... and ${invoicesToProcess.length - 5} more invoices',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(
+                              fontStyle: FontStyle.italic,
+                              color: Colors.grey[600],
+                            ),
                           ),
                         ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline,
+                        color: Colors.blue[700],
+                        size: 16,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This will mark all selected invoices as "rescheduled" and make them available for delivery again.',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.blue[700]),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -337,16 +430,17 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                _performBulkReassign(context, selectedInvoices);
+                _performBulkReassign(context, invoicesToProcess);
               },
+              icon: const Icon(Icons.assignment_return),
+              label: Text('Re-assign ${invoicesToProcess.length} Invoice(s)'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Re-assign All'),
             ),
           ],
         );
@@ -354,8 +448,69 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
     );
   }
 
+  // Update the existing _performBulkReassign method
+  void _performBulkReassign(
+    BuildContext context,
+    List<CancelledInvoiceEntity> invoices,
+  ) {
+    debugPrint('🔄 Starting bulk reassign for ${invoices.length} invoices');
+
+    int successCount = 0;
+    int errorCount = 0;
+
+    for (var invoice in invoices) {
+      if (invoice.deliveryData?.id != null) {
+        debugPrint(
+          '📋 Reassigning invoice: ${invoice.invoice?.name} (DeliveryData: ${invoice.deliveryData!.id})',
+        );
+
+        context.read<CancelledInvoiceBloc>().add(
+          ReassignTripForCancelledInvoiceEvent(invoice.deliveryData!.id!),
+        );
+        successCount++;
+      } else {
+        debugPrint(
+          '⚠️ Skipping invoice ${invoice.invoice?.name}: No delivery data ID',
+        );
+        errorCount++;
+      }
+    }
+
+    // Show summary message
+    if (errorCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Processing ${successCount} invoices. ${errorCount} invoices skipped (missing delivery data).',
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Processing ${successCount} invoices for reassignment...',
+          ),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+
+    // Clear selection after initiating bulk action
+    setState(() {
+      _selectedRows.clear();
+      _selectAll = false;
+    });
+  }
+
   // NEW: Show single re-assign dialog
-  void _showSingleReassignDialog(BuildContext context, CancelledInvoiceEntity cancelledInvoice) {
+  void _showSingleReassignDialog(
+    BuildContext context,
+    CancelledInvoiceEntity cancelledInvoice,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -383,8 +538,12 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
                       'Invoice: ${cancelledInvoice.invoice?.name ?? 'N/A'}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    Text('Customer: ${cancelledInvoice.customer?.name ?? 'N/A'}'),
-                    Text('Trip: ${cancelledInvoice.trip?.tripNumberId ?? 'N/A'}'),
+                    Text(
+                      'Customer: ${cancelledInvoice.customer?.name ?? 'N/A'}',
+                    ),
+                    Text(
+                      'Trip: ${cancelledInvoice.trip?.tripNumberId ?? 'N/A'}',
+                    ),
                   ],
                 ),
               ),
@@ -412,22 +571,16 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
     );
   }
 
-  // NEW: Perform bulk re-assign
-  void _performBulkReassign(BuildContext context, List<CancelledInvoiceEntity> invoices) {
-    for (var invoice in invoices) {
-      if (invoice.deliveryData?.id != null) {
-        context.read<CancelledInvoiceBloc>().add(
-          ReassignTripForCancelledInvoiceEvent(invoice.deliveryData!.id!),
-        );
-      }
-    }
-  }
-
   // NEW: Perform single re-assign
-  void _performSingleReassign(BuildContext context, CancelledInvoiceEntity cancelledInvoice) {
+  void _performSingleReassign(
+    BuildContext context,
+    CancelledInvoiceEntity cancelledInvoice,
+  ) {
     if (cancelledInvoice.deliveryData?.id != null) {
       context.read<CancelledInvoiceBloc>().add(
-        ReassignTripForCancelledInvoiceEvent(cancelledInvoice.deliveryData!.id!),
+        ReassignTripForCancelledInvoiceEvent(
+          cancelledInvoice.deliveryData!.id!,
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -564,7 +717,9 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
                       'Customer: ${cancelledInvoice.customer?.name ?? 'N/A'}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    Text('Delivery Number: ${cancelledInvoice.deliveryData?.deliveryNumber ?? 'N/A'}'),
+                    Text(
+                      'Delivery Number: ${cancelledInvoice.deliveryData?.deliveryNumber ?? 'N/A'}',
+                    ),
                     Text('Reason: ${cancelledInvoice.reason?.name ?? 'N/A'}'),
                   ],
                 ),
@@ -622,14 +777,16 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
       case UndeliverableReason.environmentalIssues:
         chipColor = Colors.red;
         break;
+
       case UndeliverableReason.none:
         chipColor = Colors.purple;
         break;
       case UndeliverableReason.storeClosed:
         chipColor = Colors.blue;
         break;
-     
-      
+      case UndeliverableReason.rescheduled:
+        chipColor = Colors.green;
+        break;
     }
 
     return Chip(
@@ -649,7 +806,7 @@ class _UndeliveredCustomerTableState extends State<UndeliveredCustomerTable> {
     if (customer == null) return 'N/A';
 
     final parts = <String>[];
-  
+
     if (customer.municipality != null && customer.municipality!.isNotEmpty) {
       parts.add(customer.municipality!);
     }

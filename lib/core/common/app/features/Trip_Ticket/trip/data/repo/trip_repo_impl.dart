@@ -129,4 +129,47 @@ class TripRepoImpl implements TripRepo {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     }
   }
+  
+@override
+ResultFuture<List<TripEntity>> filterTripsByDateRange({
+  required DateTime startDate,
+  required DateTime endDate,
+}) async {
+  try {
+    debugPrint('🔄 REPO: Filtering trips by date range');
+    debugPrint('📅 REPO: Start Date: ${startDate.toIso8601String()}');
+    debugPrint('📅 REPO: End Date: ${endDate.toIso8601String()}');
+    
+    final remoteTrips = await _remoteDatasource.filterTripsByDateRange(
+      startDate: startDate,
+      endDate: endDate,
+    );
+    
+    debugPrint('✅ REPO: Successfully retrieved ${remoteTrips.length} trips by date range');
+    return Right(remoteTrips);
+  } on ServerException catch (e) {
+    debugPrint('❌ REPO: Server error filtering by date range: ${e.message}');
+    return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+  }
+}
+
+@override
+ResultFuture<List<TripEntity>> filterTripsByUser({
+  required String userId,
+}) async {
+  try {
+    debugPrint('🔄 REPO: Filtering trips by user ID: $userId');
+    
+    final remoteTrips = await _remoteDatasource.filterTripsByUser(
+      userId: userId,
+    );
+    
+    debugPrint('✅ REPO: Successfully retrieved ${remoteTrips.length} trips for user: $userId');
+    return Right(remoteTrips);
+  } on ServerException catch (e) {
+    debugPrint('❌ REPO: Server error filtering by user: ${e.message}');
+    return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+  }
+}
+
 }

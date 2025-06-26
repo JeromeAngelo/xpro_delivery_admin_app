@@ -33,7 +33,7 @@ class CancelledInvoiceDashboardWidget extends StatelessWidget {
       DashboardInfoItem(
         icon: Icons.person,
         value: cancelledInvoice.customer?.name ?? 'Unknown Customer',
-        label: 'Customer Name',
+        label: 'Store Name',
         iconColor: Colors.blue,
       ),
 
@@ -41,7 +41,7 @@ class CancelledInvoiceDashboardWidget extends StatelessWidget {
       DashboardInfoItem(
         icon: Icons.store,
         value: cancelledInvoice.customer?.ownerName ?? 'N/A',
-        label: 'Store Name',
+        label: 'Customer Name',
         iconColor: Colors.green,
       ),
 

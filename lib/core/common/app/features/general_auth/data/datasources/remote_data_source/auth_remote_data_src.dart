@@ -549,6 +549,27 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
 
       debugPrint('✅ User created successfully: ${record.id}');
 
+      // Create user performance record
+      try {
+        debugPrint(
+          '🔄 Creating user performance record for user: ${record.id}',
+        );
+
+        final performanceData = {'user': record.id};
+
+        await _pocketBaseClient
+            .collection('user_performance')
+            .create(body: performanceData);
+
+        debugPrint('✅ User performance record created successfully');
+      } catch (performanceError) {
+        debugPrint(
+          '⚠️ Failed to create user performance record: ${performanceError.toString()}',
+        );
+        // Note: We don't throw here to avoid failing the entire user creation
+        // The user was created successfully, but performance record creation failed
+      }
+
       // Fetch the created record with expanded relations
       return getUserById(record.id);
     } catch (e) {

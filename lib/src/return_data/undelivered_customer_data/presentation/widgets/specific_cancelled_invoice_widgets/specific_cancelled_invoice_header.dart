@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cancelled_invoices/domain/entity/cancelled_invoice_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cancelled_invoices/presentation/bloc/cancelled_invoice_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cancelled_invoices/presentation/bloc/cancelled_invoice_event.dart';
@@ -23,9 +24,7 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -41,7 +40,9 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
                     children: [
                       Text(
                         'Cancelled Invoice',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.red[700],
                         ),
@@ -50,7 +51,9 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
                       Text(
                         cancelledInvoice.invoice?.name ?? 'N/A',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -71,6 +74,7 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
                               backgroundColor: Colors.green,
                             ),
                           );
+                          context.go('/tripticket-create');
                         } else if (state is CancelledInvoiceError) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -82,16 +86,22 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
                       },
                       builder: (context, state) {
                         final isLoading = state is CancelledInvoiceLoading;
-                        
+
                         return ElevatedButton.icon(
-                          onPressed: isLoading ? null : () => _showReassignDialog(context),
-                          icon: isLoading 
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.assignment_return),
+                          onPressed:
+                              isLoading
+                                  ? null
+                                  : () => _showReassignDialog(context),
+                          icon:
+                              isLoading
+                                  ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                  : const Icon(Icons.assignment_return),
                           label: const Text('Re-assign to Trip'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
@@ -101,18 +111,20 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
                       },
                     ),
                     const SizedBox(width: 8),
-                    
+
                     // View Image Button
-                    if (cancelledInvoice.image != null && cancelledInvoice.image!.isNotEmpty)
+                    if (cancelledInvoice.image != null &&
+                        cancelledInvoice.image!.isNotEmpty)
                       IconButton(
                         icon: const Icon(Icons.image),
                         tooltip: 'View Image',
                         onPressed: onViewImagePressed,
                         style: IconButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                    
+
                     // Edit Button
                     if (onEditPressed != null)
                       IconButton(
@@ -120,10 +132,11 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
                         tooltip: 'Edit',
                         onPressed: onEditPressed,
                         style: IconButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                    
+
                     // Delete Button
                     if (onDeletePressed != null)
                       IconButton(
@@ -138,9 +151,9 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Status and Info Row
             Row(
               children: [
@@ -155,9 +168,9 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
                   ),
                   backgroundColor: Colors.red[600],
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
                 // Customer Info
                 Expanded(
                   child: Column(
@@ -172,13 +185,15 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
                       Text(
                         'Store: ${cancelledInvoice.customer?.ownerName ?? 'N/A'}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Amount Info
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -186,7 +201,9 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
                     Text(
                       'Amount',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.7),
                       ),
                     ),
                     Text(
@@ -234,8 +251,12 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
                       'Invoice: ${cancelledInvoice.invoice?.name ?? 'N/A'}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    Text('Customer: ${cancelledInvoice.customer?.name ?? 'N/A'}'),
-                    Text('Trip: ${cancelledInvoice.trip?.tripNumberId ?? 'N/A'}'),
+                    Text(
+                      'Customer: ${cancelledInvoice.customer?.name ?? 'N/A'}',
+                    ),
+                    Text(
+                      'Trip: ${cancelledInvoice.trip?.tripNumberId ?? 'N/A'}',
+                    ),
                   ],
                 ),
               ),
@@ -266,8 +287,12 @@ class CancelledInvoiceHeaderWidget extends StatelessWidget {
   void _reassignToTrip(BuildContext context) {
     if (cancelledInvoice.deliveryData?.id != null) {
       context.read<CancelledInvoiceBloc>().add(
-        ReassignTripForCancelledInvoiceEvent(cancelledInvoice.deliveryData!.id!),
+        ReassignTripForCancelledInvoiceEvent(
+          cancelledInvoice.deliveryData!.id!,
+        ),
       );
+
+      context.go('/tripticket-create');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

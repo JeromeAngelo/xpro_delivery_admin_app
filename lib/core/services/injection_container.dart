@@ -240,6 +240,8 @@ import '../common/app/features/Trip_Ticket/collection/domain/usecases/get_collec
 import '../common/app/features/Trip_Ticket/delivery_data/domain/usecases/get_all_delivery_data_with_trips.dart';
 import '../common/app/features/Trip_Ticket/delivery_receipt/data/repo/delivery_receipt_repo_impl.dart';
 import '../common/app/features/Trip_Ticket/delivery_receipt/domain/repo/delivery_receipt_repo.dart';
+import '../common/app/features/Trip_Ticket/trip/domain/usecase/filter_trips_by_user.dart';
+import '../common/app/features/Trip_Ticket/trip/domain/usecase/fiter_trips_by_data_range.dart';
 
 final sl = GetIt.instance;
 final pb = PocketBase('http://172.16.0.175:8090');
@@ -709,6 +711,8 @@ Future<void> initTrip() async {
       updateTripTicket: sl(),
       deleteTripTicket: sl(),
       deleteAllTripTickets: sl(),
+      filterTripsByDateRange: sl(),
+      filterTripsByUser: sl(),
     ),
   );
 
@@ -720,6 +724,8 @@ Future<void> initTrip() async {
   sl.registerLazySingleton(() => UpdateTripTicket(sl()));
   sl.registerLazySingleton(() => DeleteTripTicket(sl()));
   sl.registerLazySingleton(() => DeleteAllTripTickets(sl()));
+  sl.registerLazySingleton(() => FilterTripsByDateRange(sl())); // (start, end
+  sl.registerLazySingleton(() => FilterTripsByUser(sl())); // (userId,)
 
   // Repository
   sl.registerLazySingleton<TripRepo>(() => TripRepoImpl(sl()));

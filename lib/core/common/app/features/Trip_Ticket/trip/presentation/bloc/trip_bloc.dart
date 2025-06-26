@@ -11,6 +11,9 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/tri
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/usecase/filter_trips_by_user.dart';
+import '../../domain/usecase/fiter_trips_by_data_range.dart';
+
 class TripBloc extends Bloc<TripEvent, TripState> {
   final GetAllTripTickets _getAllTripTickets;
   final CreateTripTicket _createTripTicket;
@@ -19,6 +22,8 @@ class TripBloc extends Bloc<TripEvent, TripState> {
   final UpdateTripTicket _updateTripTicket;
   final DeleteTripTicket _deleteTripTicket;
   final DeleteAllTripTickets _deleteAllTripTickets;
+  final FilterTripsByDateRange _filterTripsByDateRange; // NEW
+  final FilterTripsByUser _filterTripsByUser; // NEW
 
   TripBloc({
     required GetAllTripTickets getAllTripTickets,
@@ -28,6 +33,8 @@ class TripBloc extends Bloc<TripEvent, TripState> {
     required UpdateTripTicket updateTripTicket,
     required DeleteTripTicket deleteTripTicket,
     required DeleteAllTripTickets deleteAllTripTickets,
+    required FilterTripsByDateRange filterTripsByDateRange, // NEW
+    required FilterTripsByUser filterTripsByUser, // NEW
   })  : _getAllTripTickets = getAllTripTickets,
         _createTripTicket = createTripTicket,
         _searchTripTickets = searchTripTickets,
@@ -35,6 +42,8 @@ class TripBloc extends Bloc<TripEvent, TripState> {
         _updateTripTicket = updateTripTicket,
         _deleteTripTicket = deleteTripTicket,
         _deleteAllTripTickets = deleteAllTripTickets,
+        _filterTripsByDateRange = filterTripsByDateRange, // NEW
+        _filterTripsByUser = filterTripsByUser, // NEW
         super(TripInitial()) {
     on<GetAllTripTicketsEvent>(_onGetAllTripTickets);
     on<CreateTripTicketEvent>(_onCreateTripTicket);
@@ -43,6 +52,70 @@ class TripBloc extends Bloc<TripEvent, TripState> {
     on<UpdateTripTicketEvent>(_onUpdateTripTicket);
     on<DeleteTripTicketEvent>(_onDeleteTripTicket);
     on<DeleteAllTripTicketsEvent>(_onDeleteAllTripTickets);
+    on<FilterTripsByDateRangeEvent>(_onFilterTripsByDateRange); // NEW
+    on<FilterTripsByUserEvent>(_onFilterTripsByUser); // NEW
+  }
+
+
+  // Add these event handler methods
+  Future<void> _onFilterTripsByDateRange(
+    FilterTripsByDateRangeEvent event,
+    Emitter<TripState> emit,
+  ) async {
+    debugPrint('🔄 BLOC: Filtering trips by date range');
+    debugPrint('📅 BLOC: Start Date: ${event.startDate.toIso8601String()}');
+    debugPrint('📅 BLOC: End Date: ${event.endDate.toIso8601String()}');
+    emit(TripLoading());
+
+    final result = await _filterTripsByDateRange(
+      FilterTripsByDateRangeParams(
+        startDate: event.startDate,
+        endDate: event.endDate,
+      ),
+    );
+
+    result.fold(
+      (failure) {
+        debugPrint('❌ BLOC: Failed to filter trips by date range: ${failure.message}');
+        emit(TripError(failure.message));
+      },
+      (trips) {
+        debugPrint('✅ BLOC: Successfully filtered ${trips.length} trips by date range');
+        emit(TripsFilteredByDateRange(
+          trips: trips,
+          startDate: event.startDate,
+          endDate: event.endDate,
+        ));
+      },
+    );
+  }
+
+  Future<void> _onFilterTripsByUser(
+    FilterTripsByUserEvent event,
+    Emitter<TripState> emit,
+  ) async {
+    debugPrint('🔄 BLOC: Filtering trips by user: ${event.userId}');
+    emit(TripLoading());
+
+    final result = await _filterTripsByUser(
+      FilterTripsByUserParams(
+        userId: event.userId,
+      ),
+    );
+
+    result.fold(
+      (failure) {
+        debugPrint('❌ BLOC: Failed to filter trips by user: ${failure.message}');
+        emit(TripError(failure.message));
+      },
+      (trips) {
+        debugPrint('✅ BLOC: Successfully filtered ${trips.length} trips for user: ${event.userId}');
+        emit(TripsFilteredByUser(
+          trips: trips,
+          userId: event.userId,
+        ));
+      },
+    );
   }
 
   Future<void> _onGetAllTripTickets(

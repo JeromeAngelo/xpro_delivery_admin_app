@@ -76,3 +76,32 @@ class TripError extends TripState {
   @override
   List<Object?> get props => [message];
 }
+
+class TripsFilteredByDateRange extends TripState {
+  final List<TripEntity> trips;
+  final DateTime startDate;
+  final DateTime endDate;
+  
+  const TripsFilteredByDateRange({
+    required this.trips,
+    required this.startDate,
+    required this.endDate,
+  });
+  
+  @override
+  List<Object?> get props => [trips, startDate, endDate];
+}
+
+class TripsFilteredByUser extends TripState {
+  final List<TripEntity> trips;
+  final String userId;
+  
+  const TripsFilteredByUser({
+    required this.trips,
+    required this.userId,
+  });
+  
+  @override
+  List<Object?> get props => [trips, userId];
+}
+

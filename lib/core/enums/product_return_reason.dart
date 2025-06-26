@@ -6,4 +6,5 @@ enum ProductReturnReason {
   wrongQuantity,
   dented,
   other,
+  rescheduled
 }

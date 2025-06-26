@@ -40,6 +40,9 @@ class ReturnStatusChip extends StatelessWidget {
           color = Colors.amber;
           label = 'Dented';
           break;
+          case ProductReturnReason.rescheduled:
+          color = Colors.green;
+          label = 'Rescheduled';
         case ProductReturnReason.other:
           color = Colors.teal;
           label = 'Other';
