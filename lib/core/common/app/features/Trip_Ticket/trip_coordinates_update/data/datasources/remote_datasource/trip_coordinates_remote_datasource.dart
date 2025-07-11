@@ -39,7 +39,7 @@ class TripCoordinatesRemoteDataSourceImpl
 
       // Get coordinates using trip ID
       final List<RecordModel> records = await _pocketBaseClient
-          .collection('trip_coordinates_updates')
+          .collection('tripCoordinatesUpdates')
           .getFullList(
             filter: 'trip = "$actualTripId"',
             expand: 'trip',

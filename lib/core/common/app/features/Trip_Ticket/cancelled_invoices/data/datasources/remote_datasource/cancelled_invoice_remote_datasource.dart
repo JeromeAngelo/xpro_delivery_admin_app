@@ -673,7 +673,7 @@ class CancelledInvoiceRemoteDataSourceImpl
 
       // Get delivery team for this trip
       final deliveryTeamRecords = await _pocketBaseClient
-          .collection('delivery_team')
+          .collection('deliveryTeam')
           .getFullList(filter: 'tripTicket = "$tripId"');
 
       if (deliveryTeamRecords.isEmpty) {
@@ -690,7 +690,7 @@ class CancelledInvoiceRemoteDataSourceImpl
 
       // Update delivery team with new undelivered count
       await _pocketBaseClient
-          .collection('delivery_team')
+          .collection('deliveryTeam')
           .update(
             deliveryTeam.id,
             body: {

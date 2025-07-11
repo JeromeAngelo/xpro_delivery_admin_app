@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/models/delivery_update_model.dart';
 import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:pocketbase/pocketbase.dart';
+
+import '../../models/delivery_update_model.dart';
 
 
 abstract class DeliveryUpdateDatasource {
@@ -223,7 +224,7 @@ class DeliveryUpdateDatasourceImpl implements DeliveryUpdateDatasource {
       // Create delivery update with validated data
       final currentTime = DateTime.now().toIso8601String();
       final deliveryUpdateRecord =
-          await _pocketBaseClient.collection('delivery_update').create(body: {
+          await _pocketBaseClient.collection('deliveryUpdate').create(body: {
         'customer': customerId,
         'status': statusId,
         'title': statusRecord.data['title'],
@@ -339,7 +340,7 @@ Future<DataMap> checkEndDeliverStatus(String tripId) async {
         if (!hasPendingStatus) {
           final currentTime = DateTime.now().toIso8601String();
           final deliveryUpdateRecord = await _pocketBaseClient
-              .collection('delivery_update')
+              .collection('deliveryUpdate')
               .create(body: {
             'customer': customerId,
             'status': pendingStatus.id,
@@ -393,7 +394,7 @@ Future<DataMap> checkEndDeliverStatus(String tripId) async {
       }
 
       final deliveryUpdateRecord =
-          await _pocketBaseClient.collection('delivery_update').create(
+          await _pocketBaseClient.collection('deliveryUpdate').create(
         body: {
           'customer': customerId,
           'title': title,
@@ -429,7 +430,7 @@ Future<DataMap> checkEndDeliverStatus(String tripId) async {
       debugPrint('🔄 Getting all delivery updates');
       
       final records = await _pocketBaseClient
-          .collection('delivery_update')
+          .collection('deliveryUpdate')
           .getFullList(
             expand: 'customer',
           );
@@ -496,12 +497,12 @@ Future<DataMap> checkEndDeliverStatus(String tripId) async {
         files['image'] = MultipartFile.fromBytes(
           'image',
           imageBytes,
-          filename: 'delivery_update_image.jpg',
+          filename: 'deliveryUpdate_image.jpg',
         );
       }
       
       final record = await _pocketBaseClient
-          .collection('delivery_update')
+          .collection('deliveryUpdate')
           .create(
             body: body,
           );
@@ -516,7 +517,7 @@ Future<DataMap> checkEndDeliverStatus(String tripId) async {
       
       // Fetch the created record with expanded relations
       final createdRecord = await _pocketBaseClient
-          .collection('delivery_update')
+          .collection('deliveryUpdate')
           .getOne(
             record.id,
             expand: 'customer',
@@ -582,12 +583,12 @@ Future<DataMap> checkEndDeliverStatus(String tripId) async {
         files['image'] = MultipartFile.fromBytes(
           'image',
           imageBytes,
-          filename: 'delivery_update_image.jpg',
+          filename: 'deliveryUpdate_image.jpg',
         );
       }
       
       await _pocketBaseClient
-          .collection('delivery_update')
+          .collection('deliveryUpdate')
           .update(
             id,
             body: body,
@@ -595,7 +596,7 @@ Future<DataMap> checkEndDeliverStatus(String tripId) async {
       
       // Fetch the updated record with expanded relations
       final updatedRecord = await _pocketBaseClient
-          .collection('delivery_update')
+          .collection('deliveryUpdate')
           .getOne(
             id,
             expand: 'customer',
@@ -637,13 +638,13 @@ Future<DataMap> checkEndDeliverStatus(String tripId) async {
       
       // Get the delivery update to find the customer ID
       final record = await _pocketBaseClient
-          .collection('delivery_update')
+          .collection('deliveryUpdate')
           .getOne(id);
       
       final customerId = record.data['customer'];
       
       // Delete the delivery update
-      await _pocketBaseClient.collection('delivery_update').delete(id);
+      await _pocketBaseClient.collection('deliveryUpdate').delete(id);
       
       // Update the customer record to remove the delivery status reference
       if (customerId != null) {
@@ -684,7 +685,7 @@ Future<DataMap> checkEndDeliverStatus(String tripId) async {
       for (final id in ids) {
         try {
           final record = await _pocketBaseClient
-              .collection('delivery_update')
+              .collection('deliveryUpdate')
               .getOne(id);
           
           final customerId = record.data['customer'];
@@ -693,7 +694,7 @@ Future<DataMap> checkEndDeliverStatus(String tripId) async {
           }
           
           // Delete the delivery update
-          await _pocketBaseClient.collection('delivery_update').delete(id);
+          await _pocketBaseClient.collection('deliveryUpdate').delete(id);
         } catch (e) {
           debugPrint('⚠️ Error processing delivery update $id: $e');
           // Continue with other deletions

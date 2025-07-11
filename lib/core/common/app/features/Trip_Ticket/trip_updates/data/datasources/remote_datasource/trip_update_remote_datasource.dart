@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip_updates/data/model/trip_update_model.dart';
 import 'package:xpro_delivery_admin_app/core/enums/trip_update_status.dart';
 import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:pocketbase/pocketbase.dart';
+
+import '../../model/trip_update_model.dart';
 
 abstract class TripUpdateRemoteDatasource {
   Future<List<TripUpdateModel>> getTripUpdates(String tripId);
@@ -51,7 +52,7 @@ class TripUpdateRemoteDatasourceImpl implements TripUpdateRemoteDatasource {
       debugPrint('🎯 Using trip ID: $actualTripId');
 
       final records = await _pocketBaseClient
-          .collection('trip_updates')
+          .collection('tripUpdates')
           .getFullList(filter: 'trip = "$actualTripId"', expand: 'trip');
 
       debugPrint('✅ Retrieved ${records.length} trip updates from API');
@@ -135,7 +136,7 @@ class TripUpdateRemoteDatasourceImpl implements TripUpdateRemoteDatasource {
       }
 
       final tripUpdateRecord = await _pocketBaseClient
-          .collection('trip_updates')
+          .collection('tripUpdates')
           .create(
             body: {
               'trip': actualTripId,
@@ -176,7 +177,7 @@ class TripUpdateRemoteDatasourceImpl implements TripUpdateRemoteDatasource {
       debugPrint('🔄 Fetching all trip updates');
 
       final records = await _pocketBaseClient
-          .collection('trip_updates')
+          .collection('tripUpdates')
           .getFullList(expand: 'trip');
 
       debugPrint('✅ Retrieved ${records.length} trip updates from API');
@@ -244,7 +245,7 @@ class TripUpdateRemoteDatasourceImpl implements TripUpdateRemoteDatasource {
       }
 
       final updatedRecord = await _pocketBaseClient
-          .collection('trip_updates')
+          .collection('tripUpdates')
           .update(
             updateId,
             body: body,
@@ -255,7 +256,7 @@ class TripUpdateRemoteDatasourceImpl implements TripUpdateRemoteDatasource {
 
       // Fetch the updated record with expanded relations
       final record = await _pocketBaseClient
-          .collection('trip_updates')
+          .collection('tripUpdates')
           .getOne(updateId, expand: 'trip');
 
       final mappedData = {
@@ -290,12 +291,12 @@ class TripUpdateRemoteDatasourceImpl implements TripUpdateRemoteDatasource {
 
       // Get the trip update to find its associated trip
       final record = await _pocketBaseClient
-          .collection('trip_updates')
+          .collection('tripUpdates')
           .getOne(updateId);
       final tripId = record.data['trip'];
 
       // Delete the trip update
-      await _pocketBaseClient.collection('trip_updates').delete(updateId);
+      await _pocketBaseClient.collection('tripUpdates').delete(updateId);
 
       // Update the trip to remove this update from its list
       await _pocketBaseClient
@@ -325,7 +326,7 @@ class TripUpdateRemoteDatasourceImpl implements TripUpdateRemoteDatasource {
 
       // Get all trip updates
       final records =
-          await _pocketBaseClient.collection('trip_updates').getFullList();
+          await _pocketBaseClient.collection('tripUpdates').getFullList();
 
       // Group updates by trip for efficient trip updates
       final updatesByTrip = <String, List<String>>{};
@@ -337,7 +338,7 @@ class TripUpdateRemoteDatasourceImpl implements TripUpdateRemoteDatasource {
 
       // Delete all trip updates
       for (final record in records) {
-        await _pocketBaseClient.collection('trip_updates').delete(record.id);
+        await _pocketBaseClient.collection('tripUpdates').delete(record.id);
       }
 
       // Update each trip to remove its updates

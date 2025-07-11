@@ -4,12 +4,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/delivery_team/data/models/delivery_team_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/data/models/auth_models.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/users_roles/data/model/user_role_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/users_trip_collection/data/models/users_trip_collection_model.dart';
 import 'package:xpro_delivery_admin_app/core/enums/user_status_enum.dart';
 import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
+
+import '../../../../users_roles/data/model/user_role_model.dart';
 
 abstract class GeneralUserRemoteDataSource {
   const GeneralUserRemoteDataSource();
@@ -72,7 +73,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
           .getOne(
             authData.record!.id,
             expand:
-                'user_role', // Make sure this matches the field name in PocketBase
+                'userRole', // Make sure this matches the field name in PocketBase
           );
 
       // Check user status
@@ -87,7 +88,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
       }
 
       // Check if user has Team Leader role
-      final userRoleData = userRecord.expand['user_role'];
+      final userRoleData = userRecord.expand['userRole'];
       // bool isTeamLeader = false;
       bool isSuperAdministrator = false;
       bool isCollectionAdministator = false;
@@ -148,7 +149,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
 
         // Add role data if available
         if (roleJson != null) {
-          userData['expand'] = {'user_role': roleJson};
+          userData['expand'] = {'userRole': roleJson};
         }
 
         // Store properly formatted auth data
@@ -177,7 +178,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
 
         // Add role data if available
         if (roleJson != null) {
-          userData['expand'] = {'user_role': roleJson};
+          userData['expand'] = {'userRole': roleJson};
         }
 
         return GeneralUserModel.fromJson(userData);
@@ -237,7 +238,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
       // Now fetch all users with explicit fields
       final records = await _pocketBaseClient
           .collection('users')
-          .getFullList(expand: 'trip,deliveryTeam,user_role', sort: '-created');
+          .getFullList(expand: 'trip,deliveryTeam,userRoles', sort: '-created');
 
       debugPrint('✅ Retrieved ${records.length} users from API');
 
@@ -278,7 +279,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
             'name': record.data['name'],
             'profilePic': record.data['profilePic'],
             'tripNumberId': record.data['tripNumberId'],
-            'user_role': record.data['user_role'],
+            'userRole': record.data['userRole'],
             'trip': record.data['trip'],
             'deliveryTeam': record.data['deliveryTeam'],
             'status': record.data['status'],
@@ -309,9 +310,9 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
           }
 
           // Process user role expand if available
-          if (record.expand.containsKey('user_role') &&
-              record.expand['user_role'] != null) {
-            roleModel = _processRoleExpand(record.expand['user_role']);
+          if (record.expand.containsKey('userRole') &&
+              record.expand['userRole'] != null) {
+            roleModel = _processRoleExpand(record.expand['userRole']);
           }
 
           // Convert status string to enum
@@ -352,7 +353,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
             name: mappedData['name'] as String?,
             profilePic: mappedData['profilePic'] as String?,
             tripNumberId: mappedData['tripNumberId'] as String?,
-            roleId: mappedData['user_role'] as String?,
+            roleId: mappedData['userRole'] as String?,
             tripId: mappedData['trip'] as String?,
             deliveryTeamId: mappedData['deliveryTeam'] as String?,
             tripModel: tripModel,
@@ -558,7 +559,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
         final performanceData = {'user': record.id};
 
         await _pocketBaseClient
-            .collection('user_performance')
+            .collection('userPerformance')
             .create(body: performanceData);
 
         debugPrint('✅ User performance record created successfully');
@@ -712,7 +713,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
           .collection('users')
           .getOne(
             userId,
-            expand: 'trip,deliveryTeam,user_role,trip_collection',
+            expand: 'trip,deliveryTeam,userRoles,trip_collection',
           );
 
       debugPrint('✅ Retrieved user record: ${record.id}');
@@ -766,7 +767,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
         'name': record.data['name'],
         'profilePic': record.data['profilePic'],
         'tripNumberId': record.data['tripNumberId'],
-        'user_role': record.data['user_role'],
+        'userRole': record.data['userRole'],
         'trip': record.data['trip'],
         'deliveryTeam': record.data['deliveryTeam'],
         'trip_collection': record.data['trip_collection'],
@@ -805,9 +806,9 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
       }
 
       // Process user role expand if available
-      if (record.expand.containsKey('user_role') &&
-          record.expand['user_role'] != null) {
-        roleModel = _processRoleExpand(record.expand['user_role']);
+      if (record.expand.containsKey('userRole') &&
+          record.expand['userRole'] != null) {
+        roleModel = _processRoleExpand(record.expand['userRole']);
         debugPrint('👑 Processed user role relation: ${roleModel?.name}');
       }
 
@@ -875,7 +876,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
         name: mappedData['name'] as String?,
         profilePic: mappedData['profilePic'] as String?,
         tripNumberId: mappedData['tripNumberId'] as String?,
-        roleId: mappedData['user_role'] as String?,
+        roleId: mappedData['userRole'] as String?,
         tripId: mappedData['trip'] as String?,
         deliveryTeamId: mappedData['deliveryTeam'] as String?,
         tripCollectionIds:
@@ -929,7 +930,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
   //     };
 
   //     // Extract IDs for relationships
-  //     String? roleId = record.data['user_role'];
+  //     String? roleId = record.data['userRole'];
   //     String? tripId = record.data['trip'];
   //     String? deliveryTeamId = record.data['deliveryTeam'];
 

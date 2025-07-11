@@ -1,8 +1,9 @@
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/data/model/end_trip_model.dart';
 import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
+
+import '../../model/end_trip_model.dart';
 abstract class EndTripOtpRemoteDataSource {
   Future<String> getEndGeneratedOtp();
   Future<EndTripOtpModel> loadEndTripOtpByTripId(String tripId);
@@ -59,12 +60,12 @@ class EndTripOtpRemoteDataSourceImpl implements EndTripOtpRemoteDataSource {
       debugPrint('OTP ID: $otpId');
       debugPrint('Odometer Reading: $odometerReading');
 
-      final otpRecord = await _pocketBaseClient.collection('end_trip_otp').getOne(otpId);
+      final otpRecord = await _pocketBaseClient.collection('endTripOtp').getOne(otpId);
       final backendGeneratedCode = otpRecord.data['generatedCode'] as String;
       debugPrint('Backend Generated Code: $backendGeneratedCode');
 
       if (enteredOtp == backendGeneratedCode) {
-        await _pocketBaseClient.collection('end_trip_otp').update(
+        await _pocketBaseClient.collection('endTripOtp').update(
           otpId,
           body: {
             'otpCode': enteredOtp,
@@ -116,7 +117,7 @@ class EndTripOtpRemoteDataSourceImpl implements EndTripOtpRemoteDataSource {
   @override
   Future<String> getEndGeneratedOtp() async {
     try {
-      final otpRecords = await _pocketBaseClient.collection('end_trip_otp').getFullList();
+      final otpRecords = await _pocketBaseClient.collection('endTripOtp').getFullList();
 
       if (otpRecords.isNotEmpty) {
         final generatedCode = otpRecords.first.data['generatedCode'];
@@ -145,7 +146,7 @@ class EndTripOtpRemoteDataSourceImpl implements EndTripOtpRemoteDataSource {
     try {
       debugPrint('🔍 Loading End Trip OTP for trip: $tripId');
 
-      final otpRecords = await _pocketBaseClient.collection('end_trip_otp').getFullList(
+      final otpRecords = await _pocketBaseClient.collection('endTripOtp').getFullList(
         expand: 'trip',
         filter: 'trip = "$tripId"',
       );
@@ -184,7 +185,7 @@ class EndTripOtpRemoteDataSourceImpl implements EndTripOtpRemoteDataSource {
     try {
       debugPrint('🔍 Loading End Trip OTP by ID: $otpId');
 
-      final record = await _pocketBaseClient.collection('end_trip_otp').getOne(
+      final record = await _pocketBaseClient.collection('endTripOtp').getOne(
         otpId,
         expand: 'trip',
       );
@@ -213,7 +214,7 @@ class EndTripOtpRemoteDataSourceImpl implements EndTripOtpRemoteDataSource {
     try {
       debugPrint('🔄 Fetching all end trip OTPs');
       
-      final records = await _pocketBaseClient.collection('end_trip_otp').getFullList(
+      final records = await _pocketBaseClient.collection('endTripOtp').getFullList(
         expand: 'trip',
       );
       
@@ -271,12 +272,12 @@ class EndTripOtpRemoteDataSourceImpl implements EndTripOtpRemoteDataSource {
         body['verifiedAt'] = verifiedAt.toIso8601String();
       }
       
-      final record = await _pocketBaseClient.collection('end_trip_otp').create(
+      final record = await _pocketBaseClient.collection('endTripOtp').create(
         body: body,
       );
       
       // Get the created record with expanded relations
-      final createdRecord = await _pocketBaseClient.collection('end_trip_otp').getOne(
+      final createdRecord = await _pocketBaseClient.collection('endTripOtp').getOne(
         record.id,
         expand: 'trip',
       );
@@ -341,13 +342,13 @@ class EndTripOtpRemoteDataSourceImpl implements EndTripOtpRemoteDataSource {
         body['verifiedAt'] = verifiedAt.toIso8601String();
       }
       
-      await _pocketBaseClient.collection('end_trip_otp').update(
+      await _pocketBaseClient.collection('endTripOtp').update(
         id,
         body: body,
       );
       
       // Get the updated record with expanded relations
-      final updatedRecord = await _pocketBaseClient.collection('end_trip_otp').getOne(
+      final updatedRecord = await _pocketBaseClient.collection('endTripOtp').getOne(
         id,
         expand: 'trip',
       );
@@ -378,7 +379,7 @@ class EndTripOtpRemoteDataSourceImpl implements EndTripOtpRemoteDataSource {
     try {
       debugPrint('🔄 Deleting end trip OTP: $id');
       
-      await _pocketBaseClient.collection('end_trip_otp').delete(id);
+      await _pocketBaseClient.collection('endTripOtp').delete(id);
       
       debugPrint('✅ Successfully deleted end trip OTP');
       return true;
@@ -398,7 +399,7 @@ class EndTripOtpRemoteDataSourceImpl implements EndTripOtpRemoteDataSource {
       
       // Use Future.wait to delete all items in parallel
       await Future.wait(
-        ids.map((id) => _pocketBaseClient.collection('end_trip_otp').delete(id))
+        ids.map((id) => _pocketBaseClient.collection('endTripOtp').delete(id))
       );
       
       debugPrint('✅ Successfully deleted all end trip OTPs');

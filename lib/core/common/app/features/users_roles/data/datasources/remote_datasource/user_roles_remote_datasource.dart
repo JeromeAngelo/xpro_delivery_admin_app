@@ -18,7 +18,7 @@ class UserRolesRemoteDatasourceImpl extends UserRolesRemoteDatasource {
   Future<List<UserRoleModel>> getAllRoles() async {
     try {
       final result = await _pocketBaseClient
-          .collection('user_roles')
+          .collection('userRoles')
           .getFullList(expand: 'permissions', sort: '-created');
 
       List<UserRoleModel> userRoles = [];

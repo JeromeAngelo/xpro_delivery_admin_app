@@ -450,7 +450,7 @@ class DeliveryReceiptRemoteDatasourceImpl implements DeliveryReceiptRemoteDataso
 
         // Create delivery update record
         final deliveryUpdateRecord = await _pocketBaseClient
-            .collection('delivery_update')
+            .collection('deliveryUpdate')
             .create(
               body: {
                 'deliveryData': deliveryDataId,

@@ -48,7 +48,7 @@ class DeliveryUpdateModel extends DeliveryUpdateEntity {
     return DeliveryUpdateModel(
       id: json['id'],
       collectionId: json['collectionId']?.toString() ?? '',
-      collectionName: json['collectionName']?.toString() ?? 'delivery_update',
+      collectionName: json['collectionName']?.toString() ?? 'deliveryUpdate',
       title: json['title']?.toString() ?? 'Pending',
       subtitle: json['subtitle']?.toString() ?? 'Waiting to Accept the Trip',
       time: parseDate(json['time']),
@@ -85,7 +85,7 @@ class DeliveryUpdateModel extends DeliveryUpdateEntity {
     return DeliveryUpdateModel(
       id: '',
       collectionId: '',
-      collectionName: 'delivery_update',
+      collectionName: 'deliveryUpdate',
       title: 'Pending',
       subtitle: 'Waiting to Accept the Trip',
       time: now,

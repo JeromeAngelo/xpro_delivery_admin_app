@@ -1,14 +1,16 @@
 
 import 'dart:convert';
 
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/delivery_team/data/models/delivery_team_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/data/models/personel_models.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/vehicle/data/model/vehicle_model.dart';
+
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
 import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
+
+import '../../../../personels/data/models/personel_models.dart';
+import '../../../../vehicle/data/model/vehicle_model.dart';
+import '../../models/delivery_team_model.dart';
 
 
 abstract class DeliveryTeamDatasource {
@@ -66,7 +68,7 @@ Future<DeliveryTeamModel> loadDeliveryTeam(String tripId) async {
     
     debugPrint('🎯 Using trip ID: $actualTripId');
 
-    final result = await _pocketBaseClient.collection('delivery_team').getFullList(
+    final result = await _pocketBaseClient.collection('deliveryTeam').getFullList(
       expand: 'personels,vehicle,tripTicket',
       filter: 'tripTicket = "$actualTripId"',
     );
@@ -100,7 +102,7 @@ Future<DeliveryTeamModel> loadDeliveryTeam(String tripId) async {
   try {
     debugPrint('📍 Fetching data for delivery team: $deliveryTeamId');
 
-    final record = await _pocketBaseClient.collection('delivery_team').getOne(
+    final record = await _pocketBaseClient.collection('deliveryTeam').getOne(
       deliveryTeamId,
       expand: 'personels,vehicle,tripTicket',
     );
@@ -173,14 +175,14 @@ Future<DeliveryTeamModel> loadDeliveryTeam(String tripId) async {
       await _pocketBaseClient.collection('tripticket').update(
         tripId,
         body: {
-          'delivery_team': deliveryTeamId,
+          'deliveryTeam': deliveryTeamId,
           'isAccepted': true,
           'timeAccepted': DateTime.now().toIso8601String(),
         },
       );
 
       // Get updated delivery team data
-      final record = await _pocketBaseClient.collection('delivery_team').getOne(
+      final record = await _pocketBaseClient.collection('deliveryTeam').getOne(
             deliveryTeamId,
             expand: 'personels,vehicle,tripTicket',
           );
@@ -257,7 +259,7 @@ List<Map<String, dynamic>> _mapExpandedList(dynamic records) {
       final personelIds = personels.map((p) => p.id).toList();
       
       // Create delivery team record
-      final record = await _pocketBaseClient.collection('delivery_team').create(
+      final record = await _pocketBaseClient.collection('deliveryTeam').create(
         body: {
           'id': deliveryTeamId,
           'vehicle': vehicle.id,
@@ -271,7 +273,7 @@ List<Map<String, dynamic>> _mapExpandedList(dynamic records) {
       );
       
       // Get the created record with expanded relations
-      final createdRecord = await _pocketBaseClient.collection('delivery_team').getOne(
+      final createdRecord = await _pocketBaseClient.collection('deliveryTeam').getOne(
         record.id,
         expand: 'personels,vehicle,tripTicket',
       );
@@ -294,7 +296,7 @@ List<Map<String, dynamic>> _mapExpandedList(dynamic records) {
     try {
       debugPrint('🔄 Deleting delivery team: $deliveryTeamId');
       
-      await _pocketBaseClient.collection('delivery_team').delete(deliveryTeamId);
+      await _pocketBaseClient.collection('deliveryTeam').delete(deliveryTeamId);
       
       debugPrint('✅ Successfully deleted delivery team');
       return true;
@@ -313,7 +315,7 @@ List<Map<String, dynamic>> _mapExpandedList(dynamic records) {
     try {
       debugPrint('🔄 Loading all delivery teams');
       
-      final records = await _pocketBaseClient.collection('delivery_team').getFullList(
+      final records = await _pocketBaseClient.collection('deliveryTeam').getFullList(
         expand: 'personels,vehicle,tripTicket',
       );
       
@@ -353,7 +355,7 @@ List<Map<String, dynamic>> _mapExpandedList(dynamic records) {
       final personelIds = personels.map((p) => p.id).toList();
       
       // Update delivery team record
-      await _pocketBaseClient.collection('delivery_team').update(
+      await _pocketBaseClient.collection('deliveryTeam').update(
         deliveryTeamId,
         body: {
           'vehicle': vehicle.id,
@@ -363,7 +365,7 @@ List<Map<String, dynamic>> _mapExpandedList(dynamic records) {
       );
       
       // Get the updated record with expanded relations
-      final updatedRecord = await _pocketBaseClient.collection('delivery_team').getOne(
+      final updatedRecord = await _pocketBaseClient.collection('deliveryTeam').getOne(
         deliveryTeamId,
         expand: 'personels,vehicle,tripTicket',
       );

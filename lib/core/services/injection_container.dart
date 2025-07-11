@@ -244,7 +244,7 @@ import '../common/app/features/Trip_Ticket/trip/domain/usecase/filter_trips_by_u
 import '../common/app/features/Trip_Ticket/trip/domain/usecase/fiter_trips_by_data_range.dart';
 
 final sl = GetIt.instance;
-final pb = PocketBase('http://172.16.0.175:8090');
+final pb = PocketBase('https://delivery-app.pockethost.io/');
 
 Future<void> init() async {
   // await initAuth();
