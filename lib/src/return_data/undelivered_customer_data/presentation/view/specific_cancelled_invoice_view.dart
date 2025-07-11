@@ -7,7 +7,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/can
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:xpro_delivery_admin_app/src/return_data/undelivered_customer_data/presentation/widgets/specific_cancelled_invoice_widgets/specific_cancelled_invoice_dashboard.dart';
-import 'package:xpro_delivery_admin_app/src/return_data/undelivered_customer_data/presentation/widgets/specific_cancelled_invoice_widgets/cancelled_invoice_items_per_invoice_data_table.dart';
+import 'package:xpro_delivery_admin_app/src/return_data/undelivered_customer_data/presentation/widgets/specific_cancelled_invoice_widgets/ci_invoice_items_table.dart';
 
 import '../widgets/specific_cancelled_invoice_widgets/specific_cancelled_invoice_header.dart';
 
