@@ -145,7 +145,7 @@ class CustomerTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '1 Invoice',
+                        'Invoice Number: ${deliveryData.invoice?.name ?? 'N/A'}',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -180,13 +180,13 @@ class CustomerTile extends StatelessWidget {
   String _formatAddress(DeliveryDataEntity deliveryData) {
     final List<String> addressParts = [];
 
-    
-
-    if (deliveryData.customer?.municipality != null && deliveryData.customer!.municipality!.isNotEmpty) {
+    if (deliveryData.customer?.municipality != null &&
+        deliveryData.customer!.municipality!.isNotEmpty) {
       addressParts.add(deliveryData.customer!.municipality!);
     }
 
-    if (deliveryData.customer?.province != null && deliveryData.customer!.province!.isNotEmpty) {
+    if (deliveryData.customer?.province != null &&
+        deliveryData.customer!.province!.isNotEmpty) {
       addressParts.add(deliveryData.customer!.province!);
     }
 
@@ -195,7 +195,7 @@ class CustomerTile extends StatelessWidget {
 
   DateTime? _getLatestDeliveryUpdateTime(DeliveryDataEntity deliveryData) {
     if (deliveryData.deliveryUpdates.isEmpty) return null;
-    
+
     // Get the latest delivery update time
     DateTime? latestTime;
     for (final update in deliveryData.deliveryUpdates) {
@@ -205,7 +205,7 @@ class CustomerTile extends StatelessWidget {
         }
       }
     }
-    
+
     return latestTime;
   }
 }
