@@ -4,15 +4,15 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/data/model/customer_data_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/data/model/delivery_data_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/data/model/invoice_data_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/app_drop_down_fields.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/app_textfield.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/form_title.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/create_trip_ticket_forms/customer_invoice_table_result.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/create_trip_ticket_forms/delivery_data_table.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/create_trip_ticket_forms/invoice_preset_group_dialog.dart';
+
+import 'customer_data_dialog.dart';
 
 class TripDetailsForm extends StatefulWidget {
   final TextEditingController tripIdController;
@@ -49,7 +49,7 @@ class _TripDetailsFormState extends State<TripDetailsForm> {
   void initState() {
     super.initState();
     // Load all customers when the form is initialized
-    context.read<CustomerDataBloc>().add(const GetAllCustomerDataEvent());
+    context.read<CustomerDataBloc>().add(GetAllUnassignedCustomerDataEvent());
     _selectedDeliveries = List.from(widget.selectedDeliveries);
   }
 
@@ -67,6 +67,26 @@ class _TripDetailsFormState extends State<TripDetailsForm> {
               setState(() {
                 // This will trigger a refresh of the delivery data table
               });
+            },
+          ),
+    );
+  }
+
+  void _showCustomerDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => CustomerDataDialog(
+            onCustomersSelected: (customers) {
+              if (customers.isNotEmpty) {
+                setState(() {
+                  // For single customer selection, take the first one
+                  // Or you can modify this to handle multiple customers
+                  _selectedCustomer = customers.first as CustomerDataModel?;
+                  // Clear previously selected invoices when customer changes
+                  _selectedInvoices = [];
+                });
+              }
             },
           ),
     );
@@ -305,105 +325,71 @@ class _TripDetailsFormState extends State<TripDetailsForm> {
   }
 
   Widget _buildCustomerDropdown() {
-    return BlocBuilder<CustomerDataBloc, CustomerDataState>(
-      builder: (context, state) {
-        if (state is CustomerDataLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (state is CustomerDataError) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Customer',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text('Error: ${state.message}'),
-              ElevatedButton(
-                onPressed: () {
-                  context.read<CustomerDataBloc>().add(
-                    const GetAllCustomerDataEvent(),
-                  );
-                },
-                child: const Text('Retry'),
-              ),
-            ],
-          );
-        }
-
-        if (state is AllCustomerDataLoaded) {
-          final customers = state.customerData;
-
-          // Create dropdown items from customers
-          final customerItems =
-              customers.map((customer) {
-                return DropdownItem<CustomerDataModel>(
-                  value: customer as CustomerDataModel,
-                  label: customer.name ?? 'Unnamed Customer',
-                  icon: const Icon(Icons.store, size: 16),
-                  uniqueId: customer.id ?? 'customer_${customer.hashCode}',
-                  searchTerms: [
-                    customer.name ?? '',
-                    customer.refId ?? '',
-                    customer.province ?? '',
-                    customer.municipality ?? '',
-                    customer.barangay ?? '',
-                  ],
-                );
-              }).toList();
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              AppDropdownField<CustomerDataModel>(
-                label: 'Select Customer',
-                hintText: 'Choose a customer',
-                items: customerItems,
-                selectedItems:
-                    _selectedCustomer != null ? [_selectedCustomer!] : [],
-                onChanged: (customer) {
-                  if (customer != null) {
-                    setState(() {
-                      _selectedCustomer = customer;
-                      // Clear previously selected invoices when customer changes
-                      _selectedInvoices = [];
-                    });
-
-                    // Update parent with the selected customer
-                    widget.onCustomersChanged([customer]);
-                  }
-                },
-                onSelectedItemsChanged: (customers) {
-                  if (customers.isNotEmpty) {
-                    setState(() {
-                      _selectedCustomer = customers.first;
-                      // Clear previously selected invoices when customer changes
-                      _selectedInvoices = [];
-                    });
-                    widget.onCustomersChanged(customers);
-                  } else {
-                    setState(() {
-                      _selectedCustomer = null;
-                      _selectedInvoices = [];
-                    });
-                    widget.onCustomersChanged([]);
-                  }
-                },
-              ),
-            ],
-          );
-        }
-
-        // Default state
-        return const AppTextField(
-          label: 'Customer',
-          initialValue: 'Loading customers...',
-          readOnly: true,
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Customer', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        // Custom dropdown that shows dialog instead of dropdown items
+        InkWell(
+          onTap: _showCustomerDialog,
+          child: Container(
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    _selectedCustomer?.name ?? 'Select Customer',
+                    style: TextStyle(
+                      color:
+                          _selectedCustomer != null
+                              ? Colors.black
+                              : Colors.grey,
+                    ),
+                  ),
+                ),
+                Icon(Icons.arrow_drop_down, color: Colors.grey.shade600),
+              ],
+            ),
+          ),
+        ),
+        if (_selectedCustomer != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Selected Customer Details:',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text('Ref ID: ${_selectedCustomer!.refId ?? 'N/A'}'),
+                Text(
+                  'Location: ${_selectedCustomer!.municipality ?? ''}, ${_selectedCustomer!.province ?? ''}',
+                ),
+                if (_selectedCustomer!.barangay != null)
+                  Text('Barangay: ${_selectedCustomer!.barangay}'),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

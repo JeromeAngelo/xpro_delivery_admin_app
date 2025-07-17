@@ -225,8 +225,7 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
             ),
             DashboardInfoItem(
               icon: Icons.cancel,
-              value:
-                  widget.trip?.cancelledInvoice?.length.toString() ?? '0',
+              value: widget.trip?.cancelledInvoice?.length.toString() ?? '0',
               label: 'Undelivered',
             ),
             DashboardInfoItem(

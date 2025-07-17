@@ -30,6 +30,9 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/prese
 import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/data/model/checklist_model.dart';
 import 'package:go_router/go_router.dart';
 
+// Core utilities
+import 'package:xpro_delivery_admin_app/core/services/core_utils.dart';
+
 // Form widgets
 import '../widget/create_trip_ticket_forms/trip_details_form.dart';
 import '../widget/create_trip_ticket_forms/trip_vehicle_forms.dart';
@@ -58,6 +61,7 @@ class _CreateTripTicketScreenViewState
 
   bool _isLoading = false;
   String? _errorMessage;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -92,12 +96,7 @@ class _CreateTripTicketScreenViewState
   void _createTripTicket() {
     if (!_formKey.currentState!.validate()) {
       // Form validation failed
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all required fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CoreUtils.showSnackBar(context, 'Please fill all required fields');
       return;
     }
 
@@ -113,40 +112,25 @@ class _CreateTripTicketScreenViewState
     // }
 
     if (_selectedVehicle == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a vehicle'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CoreUtils.showSnackBar(context, 'Please select a vehicle');
       return;
     }
 
     if (_selectedPersonnel.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one personnel'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CoreUtils.showSnackBar(context, 'Please select at least one personnel');
       return;
     }
 
     // Check if more than 2 personnel are selected
-    if (_selectedPersonnel.length > 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Maximum of 2 personnel allowed'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (_selectedPersonnel.length > 3) {
+      CoreUtils.showSnackBar(context, 'Maximum of 3 personnel allowed');
       return;
     }
 
     // Set loading state
     setState(() {
-      _isLoading = true;
       _errorMessage = null;
+      _hasNavigated = false;
     });
 
     // Create trip model with the selected data
@@ -160,6 +144,9 @@ class _CreateTripTicketScreenViewState
     );
 
     // Dispatch the create event
+    debugPrint(
+      '🚀 Dispatching CreateTripTicketEvent for trip: ${tripModel.tripNumberId}',
+    );
     context.read<TripBloc>().add(CreateTripTicketEvent(tripModel));
   }
 
@@ -173,110 +160,154 @@ class _CreateTripTicketScreenViewState
     context.read<ChecklistBloc>().add(const GetAllChecklistsEvent());
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     // Define navigation items
     final navigationItems = AppNavigationItems.generalTripItems();
 
-    return BlocListener<TripBloc, TripState>(
+    return BlocConsumer<TripBloc, TripState>(
+    listenWhen: (previous, current) {
+        // Only listen to specific states to avoid unnecessary triggers
+        return current is TripLoading ||
+        current is TripTicketCreated ||
+          current is TripError ||
+          (current is AllTripTicketsLoaded && _isLoading && !_hasNavigated);
+      },
       listener: (context, state) {
+        debugPrint('🔄 TripBloc State Changed: ${state.runtimeType}');
+        
         if (state is TripLoading) {
-          setState(() {
-            _isLoading = true;
-          });
+        debugPrint('📤 Trip loading state received');
+          if (mounted) {
+            setState(() {
+          _isLoading = true;
+          _errorMessage = null;
+            });
+          }
         } else if (state is TripTicketCreated) {
-          setState(() {
-            _isLoading = false;
-          });
+          debugPrint(
+            '✅ Trip ticket created successfully: ${state.trip.tripNumberId}',
+    );
+          if (mounted && !_hasNavigated) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = null;
+            _hasNavigated = true;
+    });
 
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Trip ticket ${state.trip.tripNumberId} created successfully',
-              ),
-              backgroundColor: Colors.green,
-            ),
+            // Show success message
+          CoreUtils.showSnackBar(
+        context,
+          'Trip ticket ${state.trip.tripNumberId} created successfully',
           );
 
-          // Navigate back to trip tickets list
-          context.go('/tripticket');
+            // Navigate back to trip tickets list immediately
+            context.go('/tripticket');
+          }
+        } else if (state is AllTripTicketsLoaded && _isLoading && !_hasNavigated) {
+          debugPrint('✅ All trip tickets loaded - processing as trip creation success');
+          
+          if (mounted) {
+            setState(() {
+    _isLoading = false;
+            _errorMessage = null;
+            _hasNavigated = true;
+            });
+
+            // Show success message and navigate
+            CoreUtils.showSnackBar(
+              context,
+              'Trip ticket created successfully',
+            );
+            
+            context.go('/tripticket');
+          }
         } else if (state is TripError) {
-          setState(() {
-            _isLoading = false;
-            _errorMessage = state.message;
-          });
+          debugPrint('❌ Trip creation error: ${state.message}');
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = state.message;
+            });
 
-          // Show error message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${state.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+            // Show error message
+            CoreUtils.showSnackBar(context, 'Error: ${state.message}');
+          }
         }
       },
-      child: DesktopLayout(
-        navigationItems: navigationItems,
-        currentRoute: '/tripticket',
-        onNavigate: (route) {
-          // Handle navigation
-          context.go(route);
-        },
-        onThemeToggle: () {
-          // Handle theme toggle
-        },
-        onNotificationTap: () {
-          // Handle notification tap
-        },
-        onProfileTap: () {
-          // Handle profile tap
-        },
-        child: Form(
-          key: _formKey,
-          child: FormLayout(
-            title: 'Create Trip Ticket',
-            isLoading: _isLoading,
-            actions: [
-              // Cancel Button
-              FormCancelButton(
-                label: 'Cancel',
-                onPressed: () {
-                  // Navigate back to trip tickets list
-                  context.go('/tripticket');
-                },
-              ),
-              const SizedBox(width: 16),
+      builder: (context, state) {
+        return DesktopLayout(
+          navigationItems: navigationItems,
+          currentRoute: '/tripticket',
+          onNavigate: (route) {
+            // Handle navigation
+            context.go(route);
+          },
+          onThemeToggle: () {
+            // Handle theme toggle
+          },
+          onNotificationTap: () {
+            // Handle notification tap
+          },
+          onProfileTap: () {
+            // Handle profile tap
+          },
+          child: Form(
+            key: _formKey,
+            child: FormLayout(
+              title: 'Create Trip Ticket',
+              actions: [
+                // Cancel Button
+                FormCancelButton(
+                  label: 'Cancel',
+                  onPressed: () {
+                    if (!_isLoading) {
+                      // Navigate back to trip tickets list
+                      context.go('/tripticket');
+                    }
+                  },
+                ),
+                const SizedBox(width: 16),
 
-              // Create Trip Button
-              FormSubmitButton(
-                label: 'Create Trip',
-                onPressed: _createTripTicket,
-                icon: Icons.add,
-              ),
-            ],
-            children: [
-              // Trip Details Form
-              _buildTripDetailsForm(),
+                // Create Trip Button
+                FormSubmitButton(
+                  label: _isLoading ? 'Processing...' : 'Create Trip',
+                  onPressed: () {
+                    debugPrint(
+                      '🔲 Create Trip Button Pressed - Loading: $_isLoading',
+                    );
+                    if (!_isLoading) {
+                      _createTripTicket();
+                    }
+                  },
+                  icon: _isLoading ? Icons.hourglass_empty : Icons.add,
+                ),
+              ],
+              children: [
+                // Trip Details Form
+                _buildTripDetailsForm(),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Vehicle Form
-              _buildVehicleForm(),
+                // Vehicle Form
+                _buildVehicleForm(),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Personnel Form
-              _buildPersonnelForm(),
+                // Personnel Form
+                _buildPersonnelForm(),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Checklist Form
-              _buildChecklistForm(),
-            ],
+                // Checklist Form
+                _buildChecklistForm(),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

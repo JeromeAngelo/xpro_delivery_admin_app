@@ -238,7 +238,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
       // Now fetch all users with explicit fields
       final records = await _pocketBaseClient
           .collection('users')
-          .getFullList(expand: 'trip,deliveryTeam,userRoles', sort: '-created');
+          .getFullList(expand: 'trip,deliveryTeam,userRole', sort: '-created');
 
       debugPrint('✅ Retrieved ${records.length} users from API');
 
@@ -270,6 +270,16 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
             }
           }
 
+          // Helper function to safely extract string or first element from list
+          String? extractStringValue(dynamic value) {
+            if (value == null) return null;
+            if (value is String) return value;
+            if (value is List && value.isNotEmpty) {
+              return value.first?.toString();
+            }
+            return value.toString();
+          }
+
           // Create a detailed map with all fields explicitly
           final mappedData = {
             'id': record.id,
@@ -279,9 +289,9 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
             'name': record.data['name'],
             'profilePic': record.data['profilePic'],
             'tripNumberId': record.data['tripNumberId'],
-            'userRole': record.data['userRole'],
-            'trip': record.data['trip'],
-            'deliveryTeam': record.data['deliveryTeam'],
+            'userRole': extractStringValue(record.data['userRole']),
+            'trip': extractStringValue(record.data['trip']),
+            'deliveryTeam': extractStringValue(record.data['deliveryTeam']),
             'status': record.data['status'],
           };
 
@@ -544,31 +554,97 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
         );
       }
 
+      // Set email visibility to true by default
+      userData['emailVisibility'] = true;
+
       final record = await _pocketBaseClient
           .collection('users')
           .create(body: userData);
 
       debugPrint('✅ User created successfully: ${record.id}');
 
-      // Create user performance record
+      // Create user performance record only for Helper and Driver roles
       try {
-        debugPrint(
-          '🔄 Creating user performance record for user: ${record.id}',
-        );
+        if (userData['userRole'] != null) {
+          debugPrint('🔄 Checking user role for performance record creation');
 
-        final performanceData = {'user': record.id};
+          // Get the user role to check if it's "Helper" or "Driver"
+          final userRoleRecord = await _pocketBaseClient
+              .collection('userRoles')
+              .getOne(userData['userRole']);
 
-        await _pocketBaseClient
-            .collection('userPerformance')
-            .create(body: performanceData);
+          final roleName = userRoleRecord.data['name']?.toString();
+          debugPrint('👤 User role for performance: $roleName');
 
-        debugPrint('✅ User performance record created successfully');
+          if (roleName == 'Helper' || roleName == 'Driver') {
+            debugPrint(
+              '🔄 Creating user performance record for $roleName user: ${record.id}',
+            );
+
+            final performanceData = {'user': record.id};
+
+            await _pocketBaseClient
+                .collection('userPerformance')
+                .create(body: performanceData);
+
+            debugPrint(
+              '✅ User performance record created successfully for $roleName user',
+            );
+          } else {
+            debugPrint(
+              'ℹ️ User role "$roleName" does not require performance tracking',
+            );
+          }
+        } else {
+          debugPrint(
+            '⚠️ No user role assigned, skipping performance record creation',
+          );
+        }
       } catch (performanceError) {
         debugPrint(
           '⚠️ Failed to create user performance record: ${performanceError.toString()}',
         );
         // Note: We don't throw here to avoid failing the entire user creation
         // The user was created successfully, but performance record creation failed
+      }
+
+      // Check if user has "Helper" or "Driver" role and create personnel record
+      try {
+        if (userData['userRole'] != null) {
+          debugPrint('🔄 Checking user role for personnel record creation');
+
+          // Get the user role to check if it's "Helper" or "Driver"
+          final userRoleRecord = await _pocketBaseClient
+              .collection('userRoles')
+              .getOne(userData['userRole']);
+
+          final roleName = userRoleRecord.data['name']?.toString();
+          debugPrint('👤 User role: $roleName');
+
+          if (roleName == 'Helper' || roleName == 'Driver') {
+            debugPrint('🔄 Creating personnel record for $roleName user');
+
+            final personnelData = {
+              'name': userData['name'] ?? record.data['name'],
+              'role': roleName?.toLowerCase() ?? 'helper',
+              'user': record.id,
+            };
+
+            await _pocketBaseClient
+                .collection('personels')
+                .create(body: personnelData);
+
+            debugPrint(
+              '✅ Personnel record created successfully for $roleName user',
+            );
+          }
+        }
+      } catch (personnelError) {
+        debugPrint(
+          '⚠️ Failed to create personnel record: ${personnelError.toString()}',
+        );
+        // Note: We don't throw here to avoid failing the entire user creation
+        // The user was created successfully, but personnel record creation failed
       }
 
       // Fetch the created record with expanded relations
@@ -711,10 +787,7 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
       // Fetch the user with expanded relations
       final record = await _pocketBaseClient
           .collection('users')
-          .getOne(
-            userId,
-            expand: 'trip,deliveryTeam,userRoles,trip_collection',
-          );
+          .getOne(userId, expand: 'trip,deliveryTeam,userRole,trip_collection');
 
       debugPrint('✅ Retrieved user record: ${record.id}');
 
@@ -758,6 +831,16 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
         debugPrint('⚠️ Error parsing updated date: $e');
       }
 
+      // Helper function to safely extract string or first element from list
+      String? extractStringValue(dynamic value) {
+        if (value == null) return null;
+        if (value is String) return value;
+        if (value is List && value.isNotEmpty) {
+          return value.first?.toString();
+        }
+        return value.toString();
+      }
+
       // Create a detailed map with all fields explicitly
       final mappedData = {
         'id': record.id,
@@ -767,10 +850,11 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
         'name': record.data['name'],
         'profilePic': record.data['profilePic'],
         'tripNumberId': record.data['tripNumberId'],
-        'userRole': record.data['userRole'],
-        'trip': record.data['trip'],
-        'deliveryTeam': record.data['deliveryTeam'],
-        'trip_collection': record.data['trip_collection'],
+        'userRole': extractStringValue(record.data['userRole']),
+        'trip': extractStringValue(record.data['trip']),
+        'deliveryTeam': extractStringValue(record.data['deliveryTeam']),
+        'trip_collection':
+            record.data['trip_collection'], // Keep as is for collections
         'status': record.data['status'],
         'created': createdDate,
         'updated': updatedDate,

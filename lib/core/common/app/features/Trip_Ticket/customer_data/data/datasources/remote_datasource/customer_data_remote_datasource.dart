@@ -29,6 +29,7 @@ abstract class CustomerDataRemoteDataSource {
     double? longitude,
     double? latitude,
   });
+  Future<List<CustomerDataModel>> getAllUnassignedCustomerData();
   Future<bool> deleteCustomerData(String id);
   Future<bool> deleteAllCustomerData(List<String> ids);
 
@@ -47,6 +48,99 @@ class CustomerDataRemoteDataSourceImpl implements CustomerDataRemoteDataSource {
   final PocketBase _pocketBaseClient;
 
   @override
+  Future<List<CustomerDataModel>> getAllUnassignedCustomerData() async {
+    try {
+      debugPrint('🔄 Fetching all unassigned customer data from remote');
+
+      // 1. First, get all customer data
+      final allCustomers = await _pocketBaseClient
+          .collection('customerData')
+          .getFullList(sort: '-created');
+
+      debugPrint(
+        '✅ Retrieved ${allCustomers.length} total customer data records',
+      );
+
+      // 2. Get all customers that have already been assigned (have an invoiceStatus)
+      final assignedCustomers = await _pocketBaseClient
+          .collection('invoiceStatus')
+          .getFullList(expand: 'customerData', fields: 'id,customerData');
+
+      // Create a set of assigned customer IDs for faster lookup
+      final Set<String> assignedCustomerIds = {};
+      for (var statusRecord in assignedCustomers) {
+        // Get the customer ID from the customerData relation
+        if (statusRecord.expand.containsKey('customerData') &&
+            statusRecord.expand['customerData'] != null) {
+          final customerData = statusRecord.expand['customerData'];
+          if (customerData is List && customerData!.isNotEmpty) {
+            for (var customer in customerData) {
+              assignedCustomerIds.add(customer.id);
+            }
+          }
+        } else if (statusRecord.data.containsKey('customerData') &&
+            statusRecord.data['customerData'] != null) {
+          // If not expanded but we have the customer ID
+          final customerId = statusRecord.data['customerData'].toString();
+          if (customerId.isNotEmpty) {
+            assignedCustomerIds.add(customerId);
+          }
+        }
+      }
+
+      debugPrint(
+        'ℹ️ Found ${assignedCustomerIds.length} already assigned customers',
+      );
+
+      List<CustomerDataModel> unassignedCustomers = [];
+
+      // 3. Filter customers to only include those that are unassigned
+      for (var customer in allCustomers) {
+        final customerId = customer.id;
+
+        if (!assignedCustomerIds.contains(customerId)) {
+          // This customer is unassigned
+          final customerModel = CustomerDataModel.fromJson({
+            'id': customer.id,
+            'collectionId': customer.collectionId,
+            'collectionName': customer.collectionName,
+            'name': customer.data['name'],
+            'refId': customer.data['refID'],
+            'province': customer.data['province'],
+            'ownerName': customer.data['ownerName'],
+            'paymentMode': customer.data['paymentMode'],
+            'contactNumber': customer.data['contactNumber'],
+            'municipality': customer.data['municipality'],
+            'barangay': customer.data['barangay'],
+            'longitude': customer.data['longitude'],
+            'latitude': customer.data['latitude'],
+          });
+
+          unassignedCustomers.add(customerModel);
+          debugPrint(
+            '✅ Added unassigned customer ${customer.id} (${customer.data['name']})',
+          );
+        } else {
+          debugPrint(
+            'ℹ️ Customer ${customer.id} (${customer.data['name']}) is already assigned, skipping',
+          );
+        }
+      }
+
+      debugPrint(
+        '✅ Returning ${unassignedCustomers.length} unassigned customer data records',
+      );
+      return unassignedCustomers;
+    } catch (e) {
+      debugPrint('❌ Failed to fetch unassigned customer data: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to load unassigned customer data: ${e.toString()}',
+        statusCode: '500',
+      );
+    }
+  }
+
+  @override
   Future<List<CustomerDataModel>> getAllCustomerData() async {
     try {
       debugPrint('🔄 Fetching all customer data from remote');
@@ -63,11 +157,11 @@ class CustomerDataRemoteDataSourceImpl implements CustomerDataRemoteDataSource {
           'collectionId': record.collectionId,
           'collectionName': record.collectionName,
           'name': record.data['name'],
-          'refId': record.data['refId'],
+          'refId': record.data['refID'],
           'province': record.data['province'],
           'ownerName': record.data['ownerName'],
-          'paymentMode':record.data['paymentMode'],
-          'contactNumber':record.data['contactNumber'],
+          'paymentMode': record.data['paymentMode'],
+          'contactNumber': record.data['contactNumber'],
           'municipality': record.data['municipality'],
           'barangay': record.data['barangay'],
           'longitude': record.data['longitude'],
@@ -100,9 +194,9 @@ class CustomerDataRemoteDataSourceImpl implements CustomerDataRemoteDataSource {
         'collectionName': record.collectionName,
         'name': record.data['name'],
         'ownerName': record.data['ownerName'],
-          'paymentMode':record.data['paymentMode'],
-          'contactNumber':record.data['contactNumber'],
-        'refId': record.data['refId'],
+        'paymentMode': record.data['paymentMode'],
+        'contactNumber': record.data['contactNumber'],
+        'refId': record.data['refID'],
         'province': record.data['province'],
         'municipality': record.data['municipality'],
         'barangay': record.data['barangay'],
@@ -153,10 +247,10 @@ class CustomerDataRemoteDataSourceImpl implements CustomerDataRemoteDataSource {
         'collectionId': record.collectionId,
         'collectionName': record.collectionName,
         'name': record.data['name'],
-        'refId': record.data['refId'],
+        'refId': record.data['refID'],
         'ownerName': record.data['ownerName'],
-          'paymentMode':record.data['paymentMode'],
-          'contactNumber':record.data['contactNumber'],
+        'paymentMode': record.data['paymentMode'],
+        'contactNumber': record.data['contactNumber'],
         'province': record.data['province'],
         'municipality': record.data['municipality'],
         'barangay': record.data['barangay'],
@@ -189,7 +283,7 @@ class CustomerDataRemoteDataSourceImpl implements CustomerDataRemoteDataSource {
       final body = <String, dynamic>{};
 
       if (name != null) body['name'] = name;
-      if (refId != null) body['refId'] = refId;
+      if (refId != null) body['refID'] = refId;
       if (province != null) body['province'] = province;
       if (municipality != null) body['municipality'] = municipality;
       if (barangay != null) body['barangay'] = barangay;
@@ -207,7 +301,7 @@ class CustomerDataRemoteDataSourceImpl implements CustomerDataRemoteDataSource {
         'collectionId': record.collectionId,
         'collectionName': record.collectionName,
         'name': record.data['name'],
-        'refId': record.data['refId'],
+        'refId': record.data['refID'],
         'province': record.data['province'],
         'municipality': record.data['municipality'],
         'barangay': record.data['barangay'],
@@ -265,62 +359,62 @@ class CustomerDataRemoteDataSourceImpl implements CustomerDataRemoteDataSource {
       );
     }
   }
-@override
-Future<bool> addCustomerToDelivery({
-  required String customerId,
-  required String deliveryId,
-}) async {
-  try {
-    debugPrint('🔄 Adding customer $customerId to delivery $deliveryId');
 
-    // Update the existing deliveryData record with the customer relation
-    await _pocketBaseClient
-        .collection('deliveryData')
-        .update(
-          deliveryId,
-          body: {
-            'customer': customerId, // Set the relation to the customerData
-          },
-        );
+  @override
+  Future<bool> addCustomerToDelivery({
+    required String customerId,
+    required String deliveryId,
+  }) async {
+    try {
+      debugPrint('🔄 Adding customer $customerId to delivery $deliveryId');
 
-    debugPrint('✅ Updated deliveryData with customer relation');
-    return true;
-  } catch (e) {
-    // If the deliveryData record doesn't exist yet, create it
-    if (e.toString().contains('404') || e.toString().contains('not found')) {
-      try {
-        await _pocketBaseClient
-            .collection('deliveryData')
-            .create(
-              body: {
-                'id':
-                    deliveryId, // If you want to use a specific ID (this might not work depending on PocketBase config)
-                'customer':
-                    customerId, // Set the relation to the customerData
-              },
-            );
+      // Update the existing deliveryData record with the customer relation
+      await _pocketBaseClient
+          .collection('deliveryData')
+          .update(
+            deliveryId,
+            body: {
+              'customer': customerId, // Set the relation to the customerData
+            },
+          );
 
-        debugPrint('✅ Created new deliveryData with customer relation');
-        return true;
-      } catch (createError) {
-        debugPrint(
-          '❌ Failed to create deliveryData: ${createError.toString()}',
-        );
-        throw ServerException(
-          message: 'Failed to create deliveryData: ${createError.toString()}',
-          statusCode: '500',
-        );
+      debugPrint('✅ Updated deliveryData with customer relation');
+      return true;
+    } catch (e) {
+      // If the deliveryData record doesn't exist yet, create it
+      if (e.toString().contains('404') || e.toString().contains('not found')) {
+        try {
+          await _pocketBaseClient
+              .collection('deliveryData')
+              .create(
+                body: {
+                  'id':
+                      deliveryId, // If you want to use a specific ID (this might not work depending on PocketBase config)
+                  'customer':
+                      customerId, // Set the relation to the customerData
+                },
+              );
+
+          debugPrint('✅ Created new deliveryData with customer relation');
+          return true;
+        } catch (createError) {
+          debugPrint(
+            '❌ Failed to create deliveryData: ${createError.toString()}',
+          );
+          throw ServerException(
+            message: 'Failed to create deliveryData: ${createError.toString()}',
+            statusCode: '500',
+          );
+        }
       }
+
+      debugPrint('❌ Failed to add customer to delivery: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to add customer to delivery: ${e.toString()}',
+        statusCode: '500',
+      );
     }
-
-    debugPrint('❌ Failed to add customer to delivery: ${e.toString()}');
-    throw ServerException(
-      message: 'Failed to add customer to delivery: ${e.toString()}',
-      statusCode: '500',
-    );
   }
-}
-
 
   @override
   Future<List<CustomerDataModel>> getCustomersByDeliveryId(
@@ -351,12 +445,12 @@ Future<bool> addCustomerToDelivery({
           'collectionId': customerRecord.collectionId,
           'collectionName': customerRecord.collectionName,
           'name': customerRecord.data['name'],
-          'refId': customerRecord.data['refId'],
+          'refId': customerRecord.data['refID'],
           'province': customerRecord.data['province'],
           'municipality': customerRecord.data['municipality'],
           'ownerName': customerRecord.data['ownerName'],
-          'paymentMode':customerRecord.data['paymentMode'],
-          'contactNumber':customerRecord.data['contactNumber'],
+          'paymentMode': customerRecord.data['paymentMode'],
+          'contactNumber': customerRecord.data['contactNumber'],
           'barangay': customerRecord.data['barangay'],
           'longitude': customerRecord.data['longitude'],
           'latitude': customerRecord.data['latitude'],

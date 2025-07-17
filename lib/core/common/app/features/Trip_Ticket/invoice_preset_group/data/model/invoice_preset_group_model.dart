@@ -17,9 +17,8 @@ class InvoicePresetGroupModel extends InvoicePresetGroupEntity {
     super.created,
     super.updated,
     this.objectBoxId = 0,
-  }) : 
-    pocketbaseId = id ?? '',
-    super(invoices: invoices ?? []);
+  }) : pocketbaseId = id ?? '',
+       super(invoices: invoices ?? []);
 
   factory InvoicePresetGroupModel.fromJson(DataMap json) {
     // Add safe date parsing
@@ -40,21 +39,22 @@ class InvoicePresetGroupModel extends InvoicePresetGroupEntity {
       final invoicesData = expandedData['invoices'];
       if (invoicesData != null) {
         if (invoicesData is List) {
-          invoicesList = invoicesData.map((invoice) {
-            if (invoice is RecordModel) {
-              return InvoiceDataModel.fromJson({
-                'id': invoice.id,
-                'collectionId': invoice.collectionId,
-                'collectionName': invoice.collectionName,
-                ...invoice.data,
-                'expand': invoice.expand,
-              });
-            } else if (invoice is Map) {
-              return InvoiceDataModel.fromJson(invoice as DataMap);
-            }
-            // If it's just an ID string, create a minimal model
-            return InvoiceDataModel(id: invoice.toString());
-          }).toList();
+          invoicesList =
+              invoicesData.map((invoice) {
+                if (invoice is RecordModel) {
+                  return InvoiceDataModel.fromJson({
+                    'id': invoice.id,
+                    'collectionId': invoice.collectionId,
+                    'collectionName': invoice.collectionName,
+                    ...invoice.data,
+                    'expand': invoice.expand,
+                  });
+                } else if (invoice is Map) {
+                  return InvoiceDataModel.fromJson(invoice as DataMap);
+                }
+                // If it's just an ID string, create a minimal model
+                return InvoiceDataModel(id: invoice.toString());
+              }).toList();
         }
       }
     }
@@ -100,22 +100,29 @@ class InvoicePresetGroupModel extends InvoicePresetGroupEntity {
       collectionName: collectionName ?? this.collectionName,
       refId: refId ?? this.refId,
       name: name ?? this.name,
-      invoices: invoices ?? (this.invoices.map((invoice) => 
-        invoice is InvoiceDataModel ? invoice : InvoiceDataModel(
-          id: invoice.id,
-          collectionId: invoice.collectionId,
-          collectionName: invoice.collectionName,
-          refId: invoice.refId,
-          name: invoice.name,
-          documentDate: invoice.documentDate,
-          totalAmount: invoice.totalAmount,
-          volume: invoice.volume,
-          weight: invoice.weight,
-          created: invoice.created,
-          updated: invoice.updated,
-          customer: invoice.customer,
-        )
-      ).toList()),
+      invoices:
+          invoices ??
+          (this.invoices
+              .map(
+                (invoice) =>
+                    invoice is InvoiceDataModel
+                        ? invoice
+                        : InvoiceDataModel(
+                          id: invoice.id,
+                          collectionId: invoice.collectionId,
+                          collectionName: invoice.collectionName,
+                          refId: invoice.refId,
+                          name: invoice.name,
+                          documentDate: invoice.documentDate,
+                          totalAmount: invoice.totalAmount,
+                          volume: invoice.volume,
+                          weight: invoice.weight,
+                          created: invoice.created,
+                          updated: invoice.updated,
+                          customer: invoice.customer,
+                        ),
+              )
+              .toList()),
       created: created ?? this.created,
       updated: updated ?? this.updated,
       objectBoxId: objectBoxId,

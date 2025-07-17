@@ -13,6 +13,8 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cus
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_state.dart';
 
+import '../../domain/usecases/get_all_unassigned_customers.dart';
+
 class CustomerDataBloc extends Bloc<CustomerDataEvent, CustomerDataState> {
   final GetAllCustomerData _getAllCustomerData;
   final GetCustomerDataById _getCustomerDataById;
@@ -22,36 +24,63 @@ class CustomerDataBloc extends Bloc<CustomerDataEvent, CustomerDataState> {
   final DeleteAllCustomerData _deleteAllCustomerData;
   final AddCustomerToDelivery _addCustomerToDelivery;
   final GetCustomersByDeliveryId _getCustomersByDeliveryId;
+  final GetAllUnassignedCustomerData _getAllUnassignedCustomerData;
+
 
   CustomerDataState? _cachedState;
+CustomerDataBloc({
+  required GetAllCustomerData getAllCustomerData,
+  required GetCustomerDataById getCustomerDataById,
+  required CreateCustomerData createCustomerData,
+  required UpdateCustomerData updateCustomerData,
+  required DeleteCustomerData deleteCustomerData,
+  required DeleteAllCustomerData deleteAllCustomerData,
+  required AddCustomerToDelivery addCustomerToDelivery,
+  required GetCustomersByDeliveryId getCustomersByDeliveryId,
+  required GetAllUnassignedCustomerData getAllUnassignedCustomerData, // NEW
+})  : _getAllCustomerData = getAllCustomerData,
+      _getCustomerDataById = getCustomerDataById,
+      _createCustomerData = createCustomerData,
+      _updateCustomerData = updateCustomerData,
+      _deleteCustomerData = deleteCustomerData,
+      _deleteAllCustomerData = deleteAllCustomerData,
+      _addCustomerToDelivery = addCustomerToDelivery,
+      _getCustomersByDeliveryId = getCustomersByDeliveryId,
+      _getAllUnassignedCustomerData = getAllUnassignedCustomerData, // NEW
+      super(const CustomerDataInitial()) {
+  on<GetAllCustomerDataEvent>(_onGetAllCustomerData);
+  on<GetCustomerDataByIdEvent>(_onGetCustomerDataById);
+  on<CreateCustomerDataEvent>(_onCreateCustomerData);
+  on<UpdateCustomerDataEvent>(_onUpdateCustomerData);
+  on<DeleteCustomerDataEvent>(_onDeleteCustomerData);
+  on<DeleteAllCustomerDataEvent>(_onDeleteAllCustomerData);
+  on<AddCustomerToDeliveryEvent>(_onAddCustomerToDelivery);
+  on<GetCustomersByDeliveryIdEvent>(_onGetCustomersByDeliveryId);
+  on<GetAllUnassignedCustomerDataEvent>(_onGetAllUnassignedCustomerData); // NEW
+}
 
-  CustomerDataBloc({
-    required GetAllCustomerData getAllCustomerData,
-    required GetCustomerDataById getCustomerDataById,
-    required CreateCustomerData createCustomerData,
-    required UpdateCustomerData updateCustomerData,
-    required DeleteCustomerData deleteCustomerData,
-    required DeleteAllCustomerData deleteAllCustomerData,
-    required AddCustomerToDelivery addCustomerToDelivery,
-    required GetCustomersByDeliveryId getCustomersByDeliveryId,
-  })  : _getAllCustomerData = getAllCustomerData,
-        _getCustomerDataById = getCustomerDataById,
-        _createCustomerData = createCustomerData,
-        _updateCustomerData = updateCustomerData,
-        _deleteCustomerData = deleteCustomerData,
-        _deleteAllCustomerData = deleteAllCustomerData,
-        _addCustomerToDelivery = addCustomerToDelivery,
-        _getCustomersByDeliveryId = getCustomersByDeliveryId,
-        super(const CustomerDataInitial()) {
-    on<GetAllCustomerDataEvent>(_onGetAllCustomerData);
-    on<GetCustomerDataByIdEvent>(_onGetCustomerDataById);
-    on<CreateCustomerDataEvent>(_onCreateCustomerData);
-    on<UpdateCustomerDataEvent>(_onUpdateCustomerData);
-    on<DeleteCustomerDataEvent>(_onDeleteCustomerData);
-    on<DeleteAllCustomerDataEvent>(_onDeleteAllCustomerData);
-    on<AddCustomerToDeliveryEvent>(_onAddCustomerToDelivery);
-    on<GetCustomersByDeliveryIdEvent>(_onGetCustomersByDeliveryId);
-  }
+Future<void> _onGetAllUnassignedCustomerData(
+  GetAllUnassignedCustomerDataEvent event,
+  Emitter<CustomerDataState> emit,
+) async {
+  emit(const CustomerDataLoading());
+  debugPrint('🔄 Getting all unassigned customer data');
+
+  final result = await _getAllUnassignedCustomerData();
+  result.fold(
+    (failure) {
+      debugPrint('❌ Failed to get unassigned customer data: ${failure.message}');
+      emit(CustomerDataError(message: failure.message, statusCode: failure.statusCode));
+    },
+    (unassignedCustomerData) {
+      debugPrint('✅ Retrieved ${unassignedCustomerData.length} unassigned customer data records');
+      final newState = AllUnassignedCustomerDataLoaded(unassignedCustomerData);
+      _cachedState = newState;
+      emit(newState);
+    },
+  );
+}
+
 
   Future<void> _onGetAllCustomerData(
     GetAllCustomerDataEvent event,

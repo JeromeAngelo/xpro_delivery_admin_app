@@ -7,6 +7,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/inv
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_preset_group/presentation/bloc/invoice_preset_group_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_preset_group/presentation/bloc/invoice_preset_group_state.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/create_trip_ticket_forms/invoice_preset_group_table.dart';
+import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/create_trip_ticket_forms/processing_loading_widget.dart';
 
 class InvoicePresetGroupDialog extends StatefulWidget {
   final String? deliveryId;
@@ -30,35 +31,29 @@ class _InvoicePresetGroupDialogState extends State<InvoicePresetGroupDialog> {
   void initState() {
     super.initState();
     // Load all preset groups when the dialog opens
+    _loadPresetGroups();
+  }
+
+  // Extract loading logic to a separate method
+  void _loadPresetGroups() {
     context.read<InvoicePresetGroupBloc>().add(
       const GetAllUnassignedInvoicePresetGroupsEvent(),
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _searchPresetGroups() {
-    final query = _searchController.text.trim();
-    if (query.isNotEmpty) {
-      context.read<InvoicePresetGroupBloc>().add(
-        SearchPresetGroupByRefIdEvent(query),
-      );
-    } else {
-      context.read<InvoicePresetGroupBloc>().add(
-        const GetAllUnassignedInvoicePresetGroupsEvent(),
-      );
-    }
-  }
+  // Add refresh method
 
   void _closeDialog() {
     if (mounted) {
       // Use GoRouter to pop the dialog instead of Navigator
       context.pop();
     }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -73,6 +68,14 @@ class _InvoicePresetGroupDialogState extends State<InvoicePresetGroupDialog> {
           if (widget.onPresetAdded != null) {
             widget.onPresetAdded!();
           }
+
+          // Refresh the preset groups list to remove assigned ones
+          context.read<InvoicePresetGroupBloc>().add(
+            const GetAllUnassignedInvoicePresetGroupsEvent(),
+          );
+
+          // Clear search to show fresh results
+          _searchController.clear();
 
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
@@ -120,20 +123,20 @@ class _InvoicePresetGroupDialogState extends State<InvoicePresetGroupDialog> {
                     icon: const Icon(Icons.clear),
                     onPressed: () {
                       _searchController.clear();
-                      _searchPresetGroups();
+                      setState(() {}); // Trigger rebuild to clear search
                     },
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onSubmitted: (_) => _searchPresetGroups(),
+                onSubmitted:
+                    (_) => setState(() {}), // Trigger rebuild on submit
                 onChanged: (value) {
-                  if (value.isEmpty) {
-                    _searchPresetGroups();
-                  }
+                  setState(() {}); // Trigger rebuild on every change
                 },
               ),
+
               const SizedBox(height: 16),
               Expanded(
                 child: BlocBuilder<
@@ -143,6 +146,19 @@ class _InvoicePresetGroupDialogState extends State<InvoicePresetGroupDialog> {
                   builder: (context, state) {
                     if (state is InvoicePresetGroupLoading) {
                       return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (state is InvoiceProcessingToDelivery) {
+                      return ProcessingLoadingWidget(
+                        message: 'Processing invoices to delivery...',
+                        currentInvoiceId: state.currentInvoiceId,
+                        currentProcessMessage: state.currentProcessMessage,
+                        currentIndex: state.currentIndex,
+                        totalInvoices: state.totalInvoices,
+                        onCancel: () {
+                          context.pop();
+                        },
+                      );
                     }
 
                     if (state is InvoicePresetGroupError) {
@@ -162,31 +178,63 @@ class _InvoicePresetGroupDialogState extends State<InvoicePresetGroupDialog> {
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _searchPresetGroups,
-                              child: const Text('Retry'),
-                            ),
+                            // ElevatedButton(
+                            //   onPressed: _searchPresetGroups,
+                            //   child: const Text('Retry'),
+                            // ),
                           ],
                         ),
                       );
                     }
 
                     if (state is AllUnassignedInvoicePresetGroupsLoaded) {
-                      final presetGroups = state.presetGroups;
+                      var presetGroups = state.presetGroups;
+
+                      // Apply local search filtering
+                      if (_searchController.text.trim().isNotEmpty) {
+                        final query =
+                            _searchController.text.trim().toLowerCase();
+                        presetGroups =
+                            presetGroups.where((group) {
+                              return (group.name?.toLowerCase().contains(
+                                        query,
+                                      ) ??
+                                      false) ||
+                                  (group.refId?.toLowerCase().contains(query) ??
+                                      false);
+                            }).toList();
+                      }
 
                       if (presetGroups.isEmpty) {
-                        return const Center(
-                          child: Text('No preset groups found'),
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.search_off,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _searchController.text.trim().isNotEmpty
+                                    ? 'No preset groups found matching "${_searchController.text.trim()}"'
+                                    : 'No preset groups found',
+                                style: const TextStyle(color: Colors.grey),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
                         );
                       }
 
                       // Add debug print to verify data
                       debugPrint(
-                        '🔍 Displaying ${presetGroups.length} preset groups',
+                        '🔍 Displaying ${presetGroups.length} preset groups (filtered from ${state.presetGroups.length})',
                       );
                       for (var group in presetGroups) {
                         debugPrint(
-                          '  - Group: ${group.name} (${group.id}) with ${group.invoices.length} invoices',
+                          '  - Group: ${group.name} (${group.refId}) with ${group.invoices.length} invoices',
                         );
                       }
 

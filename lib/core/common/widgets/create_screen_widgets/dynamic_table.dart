@@ -238,6 +238,7 @@ class _DynamicDataTableState<T> extends State<DynamicDataTable<T>> {
                                             columnSpacing: widget.columnSpacing,
                                             horizontalMargin:
                                                 widget.horizontalMargin,
+
                                             headingRowColor:
                                                 MaterialStateProperty.all(
                                                   Colors.grey[100],

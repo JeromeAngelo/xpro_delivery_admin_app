@@ -28,7 +28,13 @@ class _DeliveryUsersListViewState extends State<AllUsersView> {
   void initState() {
     super.initState();
     // Load delivery users when the screen initializes
-    context.read<GeneralUserBloc>().add(const GetAllUsersEvent());
+    // Only load if not already loading or loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentState = context.read<GeneralUserBloc>().state;
+      if (currentState is! AllUsersLoaded && currentState is! GeneralUserLoading) {
+        context.read<GeneralUserBloc>().add(const GetAllUsersEvent());
+      }
+    });
   }
 
   @override
@@ -62,8 +68,12 @@ class _DeliveryUsersListViewState extends State<AllUsersView> {
         builder: (context, state) {
           // Handle different states
           if (state is GeneralUserInitial) {
-            // Initial state, trigger loading
-            context.read<GeneralUserBloc>().add(const GetAllUsersEvent());
+            // Initial state, trigger loading only if necessary
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                context.read<GeneralUserBloc>().add(const GetAllUsersEvent());
+              }
+            });
             return const Center(child: CircularProgressIndicator());
           }
 

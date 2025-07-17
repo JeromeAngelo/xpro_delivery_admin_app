@@ -12,6 +12,7 @@ class PersonelEntity extends Equatable {
   final DeliveryTeamModel? deliveryTeam;
   final TripModel? trip;
   final UserRole? role;
+  final bool? isAssigned;
   final DateTime? created;
   final DateTime? updated;
 
@@ -22,6 +23,7 @@ class PersonelEntity extends Equatable {
     this.name,
     this.role,
     this.deliveryTeam,
+    this.isAssigned,
     this.trip,
     this.created,
     this.updated,
@@ -35,6 +37,7 @@ class PersonelEntity extends Equatable {
         name,
         role,
         deliveryTeam?.id,
+        isAssigned,
         trip?.id,
         created,
         updated,
@@ -47,6 +50,7 @@ class PersonelEntity extends Equatable {
       collectionName: '',
       name: '',
       role: UserRole.teamLeader,
+      isAssigned: false,
       deliveryTeam: null,
       trip: null,
       created: null,
@@ -56,6 +60,6 @@ class PersonelEntity extends Equatable {
   
   @override
   String toString() {
-    return 'PersonelEntity(id: $id, name: $name, role: $role, deliveryTeam: ${deliveryTeam?.id}, trip: ${trip?.id})';
+    return 'PersonelEntity(id: $id, name: $name, role: $role, deliveryTeam: ${deliveryTeam?.id}, trip: ${trip?.id}, isAssigned: $isAssigned, created: $created, updated: $updated)';
   }
 }

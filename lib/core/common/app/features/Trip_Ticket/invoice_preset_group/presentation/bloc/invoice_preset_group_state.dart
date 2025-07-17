@@ -16,6 +16,28 @@ class InvoicePresetGroupLoading extends InvoicePresetGroupState {
   const InvoicePresetGroupLoading();
 }
 
+class InvoiceProcessingToDelivery extends InvoicePresetGroupState {
+  final String? currentInvoiceId;
+  final String? currentProcessMessage;
+  final int? currentIndex;
+  final int? totalInvoices;
+
+  const InvoiceProcessingToDelivery({
+    this.currentInvoiceId,
+    this.currentProcessMessage,
+    this.currentIndex,
+    this.totalInvoices,
+  });
+
+  @override
+  List<Object?> get props => [
+        currentInvoiceId,
+        currentProcessMessage,
+        currentIndex,
+        totalInvoices,
+      ];
+}
+
 class InvoicePresetGroupError extends InvoicePresetGroupState {
   final String message;
   final String? statusCode;
@@ -25,6 +47,8 @@ class InvoicePresetGroupError extends InvoicePresetGroupState {
   @override
   List<Object?> get props => [message, statusCode];
 }
+
+
 
 // State for getting all invoice preset groups
 class AllInvoicePresetGroupsLoaded extends InvoicePresetGroupState {

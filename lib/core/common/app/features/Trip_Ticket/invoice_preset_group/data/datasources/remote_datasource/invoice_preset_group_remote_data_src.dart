@@ -66,8 +66,10 @@ class InvoicePresetGroupRemoteDataSourceImpl
       );
     }
   }
+
   @override
-  Future<List<InvoicePresetGroupModel>> getAllUnassignedInvoicePresetGroups() async {
+  Future<List<InvoicePresetGroupModel>>
+  getAllUnassignedInvoicePresetGroups() async {
     try {
       debugPrint('🔄 Fetching all unassigned invoice preset groups');
 
@@ -81,26 +83,22 @@ class InvoicePresetGroupRemoteDataSourceImpl
       // 2. Get all invoices that have already been assigned (have an invoiceStatus)
       final assignedInvoices = await _pocketBaseClient
           .collection('invoiceStatus')
-          .getFullList(
-            expand: 'invoiceData',
-            fields: 'id,invoiceData',
-          );
+          .getFullList(expand: 'invoiceData', fields: 'id,invoiceData');
 
       // Create a set of assigned invoice IDs for faster lookup
       final Set<String> assignedInvoiceIds = {};
       for (var statusRecord in assignedInvoices) {
         // Get the invoice ID from the invoiceData relation
-        if (statusRecord.expand.containsKey('invoiceData') && 
+        if (statusRecord.expand.containsKey('invoiceData') &&
             statusRecord.expand['invoiceData'] != null) {
-          
           final invoiceData = statusRecord.expand['invoiceData'];
-            if (invoiceData is List && invoiceData!.isNotEmpty) {
+          if (invoiceData is List && invoiceData!.isNotEmpty) {
             for (var invoice in invoiceData) {
               assignedInvoiceIds.add(invoice.id);
-                        }
+            }
           }
-        } else if (statusRecord.data.containsKey('invoiceData') && 
-                  statusRecord.data['invoiceData'] != null) {
+        } else if (statusRecord.data.containsKey('invoiceData') &&
+            statusRecord.data['invoiceData'] != null) {
           // If not expanded but we have the ID
           final invoiceId = statusRecord.data['invoiceData'].toString();
           if (invoiceId.isNotEmpty) {
@@ -108,17 +106,21 @@ class InvoicePresetGroupRemoteDataSourceImpl
           }
         }
       }
-      
-      debugPrint('ℹ️ Found ${assignedInvoiceIds.length} already assigned invoices');
+
+      debugPrint(
+        'ℹ️ Found ${assignedInvoiceIds.length} already assigned invoices',
+      );
 
       List<InvoicePresetGroupModel> unassignedPresetGroups = [];
 
       // 3. Filter preset groups to only include those with unassigned invoices
       for (var presetGroup in presetGroups) {
         final invoicesData = presetGroup.expand['invoices'] as List?;
-        
+
         if (invoicesData == null || invoicesData.isEmpty) {
-          debugPrint('⚠️ Preset group ${presetGroup.id} has no invoices, skipping');
+          debugPrint(
+            '⚠️ Preset group ${presetGroup.id} has no invoices, skipping',
+          );
           continue;
         }
 
@@ -129,7 +131,7 @@ class InvoicePresetGroupRemoteDataSourceImpl
         for (var invoice in invoicesData) {
           final invoiceRecord = invoice as RecordModel;
           final invoiceId = invoiceRecord.id;
-          
+
           if (!assignedInvoiceIds.contains(invoiceId)) {
             hasUnassignedInvoices = true;
             unassignedInvoices.add(invoice);
@@ -150,160 +152,172 @@ class InvoicePresetGroupRemoteDataSourceImpl
             'expand': {'invoices': unassignedInvoices},
           };
 
-          unassignedPresetGroups.add(InvoicePresetGroupModel.fromJson(mappedData));
-          debugPrint('✅ Added preset group ${presetGroup.id} with ${unassignedInvoices.length} unassigned invoices');
+          unassignedPresetGroups.add(
+            InvoicePresetGroupModel.fromJson(mappedData),
+          );
+          debugPrint(
+            '✅ Added preset group ${presetGroup.id} with ${unassignedInvoices.length} unassigned invoices',
+          );
         } else {
-          debugPrint('ℹ️ Preset group ${presetGroup.id} has no unassigned invoices, skipping');
+          debugPrint(
+            'ℹ️ Preset group ${presetGroup.id} has no unassigned invoices, skipping',
+          );
         }
       }
 
-      debugPrint('✅ Returning ${unassignedPresetGroups.length} unassigned invoice preset groups');
+      debugPrint(
+        '✅ Returning ${unassignedPresetGroups.length} unassigned invoice preset groups',
+      );
       return unassignedPresetGroups;
     } catch (e) {
-      debugPrint('❌ Failed to fetch unassigned invoice preset groups: ${e.toString()}');
+      debugPrint(
+        '❌ Failed to fetch unassigned invoice preset groups: ${e.toString()}',
+      );
       throw ServerException(
-        message: 'Failed to load unassigned invoice preset groups: ${e.toString()}',
+        message:
+            'Failed to load unassigned invoice preset groups: ${e.toString()}',
         statusCode: '500',
       );
     }
   }
 
- @override
-Future<void> addAllInvoicesToDelivery({
-  required String presetGroupId,
-  required String deliveryId,
-}) async {
-  try {
-    debugPrint(
-      '🔄 Adding invoices from preset group $presetGroupId to delivery',
-    );
-
-    // 1. Get the preset group with its invoices
-    final presetGroupRecord = await _pocketBaseClient
-        .collection('invoicePresetGroup')
-        .getOne(presetGroupId, expand: 'invoices');
-
-    final invoicesData = presetGroupRecord.expand['invoices'] as List?;
-    if (invoicesData == null || invoicesData.isEmpty) {
-      debugPrint('⚠️ No invoices found in preset group $presetGroupId');
-      return;
-    }
-
-    // Create a base delivery data template
-    final baseDeliveryData = {
-      // Add default fields for new deliveries
-      'status': 'pending',
-      'created': DateTime.now().toIso8601String(),
-      'updated': DateTime.now().toIso8601String(),
-      // Add any other default fields needed for delivery data
-    };
-
-    // 2. Process each invoice - create a separate delivery for each
-    for (var invoiceData in invoicesData) {
-      final invoiceRecord = invoiceData as RecordModel;
-      final invoiceId = invoiceRecord.id;
-      final customerId = invoiceRecord.data['customer']?.toString();
-
+  @override
+  Future<void> addAllInvoicesToDelivery({
+    required String presetGroupId,
+    required String deliveryId,
+  }) async {
+    try {
       debugPrint(
-        '🔄 Processing invoice $invoiceId with customer $customerId',
+        '🔄 Adding invoices from preset group $presetGroupId to delivery',
       );
 
-      if (customerId == null || customerId.isEmpty) {
-        debugPrint('⚠️ Invoice $invoiceId has no customer, skipping');
-        continue;
+      // 1. Get the preset group with its invoices
+      final presetGroupRecord = await _pocketBaseClient
+          .collection('invoicePresetGroup')
+          .getOne(presetGroupId, expand: 'invoices');
+
+      final invoicesData = presetGroupRecord.expand['invoices'] as List?;
+      if (invoicesData == null || invoicesData.isEmpty) {
+        debugPrint('⚠️ No invoices found in preset group $presetGroupId');
+        return;
       }
 
-      // 2.1. Get invoice items for this invoice
-      debugPrint('🔍 Looking for invoice items for invoice: $invoiceId');
-      final invoiceItemsRecords = await _pocketBaseClient
-          .collection('invoiceItems')
-          .getFullList(
-            filter: 'invoice = "$invoiceId"',
-          );
+      // Create a base delivery data template
+      final baseDeliveryData = {
+        // Add default fields for new deliveries
+        'status': 'pending',
+        'created': DateTime.now().toIso8601String(),
+        'updated': DateTime.now().toIso8601String(),
+        // Add any other default fields needed for delivery data
+      };
 
-      debugPrint('✅ Found ${invoiceItemsRecords.length} invoice items for invoice $invoiceId');
+      // 2. Process each invoice - create a separate delivery for each
+      for (var invoiceData in invoicesData) {
+        final invoiceRecord = invoiceData as RecordModel;
+        final invoiceId = invoiceRecord.id;
+        final customerId = invoiceRecord.data['customer']?.toString();
 
-      // Extract invoice item IDs
-      final invoiceItemIds = invoiceItemsRecords.map((item) => item.id).toList();
+        debugPrint(
+          '🔄 Processing invoice $invoiceId with customer $customerId',
+        );
 
-      // 2.2. Create a new delivery data entry for this invoice
+        if (customerId == null || customerId.isEmpty) {
+          debugPrint('⚠️ Invoice $invoiceId has no customer, skipping');
+          continue;
+        }
 
-         final deliveryNumber = _generateDeliveryNumber();
-      debugPrint('🔢 Generated delivery number: $deliveryNumber');
-      // Use the base delivery data template
-      final newDeliveryData = Map<String, dynamic>.from(baseDeliveryData);
-
-      // Set the invoice, customer, and invoice items for this delivery
-      newDeliveryData['invoice'] = [invoiceId]; // Single invoice per delivery
-      newDeliveryData['customer'] = customerId;
-      newDeliveryData['invoiceItems'] = invoiceItemIds; // Add invoice items
-      newDeliveryData['deliveryNumber'] = deliveryNumber; // Add auto-generated delivery number
-
-      // Create the new delivery data record
-      final newDeliveryRecord = await _pocketBaseClient
-          .collection('deliveryData')
-          .create(body: newDeliveryData);
-
-      debugPrint(
-        '✅ Created new delivery ${newDeliveryRecord.id} with delivery number $deliveryNumber for invoice $invoiceId with ${invoiceItemIds.length} invoice items',
-      );
-
-      // 2.3. Update the invoice to associate it with the new delivery
-      await _pocketBaseClient
-          .collection('invoiceData')
-          .update(
-            invoiceId,
-            body: {
-              'deliveryData':
-                  newDeliveryRecord.id, // Link to the new delivery
-              'customer': customerId, // Ensure customer is set
-            },
-          );
-
-      // 2.4. Update each invoice item to link to the delivery data
-      for (final itemId in invoiceItemIds) {
-        await _pocketBaseClient
+        // 2.1. Get invoice items for this invoice
+        debugPrint('🔍 Looking for invoice items for invoice: $invoiceId');
+        final invoiceItemsRecords = await _pocketBaseClient
             .collection('invoiceItems')
+            .getFullList(filter: 'invoice = "$invoiceId"');
+
+        debugPrint(
+          '✅ Found ${invoiceItemsRecords.length} invoice items for invoice $invoiceId',
+        );
+
+        // Extract invoice item IDs
+        final invoiceItemIds =
+            invoiceItemsRecords.map((item) => item.id).toList();
+
+        // 2.2. Create a new delivery data entry for this invoice
+
+        final deliveryNumber = _generateDeliveryNumber();
+        debugPrint('🔢 Generated delivery number: $deliveryNumber');
+        // Use the base delivery data template
+        final newDeliveryData = Map<String, dynamic>.from(baseDeliveryData);
+
+        // Set the invoice, customer, and invoice items for this delivery
+        newDeliveryData['invoice'] = [invoiceId]; // Single invoice per delivery
+        newDeliveryData['customer'] = customerId;
+        newDeliveryData['invoiceItems'] = invoiceItemIds; // Add invoice items
+        newDeliveryData['deliveryNumber'] =
+            deliveryNumber; // Add auto-generated delivery number
+
+        // Create the new delivery data record
+        final newDeliveryRecord = await _pocketBaseClient
+            .collection('deliveryData')
+            .create(body: newDeliveryData);
+
+        debugPrint(
+          '✅ Created new delivery ${newDeliveryRecord.id} with delivery number $deliveryNumber for invoice $invoiceId with ${invoiceItemIds.length} invoice items',
+        );
+
+        // 2.3. Update the invoice to associate it with the new delivery
+        await _pocketBaseClient
+            .collection('invoiceData')
             .update(
-              itemId,
+              invoiceId,
               body: {
-                'deliveryData': newDeliveryRecord.id,
+                'deliveryData':
+                    newDeliveryRecord.id, // Link to the new delivery
+                'customer': customerId, // Ensure customer is set
               },
             );
-        debugPrint('🔗 Linked invoice item $itemId to delivery ${newDeliveryRecord.id}');
+
+        // 2.4. Update each invoice item to link to the delivery data
+        for (final itemId in invoiceItemIds) {
+          await _pocketBaseClient
+              .collection('invoiceItems')
+              .update(itemId, body: {'deliveryData': newDeliveryRecord.id});
+          debugPrint(
+            '🔗 Linked invoice item $itemId to delivery ${newDeliveryRecord.id}',
+          );
+        }
+
+        final invoiceStatusId =
+            'status_${invoiceId}_${DateTime.now().millisecondsSinceEpoch}';
+        await addInvoiceDataToInvoiceStatus(
+          invoiceId: invoiceId,
+          invoiceStatusId: invoiceStatusId,
+        );
+
+        debugPrint(
+          '✅ Updated invoice $invoiceId to link to delivery ${newDeliveryRecord.id}',
+        );
       }
 
-      final invoiceStatusId =
-          'status_${invoiceId}_${DateTime.now().millisecondsSinceEpoch}';
-      await addInvoiceDataToInvoiceStatus(
-        invoiceId: invoiceId,
-        invoiceStatusId: invoiceStatusId,
-      );
-
       debugPrint(
-        '✅ Updated invoice $invoiceId to link to delivery ${newDeliveryRecord.id}',
+        '✅ Successfully processed ${invoicesData.length} invoices from preset group $presetGroupId',
+      );
+    } catch (e) {
+      debugPrint('❌ Failed to add invoices to delivery: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to add invoices to delivery: ${e.toString()}',
+        statusCode: '500',
       );
     }
-
-    debugPrint(
-      '✅ Successfully processed ${invoicesData.length} invoices from preset group $presetGroupId',
-    );
-  } catch (e) {
-    debugPrint('❌ Failed to add invoices to delivery: ${e.toString()}');
-    throw ServerException(
-      message: 'Failed to add invoices to delivery: ${e.toString()}',
-      statusCode: '500',
-    );
   }
-}
 
-String _generateDeliveryNumber() {
-  final random = Random();
-  final randomNumber = random.nextInt(99999) + 1; // Generates 1-99999
-  final paddedNumber = randomNumber.toString().padLeft(5, '0'); // Ensures 5 digits
-  return 'DEL-$paddedNumber';
-}
-
+  String _generateDeliveryNumber() {
+    final random = Random();
+    final randomNumber = random.nextInt(99999) + 1; // Generates 1-99999
+    final paddedNumber = randomNumber.toString().padLeft(
+      5,
+      '0',
+    ); // Ensures 5 digits
+    return 'DEL-$paddedNumber';
+  }
 
   Future<bool> addInvoiceDataToInvoiceStatus({
     required String invoiceId,
@@ -315,13 +329,22 @@ String _generateDeliveryNumber() {
 
       debugPrint('🔄 Adding invoice $invoiceId to invoice status $statusId');
 
-      // Create a new invoice status record
+      // First get the invoice data to extract the customer information
+      final invoiceRecord = await _pocketBaseClient
+          .collection('invoiceData')
+          .getOne(invoiceId);
+
+      final customerId = invoiceRecord.data['customer']?.toString();
+      debugPrint('🔍 Found customer ID: $customerId for invoice $invoiceId');
+
+      // Create a new invoice status record with customer data
       await _pocketBaseClient
           .collection('invoiceStatus')
           .create(
             body: {
               // Don't specify the ID field - let PocketBase generate it
               'invoiceData': invoiceId,
+              'customerData': customerId,
               'status': 'assigned',
             },
           );
@@ -440,7 +463,7 @@ String _generateDeliveryNumber() {
             'id': record.id,
             'collectionId': record.collectionId,
             'collectionName': record.collectionName,
-            'refID': record.data['refID'] ?? '',
+            'refId': record.data['refID'] ?? '',
             'name': record.data['name'] ?? '',
             'description': record.data['description'] ?? '',
             'invoiceCount': record.expand['invoices']?.length ?? 0,

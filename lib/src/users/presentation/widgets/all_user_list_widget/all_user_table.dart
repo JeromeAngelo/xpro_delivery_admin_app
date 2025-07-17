@@ -93,7 +93,7 @@ class DeliveryUserDataTable extends StatelessWidget {
                                 : null,
                       ),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(user.name ?? 'N/A')),
+                      Flexible(child: Text(user.name ?? 'N/A')),
                     ],
                   ),
                   onTap: () => _navigateToUserDetails(context, user),
@@ -199,14 +199,20 @@ class DeliveryUserDataTable extends StatelessWidget {
     if (roleName == null) return Colors.grey;
 
     switch (roleName.toLowerCase()) {
-      case 'admin':
+      case 'super administrator':
         return Colors.red;
-      case 'manager':
+      case 'collection administrator':
         return Colors.purple;
       case 'driver':
         return Colors.blue;
-      case 'delivery':
+      case 'helper':
         return Colors.green;
+      case 'otp code viewer':
+        return Colors.orange;
+      case 'return administrator':
+        return Colors.brown;
+      case 'team leader':
+        return Colors.blue;
       default:
         return Colors.grey;
     }

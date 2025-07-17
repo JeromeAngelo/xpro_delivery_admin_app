@@ -324,8 +324,8 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
         );
       }
 
-      // Update personnel to reference this trip
-      await _updateRelatedEntities('personels', personnelIds, tripId);
+      // Update personnel to reference this trip and set isAssigned to true
+      await _updatePersonnelWithTrip(personnelIds, tripId);
 
       // Update checklists to reference this trip
       await _updateRelatedEntities('checklist', checklistIds, tripId);
@@ -450,6 +450,36 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
         // Log error but continue with other entities
         debugPrint(
           '⚠️ Failed to update $collectionName ID: $entityId - ${e.toString()}',
+        );
+      }
+    }
+  }
+
+  // Helper method to update personnel with trip reference and set isAssigned to true
+  Future<void> _updatePersonnelWithTrip(
+    List<String> personnelIds,
+    String tripId,
+  ) async {
+    if (personnelIds.isEmpty) return;
+
+    debugPrint(
+      '🔄 Updating personnel to reference trip and set isAssigned: $tripId',
+    );
+
+    for (final personnelId in personnelIds) {
+      try {
+        // Update the personnel to reference this trip and set isAssigned to true
+        await _pocketBaseClient
+            .collection('personels')
+            .update(personnelId, body: {'trip': tripId, 'isAssigned': true});
+
+        debugPrint(
+          '✅ Updated personnel ID: $personnelId with trip reference and isAssigned: true',
+        );
+      } catch (e) {
+        // Log error but continue with other personnel
+        debugPrint(
+          '⚠️ Failed to update personnel ID: $personnelId - ${e.toString()}',
         );
       }
     }

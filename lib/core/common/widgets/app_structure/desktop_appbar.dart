@@ -23,6 +23,18 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<GeneralUserBloc, GeneralUserState>(
+      buildWhen: (previous, current) {
+        // Only rebuild when authentication state actually changes
+        // Don't rebuild for loading states or other non-auth states
+        if (current is UserAuthenticated || current is GeneralUserLoaded) {
+          return true;
+        }
+        if (current is UserUnauthenticated) {
+          return true;
+        }
+        // Keep previous authentication state during loading
+        return false;
+      },
       builder: (context, state) {
         // Default username if not authenticated or loading
         String userName = 'User';

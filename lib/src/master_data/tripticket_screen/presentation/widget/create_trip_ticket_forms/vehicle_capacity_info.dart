@@ -11,14 +11,11 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/del
 
 class VehicleCapacityInfo extends StatelessWidget {
   final DeliveryVehicleEntity? vehicle;
-  final Function(DeliveryVehicleEntity) onConfirm;
-  final bool showConfirmButton;
-
+  
   const VehicleCapacityInfo({
     super.key,
     this.vehicle,
-    required this.onConfirm,
-    this.showConfirmButton = true,
+   
   });
 
   @override
@@ -161,7 +158,7 @@ class VehicleCapacityInfo extends StatelessWidget {
                           unit: 'kg',
                           percentage: capacityData['weightPercentage'],
                           isOverloaded: capacityData['isWeightOverloaded'],
-                          icon: Icons.fitness_center,
+                          icon: Icons.scale_sharp,
                         ),
 
                         // Volume capacity circular indicator
@@ -210,25 +207,25 @@ class VehicleCapacityInfo extends StatelessWidget {
                       ),
                     ],
 
-                    // Confirm button (optional)
-                    if (showConfirmButton) ...[
-                      const SizedBox(height: 16),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: ElevatedButton(
-                          onPressed:
-                              capacityData['isOverloaded']
-                                  ? null // Disable if overloaded
-                                  : () => onConfirm(vehicleData),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.grey.shade400,
-                          ),
-                          child: const Text('Confirm Selection'),
-                        ),
-                      ),
-                    ],
+                    // // Confirm button (optional)
+                    // if (showConfirmButton) ...[
+                    //   const SizedBox(height: 16),
+                    //   Align(
+                    //     alignment: Alignment.centerRight,
+                    //     child: ElevatedButton(
+                    //       onPressed:
+                    //           capacityData['isOverloaded']
+                    //               ? null // Disable if overloaded
+                    //               : () => onConfirm(vehicleData),
+                    //       style: ElevatedButton.styleFrom(
+                    //         backgroundColor: Colors.green,
+                    //         foregroundColor: Colors.white,
+                    //         disabledBackgroundColor: Colors.grey.shade400,
+                    //       ),
+                    //       child: const Text('Confirm Selection'),
+                    //     ),
+                    //   ),
+                    // ],
                   ],
                 );
               },

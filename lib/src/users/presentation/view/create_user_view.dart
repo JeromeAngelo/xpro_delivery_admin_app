@@ -74,21 +74,19 @@ class _CreateUserViewState extends State<CreateUserView> {
     }
 
     // Create the user model directly instead of entity
-   // Create the user model directly instead of entity
-final user = GeneralUserModel(
-  name: _nameController.text,
-  email: _emailController.text,
-  password: _passwordController.text,
-  passwordConfirm: _passwordConfirmController.text,
-  roleModel: _selectedRole as UserRoleModel,
-  roleId: _selectedRole?.id,  // Add this line to set the roleId
-  status: _selectedStatus,
-);
-
+    // Create the user model directly instead of entity
+    final user = GeneralUserModel(
+      name: _nameController.text,
+      email: _emailController.text,
+      password: _passwordController.text,
+      passwordConfirm: _passwordConfirmController.text,
+      roleModel: _selectedRole as UserRoleModel,
+      roleId: _selectedRole?.id, // Add this line to set the roleId
+      status: _selectedStatus,
+    );
 
     // Set loading state and track whether to create another
     setState(() {
-      _isLoading = true;
       _errorMessage = null;
       _createAnother = createAnother; // Store the createAnother value
     });
@@ -103,9 +101,12 @@ final user = GeneralUserModel(
     _nameController.clear();
     _emailController.clear();
     _passwordController.clear();
+    _passwordConfirmController.clear();
     setState(() {
       _selectedRole = null;
       _selectedStatus = UserStatusEnum.active;
+      _isLoading = false;
+      _errorMessage = null;
     });
   }
 
@@ -117,42 +118,57 @@ final user = GeneralUserModel(
     return BlocListener<GeneralUserBloc, GeneralUserState>(
       listener: (context, state) {
         if (state is GeneralUserLoading) {
-          setState(() {
-            _isLoading = true;
-          });
+          if (mounted) {
+            setState(() {
+              _isLoading = true;
+              _errorMessage = null;
+            });
+          }
         } else if (state is UserCreated) {
-          setState(() {
-            _isLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = null;
+            });
 
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('User ${state.user.name} created successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
+            // Show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('User ${state.user.name} created successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
 
-          // Either reset form for another user or navigate back
-          if (_createAnother) {
-            _resetForm();
-          } else {
-            // Navigate to the users list screen
-            context.go('/all-users'); // Make sure this route exists
+            // Either reset form for another user or navigate back
+            if (_createAnother) {
+              _resetForm();
+            } else {
+              // Navigate to the users list screen
+              context.go('/all-users'); // Make sure this route exists
+            }
           }
         } else if (state is GeneralUserError) {
-          setState(() {
-            _isLoading = false;
-            _errorMessage = state.message;
-          });
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = state.message;
+            });
 
-          // Show error message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${state.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+            // Show error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error: ${state.message}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        } else {
+          // Handle any other state by ensuring loading is false
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
         }
       },
       child: DesktopLayout(

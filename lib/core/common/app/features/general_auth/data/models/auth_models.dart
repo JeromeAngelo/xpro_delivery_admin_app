@@ -87,7 +87,7 @@ String? oldPassword;
     }
 
     // Handle user role data
-    final roleData = expandedData?['user_role'];
+    final roleData = expandedData?['userRole'];
     UserRoleModel? roleModel;
     if (roleData != null) {
       if (roleData is RecordModel) {
@@ -209,7 +209,7 @@ String? oldPassword;
       tripCollectionModels: tripCollectionModels,
       tripId: tripModel?.id,
       deliveryTeamId: deliveryTeamModel?.id,
-      roleId: roleModel?.id,
+      roleId: roleModel?.id ?? json['userRole']?.toString(),
       tripCollectionIds: tripCollectionIds.isEmpty ? null : tripCollectionIds,
       token: token,
     );
@@ -224,7 +224,7 @@ String? oldPassword;
     'profilePic': profilePic,
     'name': name,
     'tripNumberId': tripNumberId,
-    'user_role': roleId ?? (role as UserRoleModel?)?.id,
+    'userRole': roleId ?? (role as UserRoleModel?)?.id,
     'deliveryTeam': deliveryTeamId,
     'trip': tripId,
     'trip_collection': tripCollectionIds ?? trip_collection.map((tc) => tc.id).toList(),

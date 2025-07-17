@@ -5,7 +5,6 @@ import 'package:xpro_delivery_admin_app/core/enums/user_role.dart';
 import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 import 'package:pocketbase/pocketbase.dart';
 
-
 class PersonelModel extends PersonelEntity {
   String pocketbaseId;
   String? tripId;
@@ -16,6 +15,7 @@ class PersonelModel extends PersonelEntity {
     super.collectionId,
     super.collectionName,
     super.name,
+    super.isAssigned,
     super.role,
     DeliveryTeamModel? deliveryTeamModel,
     TripModel? tripModel,
@@ -24,20 +24,17 @@ class PersonelModel extends PersonelEntity {
     this.tripId,
     this.deliveryTeamId,
   }) : pocketbaseId = id ?? '',
-       super(
-         deliveryTeam: deliveryTeamModel,
-         trip: tripModel,
-       );
+       super(deliveryTeam: deliveryTeamModel, trip: tripModel);
 
   static UserRole _parseRole(dynamic roleData) {
     if (roleData == null) return UserRole.helper;
-    
-    switch(roleData.toString().toLowerCase()) {
-      case 'teamleader':
+
+    switch (roleData.toString().toLowerCase()) {
+      case 'team_leader':
         return UserRole.teamLeader;
       case 'helper':
         return UserRole.helper;
-   
+
       default:
         return UserRole.helper;
     }
@@ -74,7 +71,9 @@ class PersonelModel extends PersonelEntity {
           ...deliveryTeamData.data,
         });
       } else if (deliveryTeamData is Map) {
-        deliveryTeamModel = DeliveryTeamModel.fromJson(deliveryTeamData as Map<String, dynamic>);
+        deliveryTeamModel = DeliveryTeamModel.fromJson(
+          deliveryTeamData as Map<String, dynamic>,
+        );
       }
     }
 
@@ -88,8 +87,15 @@ class PersonelModel extends PersonelEntity {
       deliveryTeamModel: deliveryTeamModel,
       tripId: json['trip']?.toString(),
       deliveryTeamId: json['deliveryTeam']?.toString(),
-      created: json['created'] != null ? DateTime.parse(json['created'].toString()) : null,
-      updated: json['updated'] != null ? DateTime.parse(json['updated'].toString()) : null,
+      isAssigned: json['isAssigned'] ?? false,
+      created:
+          json['created'] != null
+              ? DateTime.parse(json['created'].toString())
+              : null,
+      updated:
+          json['updated'] != null
+              ? DateTime.parse(json['updated'].toString())
+              : null,
     );
   }
 
@@ -102,6 +108,7 @@ class PersonelModel extends PersonelEntity {
       'role': role?.toString().split('.').last,
       'trip': tripId,
       'deliveryTeam': deliveryTeamId,
+      'isAssigned': isAssigned,
       'created': created?.toIso8601String(),
       'updated': updated?.toIso8601String(),
     };
@@ -114,6 +121,7 @@ class PersonelModel extends PersonelEntity {
     String? name,
     UserRole? role,
     TripModel? tripModel,
+    bool? isAssigned,
     DeliveryTeamModel? deliveryTeamModel,
     String? tripId,
     String? deliveryTeamId,
@@ -126,6 +134,7 @@ class PersonelModel extends PersonelEntity {
       collectionName: collectionName ?? this.collectionName,
       name: name ?? this.name,
       role: role ?? this.role,
+      isAssigned: isAssigned ?? this.isAssigned,
       tripModel: tripModel ?? trip,
       deliveryTeamModel: deliveryTeamModel ?? deliveryTeam,
       tripId: tripId ?? this.tripId,
@@ -142,19 +151,21 @@ class PersonelModel extends PersonelEntity {
       collectionName: entity.collectionName,
       name: entity.name,
       role: entity.role,
+      isAssigned: entity.isAssigned,
       tripModel: entity.trip,
       deliveryTeamModel: entity.deliveryTeam,
       created: entity.created,
       updated: entity.updated,
     );
   }
-  
+
   factory PersonelModel.empty() {
     return PersonelModel(
       id: '',
       collectionId: '',
       collectionName: '',
       name: '',
+      isAssigned: false,
       role: UserRole.helper,
       tripModel: null,
       deliveryTeamModel: null,
@@ -164,11 +175,11 @@ class PersonelModel extends PersonelEntity {
   }
 
   @override
-bool operator ==(Object other) {
-  if (identical(this, other)) return true;
-  return other is PersonelModel && other.id == id;
-}
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is PersonelModel && other.id == id;
+  }
 
-@override
-int get hashCode => id.hashCode;
+  @override
+  int get hashCode => id.hashCode;
 }

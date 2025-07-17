@@ -100,7 +100,7 @@ class InvoicePresetGroupBloc
     AddAllInvoicesToDeliveryEvent event,
     Emitter<InvoicePresetGroupState> emit,
   ) async {
-    emit(const InvoicePresetGroupLoading());
+    emit(const InvoiceProcessingToDelivery());
     debugPrint(
       '🔄 BLOC: Adding invoices from preset group ${event.presetGroupId} to delivery ${event.deliveryId}',
     );

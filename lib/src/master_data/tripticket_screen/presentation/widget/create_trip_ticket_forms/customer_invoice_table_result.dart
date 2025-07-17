@@ -63,7 +63,7 @@ class _InvoiceDataTableState extends State<CustomerInvoiceDataTableResult> {
       _selectedInvoiceIds =
           widget.selectedInvoices.map((i) => i.id ?? '').toSet();
     }
-    
+
     // If we need a refresh and the customer ID hasn't changed, reload the data
     if (_needsRefresh && oldWidget.customerId == widget.customerId) {
       _loadInvoicesForCustomer();
@@ -74,7 +74,7 @@ class _InvoiceDataTableState extends State<CustomerInvoiceDataTableResult> {
   void _addSelectedInvoicesToDelivery() {
     // Check if we have a valid deliveryId
     final deliveryId = widget.deliveryId;
-    
+
     // If we don't have a deliveryId, we'll pass an empty string to let the remote datasource
     // create a new delivery automatically, rather than showing an error
     if (_selectedInvoiceIds.isEmpty) {
@@ -102,19 +102,39 @@ class _InvoiceDataTableState extends State<CustomerInvoiceDataTableResult> {
       );
     }
   }
-  
+
   void _resetTable() {
     setState(() {
       _selectedInvoiceIds = {};
       _isAddingToDelivery = false;
       _needsRefresh = true;
     });
-    
+
     // Update parent with empty selection
     widget.onInvoicesChanged([]);
-    
+
     // Reload the data to reflect changes
     _loadInvoicesForCustomer();
+  }
+
+  void _clearTableSelection() {
+    setState(() {
+      _selectedInvoiceIds.clear();
+    });
+
+    // Update parent with empty selection
+    widget.onInvoicesChanged([]);
+
+    // Show feedback to user
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Selection cleared'),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    debugPrint('🧹 Table selection cleared');
   }
 
   @override
@@ -148,7 +168,9 @@ class _InvoiceDataTableState extends State<CustomerInvoiceDataTableResult> {
                   _allInvoices = state.invoiceData;
 
                   // If no invoices are selected yet, select all by default
-                  if (_selectedInvoiceIds.isEmpty && _allInvoices.isNotEmpty && !_needsRefresh) {
+                  if (_selectedInvoiceIds.isEmpty &&
+                      _allInvoices.isNotEmpty &&
+                      !_needsRefresh) {
                     _selectedInvoiceIds =
                         _allInvoices.map((i) => i.id ?? '').toSet();
                     widget.onInvoicesChanged(_allInvoices);
@@ -158,15 +180,17 @@ class _InvoiceDataTableState extends State<CustomerInvoiceDataTableResult> {
                 // When all invoices are processed, update UI
                 if (_selectedInvoiceIds.contains(state.invoiceId)) {
                   _selectedInvoiceIds.remove(state.invoiceId);
-                  
+
                   if (_selectedInvoiceIds.isEmpty) {
                     // All invoices have been processed, reset the table
                     _resetTable();
-                    
+
                     // Show success message
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Invoices successfully added to delivery'),
+                        content: Text(
+                          'Invoices successfully added to delivery',
+                        ),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -176,7 +200,7 @@ class _InvoiceDataTableState extends State<CustomerInvoiceDataTableResult> {
                 setState(() {
                   _isAddingToDelivery = false;
                 });
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Error: ${state.message}'),
@@ -249,32 +273,36 @@ class _InvoiceDataTableState extends State<CustomerInvoiceDataTableResult> {
                       DataCell(
                         Checkbox(
                           value: isSelected,
-                          onChanged: _isAddingToDelivery 
-                              ? null 
-                              : (value) {
-                                  setState(() {
-                                    if (invoice.id != null) {
-                                      if (value == true) {
-                                        _selectedInvoiceIds.add(invoice.id!);
-                                      } else {
-                                        _selectedInvoiceIds.remove(invoice.id!);
-                                      }
+                          onChanged:
+                              _isAddingToDelivery
+                                  ? null
+                                  : (value) {
+                                    setState(() {
+                                      if (invoice.id != null) {
+                                        if (value == true) {
+                                          _selectedInvoiceIds.add(invoice.id!);
+                                        } else {
+                                          _selectedInvoiceIds.remove(
+                                            invoice.id!,
+                                          );
+                                        }
 
-                                      // Update selected invoices to parent
-                                      final selectedInvoices =
-                                          _allInvoices
-                                              .where(
-                                                (i) =>
-                                                    i.id != null &&
-                                                    _selectedInvoiceIds.contains(
-                                                      i.id,
-                                                    ),
-                                              )
-                                              .toList();
-                                      widget.onInvoicesChanged(selectedInvoices);
-                                    }
-                                  });
-                                },
+                                        // Update selected invoices to parent
+                                        final selectedInvoices =
+                                            _allInvoices
+                                                .where(
+                                                  (i) =>
+                                                      i.id != null &&
+                                                      _selectedInvoiceIds
+                                                          .contains(i.id),
+                                                )
+                                                .toList();
+                                        widget.onInvoicesChanged(
+                                          selectedInvoices,
+                                        );
+                                      }
+                                    });
+                                  },
                         ),
                       ),
                       DataCell(Text(invoice.name ?? 'N/A')),
@@ -299,14 +327,40 @@ class _InvoiceDataTableState extends State<CustomerInvoiceDataTableResult> {
                 },
                 isLoading: false,
                 emptyMessage: 'No invoices available for this customer',
-                buttonPlaceholder:
-                    _selectedInvoiceIds.isNotEmpty
-                        ? ElevatedButton.icon(
-                          onPressed: _isAddingToDelivery 
-                              ? null 
-                              : _addSelectedInvoicesToDelivery,
-                          icon: _isAddingToDelivery 
-                              ? Container(
+                buttonPlaceholder: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Reset/Clear Selection IconButton
+                    if (_selectedInvoiceIds.isNotEmpty)
+                      Tooltip(
+                        message: 'Clear Selection',
+                        child: IconButton(
+                          onPressed:
+                              _isAddingToDelivery ? null : _clearTableSelection,
+                          icon: const Icon(Icons.clear_all),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.grey.shade600,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: Colors.grey.shade300,
+                            disabledForegroundColor: Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+
+                    // Spacing
+                    if (_selectedInvoiceIds.isNotEmpty)
+                      const SizedBox(width: 8),
+
+                    // Add to Delivery Button (existing)
+                    if (_selectedInvoiceIds.isNotEmpty)
+                      ElevatedButton.icon(
+                        onPressed:
+                            _isAddingToDelivery
+                                ? null
+                                : _addSelectedInvoicesToDelivery,
+                        icon:
+                            _isAddingToDelivery
+                                ? Container(
                                   width: 24,
                                   height: 24,
                                   padding: const EdgeInsets.all(2.0),
@@ -315,20 +369,23 @@ class _InvoiceDataTableState extends State<CustomerInvoiceDataTableResult> {
                                     strokeWidth: 3,
                                   ),
                                 )
-                              : const Icon(Icons.add_circle_outline),
-                          label: Text(
-                            _isAddingToDelivery
-                                ? 'Adding to Delivery...'
-                                : 'Add ${_selectedInvoiceIds.length} To Delivery'
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).primaryColor,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: Theme.of(context).primaryColor.withOpacity(0.7),
-                            disabledForegroundColor: Colors.white,
-                          ),
-                        )
-                        : null,
+                                : const Icon(Icons.add_circle_outline),
+                        label: Text(
+                          _isAddingToDelivery
+                              ? 'Adding to Delivery...'
+                              : 'Add ${_selectedInvoiceIds.length} To Delivery',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: Theme.of(
+                            context,
+                          ).primaryColor.withOpacity(0.7),
+                          disabledForegroundColor: Colors.white,
+                        ),
+                      ),
+                  ],
+                ),
               );
             },
           ),
@@ -418,48 +475,45 @@ class _InvoiceDataTableState extends State<CustomerInvoiceDataTableResult> {
           // Shimmer loading effect for rows
           Expanded(
             child: Shimmer.fromColors(
-                            baseColor: Colors.grey[300]!,
+              baseColor: Colors.grey[300]!,
               highlightColor: Colors.grey[100]!,
               child: ListView.builder(
                 itemCount: 5, // Show 5 shimmer rows
-                itemBuilder: (_, __) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 16),
-                      // Checkbox placeholder
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+                itemBuilder:
+                    (_, __) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 16),
+                          // Checkbox placeholder
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 32),
+                          // Invoice name placeholder
+                          Container(
+                            width: 150,
+                            height: 20,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 32),
+                          // Amount placeholder
+                          Container(width: 80, height: 20, color: Colors.white),
+                          const SizedBox(width: 32),
+                          // Date placeholder
+                          Container(
+                            width: 120,
+                            height: 20,
+                            color: Colors.white,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 32),
-                      // Invoice name placeholder
-                      Container(
-                        width: 150,
-                        height: 20,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(width: 32),
-                      // Amount placeholder
-                      Container(
-                        width: 80,
-                        height: 20,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(width: 32),
-                      // Date placeholder
-                      Container(
-                        width: 120,
-                        height: 20,
-                        color: Colors.white,
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
               ),
             ),
           ),
@@ -468,4 +522,3 @@ class _InvoiceDataTableState extends State<CustomerInvoiceDataTableResult> {
     );
   }
 }
-

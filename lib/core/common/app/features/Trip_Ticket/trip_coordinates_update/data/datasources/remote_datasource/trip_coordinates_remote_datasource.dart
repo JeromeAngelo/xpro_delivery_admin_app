@@ -100,12 +100,22 @@ class TripCoordinatesRemoteDataSourceImpl
         DateTime? parseDate(dynamic value) {
           if (value == null) return null;
 
+          // If value is already a DateTime, return it directly
+          if (value is DateTime) {
+            return value;
+          }
+
           String strValue = value.toString().trim();
           if (strValue.isEmpty) return null;
 
+          debugPrint('🔍 Attempting to parse date: "$strValue" (type: ${value.runtimeType})');
+
           try {
             // Try standard ISO format first
-            return DateTime.parse(strValue);
+            debugPrint('🔍 Attempting DateTime.parse("$strValue")');
+            final result = DateTime.parse(strValue);
+            debugPrint('✅ Successfully parsed: $result');
+            return result;
           } catch (e) {
             debugPrint(
               '⚠️ Standard date parsing failed: $e for value: $strValue',
@@ -208,8 +218,10 @@ class TripCoordinatesRemoteDataSourceImpl
 
               for (var variation in isoVariations) {
                 try {
+                  debugPrint('🔍 Trying ISO variation: "$variation"');
                   return DateTime.parse(variation);
                 } catch (e) {
+                  debugPrint('⚠️ ISO variation failed: $e for "$variation"');
                   continue;
                 }
               }
@@ -229,6 +241,25 @@ class TripCoordinatesRemoteDataSourceImpl
         }
 
         // Create model from record
+        DateTime? createdDate;
+        DateTime? updatedDate;
+        
+        try {
+          debugPrint('🔍 Parsing created date: ${record.created} (type: ${record.created.runtimeType})');
+          createdDate = parseDate(record.created);
+        } catch (e) {
+          debugPrint('❌ Error parsing created date: $e');
+          createdDate = null;
+        }
+        
+        try {
+          debugPrint('🔍 Parsing updated date: ${record.updated} (type: ${record.updated.runtimeType})');
+          updatedDate = parseDate(record.updated);
+        } catch (e) {
+          debugPrint('❌ Error parsing updated date: $e');
+          updatedDate = null;
+        }
+        
         coordinates.add(
           TripCoordinatesModel(
             id: record.id,
@@ -238,8 +269,8 @@ class TripCoordinatesRemoteDataSourceImpl
             tripId: actualTripId,
             latitude: latitude,
             longitude: longitude,
-            created: parseDate(record.created),
-            updated: parseDate(record.updated),
+            created: createdDate,
+            updated: updatedDate,
           ),
         );
       }

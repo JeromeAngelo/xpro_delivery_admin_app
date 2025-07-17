@@ -160,5 +160,26 @@ class CustomerDataRepoImpl implements CustomerDataRepo {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     }
   }
+  @override
+ResultFuture<List<CustomerDataEntity>> getAllUnassignedCustomerData() async {
+  try {
+    debugPrint('🌐 Fetching all unassigned customer data from remote');
+    final remoteUnassignedCustomerData = await _remoteDataSource.getAllUnassignedCustomerData();
+    
+    debugPrint('✅ Successfully retrieved ${remoteUnassignedCustomerData.length} unassigned customer data records');
+    
+    return Right(remoteUnassignedCustomerData);
+  } on ServerException catch (e) {
+    debugPrint('⚠️ API Error: ${e.message}');
+    return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+  } catch (e) {
+    debugPrint('❌ Unexpected error: ${e.toString()}');
+    return Left(ServerFailure(
+      message: 'Failed to fetch unassigned customer data: ${e.toString()}',
+      statusCode: '500',
+    ));
+  }
+}
+
 
 }

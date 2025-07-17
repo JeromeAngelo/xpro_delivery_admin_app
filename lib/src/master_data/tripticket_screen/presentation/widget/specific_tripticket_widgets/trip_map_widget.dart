@@ -44,23 +44,100 @@ class _TripMapWidgetState extends State<TripMapWidget>
   bool _isSatelliteView = false; // Add this line
 
   List<Marker> _createCoordinateMarkers() {
-    return widget.tripCoordinates
-        .where((coord) => coord.latitude != null && coord.longitude != null)
-        .map((coord) {
-          return Marker(
-            point: LatLng(coord.latitude!, coord.longitude!),
-            width: 15,
-            height: 15,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.7),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-              ),
+    final orderedCoordinates = _getOrderedCoordinates();
+
+    return orderedCoordinates.asMap().entries.map((entry) {
+      final index = entry.key;
+      final coord = entry.value;
+      final isFirst = index == 0;
+      final isLast = index == orderedCoordinates.length - 1;
+
+      return Marker(
+        point: LatLng(coord.latitude!, coord.longitude!),
+        width: 20,
+        height: 20,
+        child: Container(
+          decoration: BoxDecoration(
+            color:
+                isFirst
+                    ? Colors.green.withOpacity(0.8)
+                    : isLast
+                    ? Colors.red.withOpacity(0.8)
+                    : Colors.blue.withOpacity(0.7),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+          child: Center(
+            child: Icon(
+              isFirst
+                  ? Icons.play_arrow
+                  : isLast
+                  ? Icons.flag
+                  : Icons.circle,
+              size: 12,
+              color: Colors.white,
             ),
-          );
-        })
-        .toList();
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  List<TripCoordinatesEntity> _getOrderedCoordinates() {
+    // Filter out coordinates with null latitude or longitude
+    final validCoordinates =
+        widget.tripCoordinates
+            .where((coord) => coord.latitude != null && coord.longitude != null)
+            .toList();
+
+    // Sort coordinates chronologically by their creation time
+    // If there's no timestamp, maintain the order they were added
+    validCoordinates.sort((a, b) {
+      // If both have creation timestamps, sort by creation time
+      if (a.created != null && b.created != null) {
+        return a.created!.compareTo(b.created!);
+      }
+      // If only one has creation timestamp, prioritize the one with timestamp
+      if (a.created != null) return -1;
+      if (b.created != null) return 1;
+      // If neither has creation timestamp, maintain original order
+      return 0;
+    });
+
+    return validCoordinates;
+  }
+
+  List<LatLng> _createOrderedRoutePoints() {
+    final orderedCoordinates = _getOrderedCoordinates();
+
+    if (orderedCoordinates.isEmpty) return [];
+
+    // Create the linear path points
+    final routePoints =
+        orderedCoordinates
+            .map((coord) => LatLng(coord.latitude!, coord.longitude!))
+            .toList();
+
+    // Add the current truck location as the final point if available
+    if (widget.trip != null &&
+        widget.trip!.latitude != null &&
+        widget.trip!.longitude != null &&
+        widget.trip!.latitude! != 0.0 &&
+        widget.trip!.longitude! != 0.0) {
+      final truckLocation = LatLng(
+        widget.trip!.latitude!,
+        widget.trip!.longitude!,
+      );
+
+      // Only add if it's different from the last coordinate
+      if (routePoints.isEmpty ||
+          routePoints.last.latitude != truckLocation.latitude ||
+          routePoints.last.longitude != truckLocation.longitude) {
+        routePoints.add(truckLocation);
+      }
+    }
+
+    return routePoints;
   }
 
   @override
@@ -360,8 +437,35 @@ class _TripMapWidgetState extends State<TripMapWidget>
                         Row(
                           children: [
                             Container(
-                              width: 10,
-                              height: 10,
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.8),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.play_arrow,
+                                size: 8,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Start Point',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 16),
+                        Row(
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
                               decoration: BoxDecoration(
                                 color: Colors.blue.withOpacity(0.7),
                                 shape: BoxShape.circle,
@@ -370,10 +474,42 @@ class _TripMapWidgetState extends State<TripMapWidget>
                                   width: 1,
                                 ),
                               ),
+                              child: const Icon(
+                                Icons.circle,
+                                size: 8,
+                                color: Colors.white,
+                              ),
                             ),
                             const SizedBox(width: 4),
                             const Text(
-                              'Location History',
+                              'Route Points',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 16),
+                        Row(
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.8),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.flag,
+                                size: 8,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'End Point',
                               style: TextStyle(fontSize: 12),
                             ),
                           ],
@@ -499,7 +635,7 @@ class _TripMapWidgetState extends State<TripMapWidget>
           initialCenter: center,
           initialZoom: 14,
           minZoom: 5,
-          maxZoom: 35,
+          maxZoom: 50,
           interactionOptions: const InteractionOptions(
             flags: InteractiveFlag.all,
             pinchMoveWinGestures: 10,
@@ -518,20 +654,9 @@ class _TripMapWidgetState extends State<TripMapWidget>
             PolylineLayer(
               polylines: [
                 Polyline(
-                  points:
-                      widget.tripCoordinates
-                          .where(
-                            (coord) =>
-                                coord.latitude != null &&
-                                coord.longitude != null,
-                          )
-                          .map(
-                            (coord) =>
-                                LatLng(coord.latitude!, coord.longitude!),
-                          )
-                          .toList(),
-                  color: Colors.blue.withOpacity(0.7),
-                  strokeWidth: 3.0,
+                  points: _createOrderedRoutePoints(),
+                  color: Colors.blue.withOpacity(0.8),
+                  strokeWidth: 4.0,
                 ),
               ],
             ),

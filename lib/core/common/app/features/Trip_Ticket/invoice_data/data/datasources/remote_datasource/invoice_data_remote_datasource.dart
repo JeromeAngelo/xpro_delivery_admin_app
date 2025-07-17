@@ -392,21 +392,68 @@ class InvoiceDataRemoteDataSourceImpl implements InvoiceDataRemoteDataSource {
 
       debugPrint('🔄 Adding invoice $invoiceId to invoice status $statusId');
 
-      // Create a new invoice status record
-      await _pocketBaseClient
-          .collection('invoiceStatus')
-          .create(
-            body: {
-              // Don't specify the ID field - let PocketBase generate it
-              'invoiceData': invoiceId,
-              'status': 'assigned',
-            },
-          );
+      // First, get the invoice data with expanded customer information
+      final invoiceRecord = await _pocketBaseClient
+          .collection('invoiceData')
+          .getOne(invoiceId, expand: 'customer');
 
-      debugPrint('✅ Created new invoice status with invoice data');
+      debugPrint('📋 Invoice record data: ${invoiceRecord.data}');
+      debugPrint('📋 Invoice expand data: ${invoiceRecord.expand}');
+
+      String? customerId;
+
+      // Extract customer ID using the same logic as addInvoiceDataToDelivery
+      if (invoiceRecord.expand.containsKey('customer') &&
+          invoiceRecord.expand['customer'] != null) {
+        final customerData = invoiceRecord.expand['customer'];
+        if (customerData is List && customerData!.isNotEmpty) {
+          customerId = (customerData.first).id;
+          debugPrint('✅ Found customer ID from expand list: $customerId');
+        }
+      } else if (invoiceRecord.data.containsKey('customer') &&
+          invoiceRecord.data['customer'] != null) {
+        customerId = invoiceRecord.data['customer'].toString();
+        debugPrint('✅ Found customer ID from data field: $customerId');
+      }
+
+      if (customerId == null || customerId.isEmpty) {
+        debugPrint('⚠️ Invoice $invoiceId has no customer data');
+        debugPrint(
+          '📋 Available data fields: ${invoiceRecord.data.keys.toList()}',
+        );
+        debugPrint(
+          '📋 Available expand fields: ${invoiceRecord.expand.keys.toList()}',
+        );
+
+        // Create status record without customer data
+        final statusData = {'invoiceData': invoiceId, 'status': 'assigned'};
+
+        await _pocketBaseClient
+            .collection('invoiceStatus')
+            .create(body: statusData);
+
+        debugPrint('⚠️ Created invoice status without customer data');
+      } else {
+        debugPrint('📋 Invoice $invoiceId belongs to customer: $customerId');
+
+        // Create a new invoice status record with both invoiceData and customerData
+        final statusData = {
+          'invoiceData': invoiceId,
+          'customerData': customerId,
+          'status': 'assigned',
+        };
+
+        debugPrint('📤 Creating invoice status with data: $statusData');
+
+        await _pocketBaseClient
+            .collection('invoiceStatus')
+            .create(body: statusData);
+
+        debugPrint('✅ Created invoice status record with customer data');
+      }
 
       // Update the invoice data to reference this status
-      // Since we let PocketBase generate the ID, we need to fetch the created record
+      // Fetch the created record to get its ID
       final records = await _pocketBaseClient
           .collection('invoiceStatus')
           .getList(
@@ -423,12 +470,30 @@ class InvoiceDataRemoteDataSourceImpl implements InvoiceDataRemoteDataSource {
             .update(invoiceId, body: {'invoiceStatus': createdStatusId});
 
         debugPrint('✅ Updated invoice with new status ID: $createdStatusId');
+
+        // Log the complete status record for verification
+        final statusRecord = records.items.first;
+        debugPrint('📊 Final Invoice Status Record:');
+        debugPrint('  - ID: ${statusRecord.id}');
+        debugPrint('  - Invoice Data: ${statusRecord.data['invoiceData']}');
+        debugPrint(
+          '  - Customer Data: ${statusRecord.data['customerData'] ?? 'NOT SET'}',
+        );
+        debugPrint('  - Status: ${statusRecord.data['status']}');
+
+        // Verify the customer data was actually saved
+        if (statusRecord.data['customerData'] != null) {
+          debugPrint('✅ Customer data successfully saved to invoice status');
+        } else {
+          debugPrint('❌ Customer data was NOT saved to invoice status');
+        }
       }
 
-      debugPrint('✅ Successfully added invoice to invoice status');
+      debugPrint('✅ Successfully processed invoice status creation');
       return true;
     } catch (e) {
       debugPrint('❌ Failed to add invoice to invoice status: ${e.toString()}');
+      debugPrint('❌ Error details: $e');
       throw ServerException(
         message: 'Failed to add invoice to invoice status: ${e.toString()}',
         statusCode: '500',

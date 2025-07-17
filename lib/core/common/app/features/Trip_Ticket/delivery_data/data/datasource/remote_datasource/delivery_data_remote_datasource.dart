@@ -32,9 +32,67 @@ class DeliveryDataRemoteDataSourceImpl implements DeliveryDataRemoteDataSource {
 
   final PocketBase _pocketBaseClient;
 
+  // Helper method for retry logic with exponential backoff
+  Future<T> _retryWithBackoff<T>(
+    Future<T> Function() operation,
+    String operationName, {
+    int maxRetries = 3,
+    Duration initialDelay = const Duration(seconds: 1),
+  }) async {
+    int retryCount = 0;
+    Duration delay = initialDelay;
+
+    while (retryCount < maxRetries) {
+      try {
+        return await operation();
+      } catch (e) {
+        retryCount++;
+
+        // Check if it's a network-related error
+        bool isNetworkError =
+            e.toString().contains('Failed to fetch') ||
+            e.toString().contains('statusCode: 0') ||
+            e.toString().contains('isAbort: true') ||
+            e.toString().contains('ClientException');
+
+        debugPrint(
+          '🔄 Attempt $retryCount/$maxRetries failed for $operationName: ${e.toString()}',
+        );
+
+        if (retryCount >= maxRetries || !isNetworkError) {
+          debugPrint(
+            '❌ Max retries exceeded or non-network error for $operationName',
+          );
+
+          // Provide more user-friendly error messages
+          if (isNetworkError) {
+            throw ServerException(
+              message:
+                  'Network connection failed. Please check your internet connection and try again.',
+              statusCode: '503',
+            );
+          }
+
+          rethrow;
+        }
+
+        debugPrint(
+          '⏳ Retrying $operationName in ${delay.inSeconds} seconds...',
+        );
+        await Future.delayed(delay);
+        delay = Duration(seconds: delay.inSeconds * 2); // Exponential backoff
+      }
+    }
+
+    throw ServerException(
+      message: 'Failed to complete $operationName after $maxRetries attempts',
+      statusCode: '503',
+    );
+  }
+
   @override
   Future<List<DeliveryDataModel>> getAllDeliveryDataWithTrips() async {
-    try {
+    return await _retryWithBackoff(() async {
       debugPrint('🔄 Fetching all delivery data with trips');
 
       final result = await _pocketBaseClient
@@ -57,18 +115,12 @@ class DeliveryDataRemoteDataSourceImpl implements DeliveryDataRemoteDataSource {
       }
 
       return deliveryDataList;
-    } catch (e) {
-      debugPrint('❌ Failed to fetch delivery data with trips: ${e.toString()}');
-      throw ServerException(
-        message: 'Failed to load delivery data with trips: ${e.toString()}',
-        statusCode: '500',
-      );
-    }
+    }, 'getAllDeliveryDataWithTrips');
   }
 
   @override
   Future<List<DeliveryDataModel>> getAllDeliveryData() async {
-    try {
+    return await _retryWithBackoff(() async {
       debugPrint('🔄 Fetching all delivery data');
 
       final result = await _pocketBaseClient
@@ -88,18 +140,12 @@ class DeliveryDataRemoteDataSourceImpl implements DeliveryDataRemoteDataSource {
       }
 
       return deliveryDataList;
-    } catch (e) {
-      debugPrint('❌ Failed to fetch delivery data: ${e.toString()}');
-      throw ServerException(
-        message: 'Failed to load delivery data: ${e.toString()}',
-        statusCode: '500',
-      );
-    }
+    }, 'getAllDeliveryData');
   }
 
   @override
   Future<List<DeliveryDataModel>> getDeliveryDataByTripId(String tripId) async {
-    try {
+    return await _retryWithBackoff(() async {
       debugPrint('🔄 Fetching delivery data for trip ID: $tripId');
 
       final result = await _pocketBaseClient
@@ -121,34 +167,25 @@ class DeliveryDataRemoteDataSourceImpl implements DeliveryDataRemoteDataSource {
       }
 
       return deliveryDataList;
-    } catch (e) {
-      debugPrint('❌ Failed to fetch delivery data by trip ID: ${e.toString()}');
-      throw ServerException(
-        message: 'Failed to load delivery data by trip ID: ${e.toString()}',
-        statusCode: '500',
-      );
-    }
+    }, 'getDeliveryDataByTripId');
   }
 
   @override
   Future<DeliveryDataModel> getDeliveryDataById(String id) async {
-    try {
+    return await _retryWithBackoff(() async {
       debugPrint('🔄 Fetching delivery data with ID: $id');
 
       final record = await _pocketBaseClient
           .collection('deliveryData')
-          .getOne(id, expand: 'customer,invoice,trip,deliveryUpdates,invoiceItems');
+          .getOne(
+            id,
+            expand: 'customer,invoice,trip,deliveryUpdates,invoiceItems',
+          );
 
       debugPrint('✅ Retrieved delivery data with ID: $id');
 
       return _processDeliveryDataRecord(record);
-    } catch (e) {
-      debugPrint('❌ Failed to fetch delivery data by ID: ${e.toString()}');
-      throw ServerException(
-        message: 'Failed to load delivery data by ID: ${e.toString()}',
-        statusCode: '500',
-      );
-    }
+    }, 'getDeliveryDataById');
   }
 
   @override
@@ -291,41 +328,40 @@ class DeliveryDataRemoteDataSourceImpl implements DeliveryDataRemoteDataSource {
               .toList();
     }
 
-// Add this after the deliveryUpdates processing section:
+    // Add this after the deliveryUpdates processing section:
 
     // Process invoice items
     List<InvoiceItemsModel> invoiceItemsList = [];
     if (record.expand['invoiceItems'] != null) {
       final invoiceItemsData = record.expand['invoiceItems'];
       if (invoiceItemsData is List) {
-        invoiceItemsList = invoiceItemsData!.map((item) {
-          return InvoiceItemsModel.fromJson({
-            'id': item.id,
-            'collectionId': item.collectionId,
-            'collectionName': item.collectionName,
-            'name': item.data['name'],
-            'brand': item.data['brand'],
-            'refId': item.data['refId'],
-            'uom': item.data['uom'],
-            'quantity': item.data['quantity'],
-            'totalBaseQuantity': item.data['totalBaseQuantity'],
-            'uomPrice': item.data['uomPrice'],
-            'totalAmount': item.data['totalAmount'],
-            'invoiceData': item.data['invoiceData'],
-            'created': item.data['created'],
-            'updated': item.data['updated'],
-          });
-        }).toList();
+        invoiceItemsList =
+            invoiceItemsData!.map((item) {
+              return InvoiceItemsModel.fromJson({
+                'id': item.id,
+                'collectionId': item.collectionId,
+                'collectionName': item.collectionName,
+                'name': item.data['name'],
+                'brand': item.data['brand'],
+                'refId': item.data['refId'],
+                'uom': item.data['uom'],
+                'quantity': item.data['quantity'],
+                'totalBaseQuantity': item.data['totalBaseQuantity'],
+                'uomPrice': item.data['uomPrice'],
+                'totalAmount': item.data['totalAmount'],
+                'invoiceData': item.data['invoiceData'],
+                'created': item.data['created'],
+                'updated': item.data['updated'],
+              });
+            }).toList();
       }
     } else if (record.data['invoiceItems'] != null &&
         record.data['invoiceItems'] is List) {
-      invoiceItemsList = (record.data['invoiceItems'] as List)
-          .map((id) => InvoiceItemsModel(id: id.toString()))
-          .toList();
+      invoiceItemsList =
+          (record.data['invoiceItems'] as List)
+              .map((id) => InvoiceItemsModel(id: id.toString()))
+              .toList();
     }
-
-
-    
 
     return DeliveryDataModel(
       id: record.id,

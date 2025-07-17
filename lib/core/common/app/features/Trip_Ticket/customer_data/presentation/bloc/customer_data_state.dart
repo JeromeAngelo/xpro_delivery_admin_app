@@ -36,6 +36,17 @@ class AllCustomerDataLoaded extends CustomerDataState {
   List<Object?> get props => [customerData];
 }
 
+// State for getting all unassigned customer data
+class AllUnassignedCustomerDataLoaded extends CustomerDataState {
+  final List<CustomerDataEntity> unassignedCustomerData;
+
+  const AllUnassignedCustomerDataLoaded(this.unassignedCustomerData);
+
+  @override
+  List<Object?> get props => [unassignedCustomerData];
+}
+
+
 // States for getting customer data by ID
 class CustomerDataLoaded extends CustomerDataState {
   final CustomerDataEntity customerData;

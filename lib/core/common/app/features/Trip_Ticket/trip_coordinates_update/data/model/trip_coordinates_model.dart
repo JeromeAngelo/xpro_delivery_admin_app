@@ -27,9 +27,18 @@ class TripCoordinatesModel extends TripCoordinatesEntity {
     // Add safe date parsing
     DateTime? parseDate(dynamic value) {
       if (value == null || value.toString().isEmpty) return null;
+      
+      // If value is already a DateTime, return it directly
+      if (value is DateTime) {
+        return value;
+      }
+      
+      debugPrint('🔍 Model parseDate attempting to parse: "${value.toString()}" (type: ${value.runtimeType})');
+      
       try {
         return DateTime.parse(value.toString());
-      } catch (_) {
+      } catch (e) {
+        debugPrint('⚠️ Model parseDate failed: $e for value: ${value.toString()}');
         return null;
       }
     }

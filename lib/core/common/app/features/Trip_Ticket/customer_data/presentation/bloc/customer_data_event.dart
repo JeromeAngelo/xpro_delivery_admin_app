@@ -54,6 +54,12 @@ class CreateCustomerDataEvent extends CustomerDataEvent {
       ];
 }
 
+// Event for getting all unassigned customer data
+class GetAllUnassignedCustomerDataEvent extends CustomerDataEvent {
+  const GetAllUnassignedCustomerDataEvent();
+}
+
+
 // Event for updating customer data
 class UpdateCustomerDataEvent extends CustomerDataEvent {
   final String id;

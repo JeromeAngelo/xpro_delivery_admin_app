@@ -36,5 +36,6 @@ abstract class CustomerDataRepo {
   });
   ResultFuture<List<CustomerDataEntity>> getCustomersByDeliveryId(String deliveryId);
 
-  
+  // NEW: Get all unassigned customer data
+  ResultFuture<List<CustomerDataEntity>> getAllUnassignedCustomerData();
 }

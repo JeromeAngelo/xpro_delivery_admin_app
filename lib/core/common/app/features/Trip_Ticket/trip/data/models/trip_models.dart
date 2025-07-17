@@ -293,21 +293,38 @@ class TripModel extends TripEntity {
       endTripOtp: endTripOtpModel,
       deliveryTeam: deliveryTeamModel,
       timeAccepted: json['timeAccepted'] != null
-          ? DateTime.parse(json['timeAccepted'].toString())
+          ? _parseDateTime(json['timeAccepted'])
           : null,
       isEndTrip: json['isEndTrip'] as bool?,
       timeEndTrip: json['timeEndTrip'] != null
-          ? DateTime.parse(json['timeEndTrip'].toString())
+          ? _parseDateTime(json['timeEndTrip'])
           : null,
       created: json['created'] != null
-          ? DateTime.parse(json['created'].toString())
+          ? _parseDateTime(json['created'])
           : null,
       updated: json['updated'] != null
-          ? DateTime.parse(json['updated'].toString())
+          ? _parseDateTime(json['updated'])
           : null,
       qrCode: json['qrCode']?.toString(),
       isAccepted: json['isAccepted'] as bool?,
     );
+  }
+
+  // Helper method for safe date parsing
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    
+    // If value is already a DateTime, return it directly
+    if (value is DateTime) {
+      return value;
+    }
+    
+    try {
+      return DateTime.parse(value.toString());
+    } catch (e) {
+      debugPrint('⚠️ TripModel date parsing failed: $e for value: ${value.toString()}');
+      return null;
+    }
   }
 
   DataMap toJson() {

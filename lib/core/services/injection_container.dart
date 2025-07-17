@@ -237,6 +237,7 @@ import '../common/app/features/Trip_Ticket/collection/domain/usecases/filter_col
 import '../common/app/features/Trip_Ticket/collection/domain/usecases/get_collection_by_id.dart';
 import '../common/app/features/Trip_Ticket/collection/domain/usecases/get_collection_by_trip_id.dart'
     show GetCollectionsByTripId;
+import '../common/app/features/Trip_Ticket/customer_data/domain/usecases/get_all_unassigned_customers.dart';
 import '../common/app/features/Trip_Ticket/delivery_data/domain/usecases/get_all_delivery_data_with_trips.dart';
 import '../common/app/features/Trip_Ticket/delivery_receipt/data/repo/delivery_receipt_repo_impl.dart';
 import '../common/app/features/Trip_Ticket/delivery_receipt/domain/repo/delivery_receipt_repo.dart';
@@ -762,7 +763,7 @@ Future<void> initCustomerData() async {
       deleteCustomerData: sl(),
       deleteAllCustomerData: sl(),
       addCustomerToDelivery: sl(),
-      getCustomersByDeliveryId: sl(),
+      getCustomersByDeliveryId: sl(), getAllUnassignedCustomerData: sl(),
     ),
   );
 
@@ -774,6 +775,7 @@ Future<void> initCustomerData() async {
   sl.registerLazySingleton(() => DeleteAllCustomerData(sl()));
   sl.registerLazySingleton(() => AddCustomerToDelivery(sl()));
   sl.registerLazySingleton(() => GetCustomersByDeliveryId(sl()));
+  sl.registerLazySingleton(() => GetAllUnassignedCustomerData(sl()));
 
   sl.registerLazySingleton<CustomerDataRepo>(() => CustomerDataRepoImpl(sl()));
   sl.registerLazySingleton<CustomerDataRemoteDataSource>(

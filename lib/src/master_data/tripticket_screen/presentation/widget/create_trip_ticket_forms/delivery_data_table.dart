@@ -96,11 +96,46 @@ class _DeliveryDataTableState extends State<DeliveryDataTable> {
             builder: (context, state) {
               // Define the table columns once to reuse
               final columns = [
-                const DataColumn(label: Text('Select')),
-                const DataColumn(label: Text('Customer')),
-                const DataColumn(label: Text('Invoices')),
-                const DataColumn(label: Text('Total Amount')),
-                const DataColumn(label: Text('Document Date')),
+                DataColumn(
+                  label: Text(
+                    'Select',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                DataColumn(
+                  label: Text(
+                    'Customer',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                DataColumn(
+                  label: Text(
+                    'Invoices',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                DataColumn(
+                  label: Text(
+                    'Total Amount',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                DataColumn(
+                  label: Text(
+                    'Document Date',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
               ];
 
               if (state is DeliveryDataLoading) {
@@ -131,6 +166,7 @@ class _DeliveryDataTableState extends State<DeliveryDataTable> {
               // Show table with data
               return DynamicDataTable<DeliveryDataModel>(
                 data: _allDeliveries,
+                
                 columnBuilder: (context) => columns,
                 rowBuilder: (delivery, index) {
                   final isSelected =

@@ -142,13 +142,13 @@ class _TripPersonelsTableState extends State<TripPersonelsTable> {
             });
           },
           isLoading: state is TripLoading,
-          onFiltered: () {}, dataLength: '${personels.length}', onDeleted: () {  },
+          onFiltered: () {},
+          dataLength: '${personels.length}',
+          onDeleted: () {},
         );
       },
     );
   }
-
-  
 
   Widget _buildRoleChip(UserRole? role) {
     if (role == null) return const Text('N/A');
@@ -161,6 +161,9 @@ class _TripPersonelsTableState extends State<TripPersonelsTable> {
         chipColor = Colors.blue;
         roleText = 'Team Leader';
         break;
+      case UserRole.driver:
+        chipColor = Colors.green;
+        roleText = 'Driver';
       case UserRole.helper:
         chipColor = Colors.orange;
         roleText = 'Helper';
