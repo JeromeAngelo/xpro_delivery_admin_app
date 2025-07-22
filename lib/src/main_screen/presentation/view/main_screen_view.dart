@@ -23,6 +23,18 @@ class _MainScreenViewState extends State<MainScreenView> {
   @override
   void initState() {
     super.initState();
+    // Check authentication state when main screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentState = context.read<GeneralUserBloc>().state;
+      debugPrint('🏠 MainScreen initState - Current auth state: ${currentState.runtimeType}');
+      
+      // If user is not authenticated, don't do anything - let the app handle it
+      if (currentState is UserAuthenticated) {
+        debugPrint('✅ User is authenticated: ${currentState.user.email}');
+      } else {
+        debugPrint('⚠️ User is not authenticated in MainScreen');
+      }
+    });
   }
 
   // Load saved theme mode preference
@@ -80,6 +92,8 @@ class _MainScreenViewState extends State<MainScreenView> {
           ),
           BlocBuilder<GeneralUserBloc, GeneralUserState>(
             builder: (context, state) {
+              debugPrint('🏠 MainScreen - Auth state: ${state.runtimeType}');
+              
               if (state is UserAuthenticated) {
                 // Get the user's name or email
                 final userName = state.user.name ?? state.user.email ?? 'User';

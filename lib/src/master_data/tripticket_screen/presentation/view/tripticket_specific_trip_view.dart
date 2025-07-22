@@ -70,16 +70,11 @@ class _TripTicketSpecificTripViewState
   int _otpCurrentPage = 1;
   int _otpTotalPages = 1;
   final int _otpItemsPerPage = 5; // Smaller number for embedded table
-  String _otpSearchQuery = '';
-  final TextEditingController _otpSearchController = TextEditingController();
 
   // End Trip OTP pagination state
   int _endTripOtpCurrentPage = 1;
   int _endTripOtpTotalPages = 1;
   final int _endTripOtpItemsPerPage = 5; // Smaller number for embedded table
-  String _endTripOtpSearchQuery = '';
-  final TextEditingController _endTripOtpSearchController =
-      TextEditingController();
 
   Timer? _mapRefreshTimer;
   List<TripUpdateEntity> _tripUpdates = [];
@@ -158,9 +153,7 @@ class _TripTicketSpecificTripViewState
   @override
   void dispose() {
     _mapRefreshTimer?.cancel();
-    _otpSearchController.dispose();
-    _endTripOtpSearchController.dispose();
-    _customerSearchController.dispose(); // Add this line
+    _customerSearchController.dispose();
     super.dispose();
   }
 
@@ -596,13 +589,6 @@ class _TripTicketSpecificTripViewState
                 _otpCurrentPage = page;
               });
             },
-            searchController: _otpSearchController,
-            searchQuery: _otpSearchQuery,
-            onSearchChanged: (value) {
-              setState(() {
-                _otpSearchQuery = value;
-              });
-            },
             tripId: widget.tripId,
           );
         }
@@ -612,36 +598,21 @@ class _TripTicketSpecificTripViewState
           final tripOtps =
               state.otps.where((otp) => otp.trip?.id == widget.tripId).toList();
 
-          // Filter based on search query
-          List<OtpEntity> filteredOtps = tripOtps;
-          if (_otpSearchQuery.isNotEmpty) {
-            final query = _otpSearchQuery.toLowerCase();
-            filteredOtps =
-                tripOtps
-                    .where(
-                      (otp) =>
-                          (otp.otpCode.toLowerCase().contains(query)) ||
-                          (otp.generatedCode?.toLowerCase().contains(query) ??
-                              false),
-                    )
-                    .toList();
-          }
-
           // Calculate total pages
-          _otpTotalPages = (filteredOtps.length / _otpItemsPerPage).ceil();
+          _otpTotalPages = (tripOtps.length / _otpItemsPerPage).ceil();
           if (_otpTotalPages == 0) _otpTotalPages = 1;
 
           // Paginate OTPs
           final startIndex = (_otpCurrentPage - 1) * _otpItemsPerPage;
           final endIndex =
-              startIndex + _otpItemsPerPage > filteredOtps.length
-                  ? filteredOtps.length
+              startIndex + _otpItemsPerPage > tripOtps.length
+                  ? tripOtps.length
                   : startIndex + _otpItemsPerPage;
 
           final List<OtpEntity> paginatedOtps =
-              startIndex < filteredOtps.length
+              startIndex < tripOtps.length
                   ? List<OtpEntity>.from(
-                    filteredOtps.sublist(startIndex, endIndex),
+                    tripOtps.sublist(startIndex, endIndex),
                   )
                   : <OtpEntity>[];
 
@@ -653,13 +624,6 @@ class _TripTicketSpecificTripViewState
             onPageChanged: (page) {
               setState(() {
                 _otpCurrentPage = page;
-              });
-            },
-            searchController: _otpSearchController,
-            searchQuery: _otpSearchQuery,
-            onSearchChanged: (value) {
-              setState(() {
-                _otpSearchQuery = value;
               });
             },
             tripId: widget.tripId,
@@ -675,13 +639,6 @@ class _TripTicketSpecificTripViewState
           onPageChanged: (page) {
             setState(() {
               _otpCurrentPage = page;
-            });
-          },
-          searchController: _otpSearchController,
-          searchQuery: _otpSearchQuery,
-          onSearchChanged: (value) {
-            setState(() {
-              _otpSearchQuery = value;
             });
           },
           tripId: widget.tripId,
@@ -743,13 +700,6 @@ class _TripTicketSpecificTripViewState
                 _endTripOtpCurrentPage = page;
               });
             },
-            searchController: _endTripOtpSearchController,
-            searchQuery: _endTripOtpSearchQuery,
-            onSearchChanged: (value) {
-              setState(() {
-                _endTripOtpSearchQuery = value;
-              });
-            },
           );
         }
 
@@ -758,39 +708,24 @@ class _TripTicketSpecificTripViewState
           final tripEndTripOtps =
               state.otps.where((otp) => otp.trip?.id == widget.tripId).toList();
 
-          // Filter based on search query
-          List<EndTripOtpEntity> filteredEndTripOtps = tripEndTripOtps;
-          if (_endTripOtpSearchQuery.isNotEmpty) {
-            final query = _endTripOtpSearchQuery.toLowerCase();
-            filteredEndTripOtps =
-                tripEndTripOtps
-                    .where(
-                      (otp) =>
-                          (otp.otpCode.toLowerCase().contains(query)) ||
-                          (otp.generatedCode?.toLowerCase().contains(query) ??
-                              false),
-                    )
-                    .toList();
-          }
-
           // Calculate total pages
           _endTripOtpTotalPages =
-              (filteredEndTripOtps.length / _endTripOtpItemsPerPage).ceil();
+              (tripEndTripOtps.length / _endTripOtpItemsPerPage).ceil();
           if (_endTripOtpTotalPages == 0) _endTripOtpTotalPages = 1;
 
           // Paginate End Trip OTPs
           final startIndex =
               (_endTripOtpCurrentPage - 1) * _endTripOtpItemsPerPage;
           final endIndex =
-              startIndex + _endTripOtpItemsPerPage > filteredEndTripOtps.length
-                  ? filteredEndTripOtps.length
+              startIndex + _endTripOtpItemsPerPage > tripEndTripOtps.length
+                  ? tripEndTripOtps.length
                   : startIndex + _endTripOtpItemsPerPage;
 
           // Use proper type casting with List.from() to avoid type errors
           final List<EndTripOtpEntity> paginatedEndTripOtps =
-              startIndex < filteredEndTripOtps.length
+              startIndex < tripEndTripOtps.length
                   ? List<EndTripOtpEntity>.from(
-                    filteredEndTripOtps.sublist(startIndex, endIndex),
+                    tripEndTripOtps.sublist(startIndex, endIndex),
                   )
                   : <EndTripOtpEntity>[];
 
@@ -802,13 +737,6 @@ class _TripTicketSpecificTripViewState
             onPageChanged: (page) {
               setState(() {
                 _endTripOtpCurrentPage = page;
-              });
-            },
-            searchController: _endTripOtpSearchController,
-            searchQuery: _endTripOtpSearchQuery,
-            onSearchChanged: (value) {
-              setState(() {
-                _endTripOtpSearchQuery = value;
               });
             },
           );
@@ -823,13 +751,6 @@ class _TripTicketSpecificTripViewState
           onPageChanged: (page) {
             setState(() {
               _endTripOtpCurrentPage = page;
-            });
-          },
-          searchController: _endTripOtpSearchController,
-          searchQuery: _endTripOtpSearchQuery,
-          onSearchChanged: (value) {
-            setState(() {
-              _endTripOtpSearchQuery = value;
             });
           },
         );

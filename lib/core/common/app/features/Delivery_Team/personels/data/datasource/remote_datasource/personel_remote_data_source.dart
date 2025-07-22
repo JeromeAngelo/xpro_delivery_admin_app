@@ -2,6 +2,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/p
 import 'package:xpro_delivery_admin_app/core/enums/user_role.dart';
 import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 abstract class PersonelRemoteDataSource {
@@ -34,12 +35,57 @@ abstract class PersonelRemoteDataSource {
 
 class PersonelRemoteDataSourceImpl implements PersonelRemoteDataSource {
   final PocketBase _pocketBaseClient;
+  static const String _authTokenKey = 'auth_token';
+  static const String _authUserKey = 'auth_user';
 
   PersonelRemoteDataSourceImpl({required PocketBase pocketBaseClient})
       : _pocketBaseClient = pocketBaseClient;
 
+  // Helper method to ensure PocketBase client is authenticated
+  Future<void> _ensureAuthenticated() async {
+    try {
+      // Check if already authenticated
+      if (_pocketBaseClient.authStore.isValid) {
+        debugPrint('✅ PocketBase client already authenticated');
+        return;
+      }
+
+      debugPrint('⚠️ PocketBase client not authenticated, attempting to restore from storage');
+
+      // Try to restore authentication from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final authToken = prefs.getString(_authTokenKey);
+      final userDataString = prefs.getString(_authUserKey);
+
+      if (authToken != null && userDataString != null) {
+        debugPrint('🔄 Restoring authentication from storage');
+
+        // Restore the auth store with token only
+        // The PocketBase client will handle the record validation
+        _pocketBaseClient.authStore.save(authToken, null);
+        
+        debugPrint('✅ Authentication restored from storage');
+      } else {
+        debugPrint('❌ No stored authentication found');
+        throw const ServerException(
+          message: 'User not authenticated. Please log in again.',
+          statusCode: '401',
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to ensure authentication: ${e.toString()}');
+      throw ServerException(
+        message: 'Authentication error: ${e.toString()}',
+        statusCode: '401',
+      );
+    }
+  }
+
   @override
   Future<List<PersonelModel>> getPersonels() async {
+    // Ensure PocketBase client is authenticated
+    await _ensureAuthenticated();
+    
     final records = await _pocketBaseClient.collection('personels').getFullList();
     return records.map((record) {
       final data = record.toJson();
@@ -58,6 +104,9 @@ class PersonelRemoteDataSourceImpl implements PersonelRemoteDataSource {
 
   @override
   Future<List<PersonelModel>> loadPersonelsByTripId(String tripId) async {
+    // Ensure PocketBase client is authenticated
+    await _ensureAuthenticated();
+    
     final records = await _pocketBaseClient.collection('personels').getFullList(
       filter: 'trip = "$tripId"',
       expand: 'trip,deliveryTeam',
@@ -68,6 +117,9 @@ class PersonelRemoteDataSourceImpl implements PersonelRemoteDataSource {
 
   @override
   Future<List<PersonelModel>> loadPersonelsByDeliveryTeam(String deliveryTeamId) async {
+    // Ensure PocketBase client is authenticated
+    await _ensureAuthenticated();
+    
     final records = await _pocketBaseClient.collection('personels').getFullList(
       filter: 'deliveryTeam = "$deliveryTeamId"',
       expand: 'trip,deliveryTeam',

@@ -14,9 +14,6 @@ class TripEndTripOtpTable extends StatelessWidget {
   final int currentPage;
   final int totalPages;
   final Function(int) onPageChanged;
-  final TextEditingController searchController;
-  final String searchQuery;
-  final Function(String) onSearchChanged;
 
   const TripEndTripOtpTable({
     super.key,
@@ -25,34 +22,12 @@ class TripEndTripOtpTable extends StatelessWidget {
     required this.currentPage,
     required this.totalPages,
     required this.onPageChanged,
-    required this.searchController,
-    required this.searchQuery,
-    required this.onSearchChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     return DataTableLayout(
       title: 'End Trip OTP Codes',
-      searchBar: TextField(
-        controller: searchController,
-        decoration: InputDecoration(
-          hintText: 'Search by OTP code, trip number, or status...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon:
-              searchQuery.isNotEmpty
-                  ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      searchController.clear();
-                      onSearchChanged('');
-                    },
-                  )
-                  : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        onChanged: onSearchChanged,
-      ),
       onCreatePressed: () {
         // Navigate to create End Trip OTP screen
         context.go('/end-trip-otp/create');

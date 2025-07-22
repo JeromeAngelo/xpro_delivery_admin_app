@@ -30,8 +30,24 @@ class _DeliveryUsersListViewState extends State<AllUsersView> {
     // Load delivery users when the screen initializes
     // Only load if not already loading or loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      
       final currentState = context.read<GeneralUserBloc>().state;
-      if (currentState is! AllUsersLoaded && currentState is! GeneralUserLoading) {
+      debugPrint('📱 AllUsersView initState - Current state: ${currentState.runtimeType}');
+      
+      // Trigger loading for appropriate states
+      if (currentState is GeneralUserInitial || 
+          currentState is GeneralUserError || 
+          currentState is UserAuthenticated) {
+        debugPrint('🔄 Triggering GetAllUsersEvent from initState - State: ${currentState.runtimeType}');
+        context.read<GeneralUserBloc>().add(const GetAllUsersEvent());
+      } else if (currentState is AllUsersLoaded) {
+        debugPrint('✅ Users already loaded, skipping API call');
+      } else if (currentState is GeneralUserLoading) {
+        debugPrint('⏳ Users currently loading, skipping API call');
+      } else {
+        debugPrint('⚠️ Unexpected state in initState: ${currentState.runtimeType}');
+        // Trigger loading anyway for unexpected states
         context.read<GeneralUserBloc>().add(const GetAllUsersEvent());
       }
     });
@@ -64,37 +80,89 @@ class _DeliveryUsersListViewState extends State<AllUsersView> {
       onProfileTap: () {
         // Handle profile tap
       },
-      child: BlocBuilder<GeneralUserBloc, GeneralUserState>(
-        builder: (context, state) {
+      child: BlocListener<GeneralUserBloc, GeneralUserState>(
+        listener: (context, state) {
+          // Listen for authentication errors and handle them appropriately
+          if (state is GeneralUserError) {
+            debugPrint('⚠️ User management error: ${state.message}');
+            
+            // Check if it's an authentication error
+            if (state.message.toLowerCase().contains('authentication') || 
+                state.message.toLowerCase().contains('unauthorized') ||
+                state.message.toLowerCase().contains('not authenticated')) {
+              debugPrint('🔒 Authentication error detected, but not auto-logging out');
+              
+              // Show a snackbar instead of auto-logout
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Authentication issue: ${state.message}'),
+                  backgroundColor: Colors.orange,
+                  action: SnackBarAction(
+                    label: 'Retry',
+                    onPressed: () {
+                      context.read<GeneralUserBloc>().add(const GetAllUsersEvent());
+                    },
+                  ),
+                ),
+              );
+            }
+          }
+        },
+        child: BlocBuilder<GeneralUserBloc, GeneralUserState>(
+          builder: (context, state) {
+          // Add debug logging to see what state we're receiving
+          debugPrint('📱 BlocBuilder: Current state = ${state.runtimeType}');
+          
           // Handle different states
           if (state is GeneralUserInitial) {
-            // Initial state, trigger loading only if necessary
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                context.read<GeneralUserBloc>().add(const GetAllUsersEvent());
-              }
-            });
+            // Show loading indicator without triggering another API call
+            // The initState already handles the initial loading
+            debugPrint('📱 BlocBuilder: GeneralUserInitial state - showing loading');
             return const Center(child: CircularProgressIndicator());
+          }
+          
+          // Handle UserAuthenticated state - this might be the "unknown state"
+          if (state is UserAuthenticated) {
+            debugPrint('📱 BlocBuilder: UserAuthenticated state - showing loading, initState will handle data loading');
+            
+            // Don't trigger events during build - let initState handle it
+            // Just show loading state
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Loading users...'),
+                ],
+              ),
+            );
           }
 
           if (state is GeneralUserLoading) {
-            return DeliveryUserDataTable(
-              users: [],
-              isLoading: true,
-              currentPage: _currentPage,
-              totalPages: _totalPages,
-              onPageChanged: (page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              searchController: _searchController,
-              searchQuery: _searchQuery,
-              onSearchChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+            return Scaffold(
+              body: SafeArea(
+                child: SingleChildScrollView(
+                  child: DeliveryUserDataTable(
+                    users: [],
+                    isLoading: true,
+                    currentPage: _currentPage,
+                    totalPages: _totalPages,
+                    onPageChanged: (page) {
+                      setState(() {
+                        _currentPage = page;
+                      });
+                    },
+                    searchController: _searchController,
+                    searchQuery: _searchQuery,
+                    onSearchChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+              ),
             );
           }
 
@@ -134,33 +202,62 @@ class _DeliveryUsersListViewState extends State<AllUsersView> {
                     )
                     : <GeneralUserEntity>[];
 
-            return DeliveryUserDataTable(
-              users: paginatedUsers,
-              isLoading: false,
-              currentPage: _currentPage,
-              totalPages: _totalPages,
-              onPageChanged: (page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              searchController: _searchController,
-              searchQuery: _searchQuery,
-              onSearchChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-                // If search query is empty, refresh the users list
-                if (value.isEmpty) {
-                  context.read<GeneralUserBloc>().add(const GetAllUsersEvent());
-                }
-              },
+            return Scaffold(
+              body: SafeArea(
+                child: SingleChildScrollView(
+                  child: DeliveryUserDataTable(
+                    users: paginatedUsers,
+                    isLoading: false,
+                    currentPage: _currentPage,
+                    totalPages: _totalPages,
+                    onPageChanged: (page) {
+                      setState(() {
+                        _currentPage = page;
+                      });
+                    },
+                    searchController: _searchController,
+                    searchQuery: _searchQuery,
+                    onSearchChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                      // Reset to first page when searching
+                      if (_currentPage != 1) {
+                        setState(() {
+                          _currentPage = 1;
+                        });
+                      }
+                      // Don't trigger API call when search changes - just filter locally
+                      debugPrint('🔍 Search query changed to: "$value"');
+                    },
+                  ),
+                ),
+              ),
             );
           }
 
-          // Default fallback
-          return const Center(child: Text('Unknown state'));
-        },
+            // Default fallback - show what state we received for debugging
+            debugPrint('❓ BlocBuilder: Unhandled state - ${state.runtimeType}');
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.help_outline, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text('Unexpected state: ${state.runtimeType}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      debugPrint('🔄 Manual retry - triggering GetAllUsersEvent');
+                      context.read<GeneralUserBloc>().add(const GetAllUsersEvent());
+                    },
+                    child: const Text('Retry Loading Users'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

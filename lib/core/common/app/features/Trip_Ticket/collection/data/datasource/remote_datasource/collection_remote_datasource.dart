@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pocketbase/pocketbase.dart' show PocketBase, RecordModel;
 
 import '../../../../../../../../errors/exceptions.dart';
@@ -37,11 +38,56 @@ class CollectionRemoteDataSourceImpl implements CollectionRemoteDataSource {
       : _pocketBaseClient = pocketBaseClient;
 
   final PocketBase _pocketBaseClient;
+  static const String _authTokenKey = 'auth_token';
+  static const String _authUserKey = 'auth_user';
+
+  // Helper method to ensure PocketBase client is authenticated
+  Future<void> _ensureAuthenticated() async {
+    try {
+      // Check if already authenticated
+      if (_pocketBaseClient.authStore.isValid) {
+        debugPrint('✅ PocketBase client already authenticated');
+        return;
+      }
+
+      debugPrint('⚠️ PocketBase client not authenticated, attempting to restore from storage');
+
+      // Try to restore authentication from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final authToken = prefs.getString(_authTokenKey);
+      final userDataString = prefs.getString(_authUserKey);
+
+      if (authToken != null && userDataString != null) {
+        debugPrint('🔄 Restoring authentication from storage');
+
+        // Restore the auth store with token only
+        // The PocketBase client will handle the record validation
+        _pocketBaseClient.authStore.save(authToken, null);
+        
+        debugPrint('✅ Authentication restored from storage');
+      } else {
+        debugPrint('❌ No stored authentication found');
+        throw const ServerException(
+          message: 'User not authenticated. Please log in again.',
+          statusCode: '401',
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to ensure authentication: ${e.toString()}');
+      throw ServerException(
+        message: 'Authentication error: ${e.toString()}',
+        statusCode: '401',
+      );
+    }
+  }
 
   @override
 Future<List<CollectionModel>> getAllCollections() async {
   try {
     debugPrint('🔄 Fetching all collections');
+    
+    // Ensure PocketBase client is authenticated
+    await _ensureAuthenticated();
 
     final records = await _pocketBaseClient
         .collection('deliveryCollection')

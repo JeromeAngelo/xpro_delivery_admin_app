@@ -123,12 +123,12 @@ class _TripTicketListForCollectionState extends State<TripTicketListForCollectio
                 ? trips.length 
                 : startIndex + _itemsPerPage;
             
-            final paginatedTrips = startIndex < trips.length 
+            final List<TripEntity> paginatedTrips = startIndex < trips.length 
                 ? trips.sublist(startIndex, endIndex) 
-                : [];
+                : <TripEntity>[];
 
             return CollectionDataTable(
-              trips: paginatedTrips as List<TripEntity>,
+              trips: paginatedTrips,
               isLoading: false,
               currentPage: _currentPage,
               totalPages: _totalPages,

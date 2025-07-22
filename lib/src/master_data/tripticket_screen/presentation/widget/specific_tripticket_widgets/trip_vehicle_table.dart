@@ -5,7 +5,7 @@ import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_t
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-// Import the new DeliveryVehicleEntity
+// Import the DeliveryVehicleEntity
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/domain/enitity/delivery_vehicle_entity.dart';
 
 class TripVehicleTable extends StatefulWidget {
@@ -43,7 +43,7 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
                   Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
                   const SizedBox(height: 16),
                   Text(
-                    'Error loading vehicles: ${state.message}',
+                    'Error loading trip data: ${state.message}',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 16),
@@ -62,20 +62,31 @@ class _TripVehicleTableState extends State<TripVehicleTable> {
           );
         }
 
-        // Updated: Changed from List<VehicleEntity> to DeliveryVehicleEntity
-        DeliveryVehicleEntity? vehicle;
+        // Get vehicle from the trip entity
+        List<DeliveryVehicleEntity> vehicles = [];
 
         if (state is TripTicketLoaded) {
-          vehicle = state.trip.vehicle;
-          debugPrint('✅ Loaded vehicle from trip data: ${vehicle?.plateNo}');
+          final vehicle = state.trip.vehicle;
+          debugPrint('✅ Loaded trip data for vehicle table');
+          debugPrint('   Trip ID: ${state.trip.id}');
+          debugPrint('   Trip Number: ${state.trip.tripNumberId}');
+          
+          if (vehicle != null) {
+            vehicles = [vehicle];
+            debugPrint('   ✅ Vehicle found: ${vehicle.name} (${vehicle.plateNo})');
+            debugPrint('   Vehicle ID: ${vehicle.id}');
+            debugPrint('   Vehicle Type: ${vehicle.type}');
+          } else {
+            debugPrint('   ⚠️ No vehicle data found in trip');
+          }
+        } else if (state is TripLoading) {
+          debugPrint('⏳ Loading trip data for vehicle table...');
+        } else {
+          debugPrint('📊 TripBloc state: ${state.runtimeType}');
         }
 
-        // Create a list with a single vehicle if it exists
-        final List<DeliveryVehicleEntity> vehicles =
-            vehicle != null ? [vehicle] : [];
-
-        // Calculate total pages - always 1 since we have at most 1 vehicle
-        final int totalPages = vehicles.isEmpty ? 1 : 1;
+        // Calculate total pages
+        final int totalPages = vehicles.isEmpty ? 1 : ((vehicles.length / _itemsPerPage).ceil());
 
         // Create data rows from vehicles
         final List<DataRow> rows =

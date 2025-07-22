@@ -483,11 +483,10 @@ class _DataTableLayoutState extends State<DataTableLayout> {
       return false;
     }
 
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
           // Title row
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -773,7 +772,6 @@ class _DataTableLayoutState extends State<DataTableLayout> {
             ),
           ),
         ],
-      ),
     );
   }
 

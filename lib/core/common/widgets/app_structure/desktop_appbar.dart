@@ -30,30 +30,55 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
         if (current is UserAuthenticated || current is GeneralUserLoaded) {
           return true;
         }
-        if (current is UserUnauthenticated) {
+        if (current is UserUnauthenticated || current is GeneralUserInitial) {
+          return true;
+        }
+        // Also rebuild for error states that might affect authentication
+        if (current is GeneralUserError) {
           return true;
         }
         // Keep previous authentication state during loading
         return false;
       },
       builder: (context, state) {
-        // Default username if not authenticated or loading
-        String userName = 'User';
+        // Enhanced authentication state handling
+        String userName = 'Guest';
         String? userEmail;
         String? userAvatar;
+        String? userRole;
         bool isAuthenticated = false;
+        bool isLoading = false;
+        bool hasError = false;
+        String? errorMessage;
 
-        // Check the state and update user information
+        // Comprehensive state checking
         if (state is UserAuthenticated) {
-          userName = state.user.name ?? 'User';
+          userName = state.user.name ?? state.user.email?.split('@')[0] ?? 'User';
           userEmail = state.user.email;
           userAvatar = state.user.profilePic;
+          userRole = state.user.role?.name;
           isAuthenticated = true;
+          debugPrint('🔐 Desktop AppBar: User authenticated - ${state.user.email}');
         } else if (state is GeneralUserLoaded) {
-          userName = state.user.name ?? 'User';
+          userName = state.user.name ?? state.user.email?.split('@')[0] ?? 'User';
           userEmail = state.user.email;
           userAvatar = state.user.profilePic;
+          userRole = state.user.role?.name;
           isAuthenticated = true;
+          debugPrint('✅ Desktop AppBar: User loaded - ${state.user.email}');
+        } else if (state is GeneralUserLoading) {
+          isLoading = true;
+          userName = 'Loading...';
+          debugPrint('⏳ Desktop AppBar: User loading...');
+        } else if (state is GeneralUserError) {
+          hasError = true;
+          errorMessage = state.message;
+          userName = 'Error';
+          debugPrint('❌ Desktop AppBar: User error - ${state.message}');
+        } else if (state is UserUnauthenticated || state is GeneralUserInitial) {
+          userName = 'Guest';
+          isAuthenticated = false;
+          debugPrint('🚫 Desktop AppBar: User not authenticated');
         }
 
         return Container(
@@ -75,7 +100,7 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
               Padding(
                 padding: const EdgeInsets.only(right: 24),
                 child: Image.asset(
-                  'assets/images/logo.png',
+                  'assets/images/app_icon.png',
                   height: 40,
                   // If you don't have a logo yet, use a placeholder
                   errorBuilder:
@@ -123,90 +148,153 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
                 tooltip: 'Notifications',
               ),
 
-              // User Profile
-
-              // User Profile
-              InkWell(
-                onTap: onProfileTap,
-                borderRadius: BorderRadius.circular(30),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    children: [
-                      _buildProfileAvatar(userName, userAvatar),
-                      const SizedBox(width: 8),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            userName,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: Theme.of(context).colorScheme.surface,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (isAuthenticated)
-                        PopupMenuButton<String>(
-                          icon: Icon(
-                            Icons.arrow_drop_down,
-                            color: Theme.of(context).colorScheme.surface,
-                          ),
-                          offset: const Offset(0, 40),
-                          onSelected: (value) {
-                            if (value == 'profile') {
-                              onProfileTap();
-                            } else if (value == 'logout') {
-                              context.read<GeneralUserBloc>().add(
-                                UserSignOutEvent(),
-                              );
-                              context.go('/');
-                            }
-                          },
-                          itemBuilder:
-                              (context) => [
-                                const PopupMenuItem(
-                                  value: 'profile',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.person, size: 16),
-                                      SizedBox(width: 8),
-                                      Text('Profile'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'settings',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.settings, size: 16),
-                                      SizedBox(width: 8),
-                                      Text('Settings'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'logout',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.logout, size: 16),
-                                      SizedBox(width: 8),
-                                      Text('Logout'),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                        ),
-                    ],
-                  ),
-                ),
+              // Enhanced User Profile Section
+              _buildUserProfileSection(
+                context: context,
+                userName: userName,
+                userEmail: userEmail,
+                userAvatar: userAvatar,
+                userRole: userRole,
+                isAuthenticated: isAuthenticated,
+                isLoading: isLoading,
+                hasError: hasError,
+                errorMessage: errorMessage,
+                onProfileTap: onProfileTap,
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  // Enhanced User Profile Section Widget
+  Widget _buildUserProfileSection({
+    required BuildContext context,
+    required String userName,
+    required String? userEmail,
+    required String? userAvatar,
+    required String? userRole,
+    required bool isAuthenticated,
+    required bool isLoading,
+    required bool hasError,
+    required String? errorMessage,
+    required VoidCallback onProfileTap,
+  }) {
+    return InkWell(
+      onTap: isAuthenticated ? onProfileTap : null,
+      borderRadius: BorderRadius.circular(30),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          children: [
+            // Profile Avatar with Status Indicator
+            Stack(
+              children: [
+                _buildProfileAvatar(userName, userAvatar),
+                // Authentication Status Indicator
+                if (isAuthenticated)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        border: Border.all(color: Colors.white, width: 2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  )
+                else if (hasError)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        border: Border.all(color: Colors.white, width: 2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  )
+                else if (isLoading)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).colorScheme.surface,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 8),
+            // User Information
+            Flexible(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    userName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.surface,
+                      fontSize: 14,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (isAuthenticated && userRole != null)
+                    Text(
+                      userRole,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  else if (hasError)
+                    Text(
+                      'Auth Error',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red.shade200,
+                      ),
+                    )
+                  else if (!isAuthenticated && !isLoading)
+                    Text(
+                      'Not Signed In',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Enhanced Popup Menu
+            _buildUserMenu(
+              context: context,
+              isAuthenticated: isAuthenticated,
+              hasError: hasError,
+              errorMessage: errorMessage,
+              userEmail: userEmail,
+              userRole: userRole,
+              onProfileTap: onProfileTap,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -468,6 +556,190 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
         );
       },
     );
+  }
+
+  // Enhanced User Menu Widget
+  Widget _buildUserMenu({
+    required BuildContext context,
+    required bool isAuthenticated,
+    required bool hasError,
+    required String? errorMessage,
+    required String? userEmail,
+    required String? userRole,
+    required VoidCallback onProfileTap,
+  }) {
+    return PopupMenuButton<String>(
+      icon: Icon(
+        Icons.keyboard_arrow_down,
+        color: Theme.of(context).colorScheme.surface,
+        size: 16,
+      ),
+      offset: const Offset(0, 40),
+      onSelected: (String value) {
+        switch (value) {
+          case 'profile':
+            onProfileTap();
+            break;
+          case 'settings':
+            context.go('/settings');
+            break;
+          case 'logout':
+            _handleLogout(context);
+            break;
+          case 'retry_auth':
+            _retryAuthentication(context);
+            break;
+        }
+      },
+      itemBuilder: (context) {
+        List<PopupMenuEntry<String>> items = [];
+        
+        // Header
+        items.add(
+          PopupMenuItem<String>(
+            enabled: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (userEmail != null)
+                    Text(
+                      userEmail,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  if (userRole != null)
+                    Text(
+                      userRole,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+        
+        items.add(const PopupMenuDivider());
+        
+        if (isAuthenticated) {
+          // Authenticated user options
+          items.addAll([
+            PopupMenuItem<String>(
+              value: 'profile',
+              child: Row(
+                children: [
+                  Icon(Icons.person_outline, size: 18),
+                  const SizedBox(width: 12),
+                  Text('Profile'),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'settings',
+              child: Row(
+                children: [
+                  Icon(Icons.settings_outlined, size: 18),
+                  const SizedBox(width: 12),
+                  Text('Settings'),
+                ],
+              ),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              value: 'logout',
+              child: Row(
+                children: [
+                  Icon(Icons.logout, size: 18, color: Colors.red),
+                  const SizedBox(width: 12),
+                  Text('Logout', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+          ]);
+        } else if (hasError) {
+          // Error state options
+          items.addAll([
+            PopupMenuItem<String>(
+              enabled: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  errorMessage ?? 'Authentication Error',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              value: 'retry_auth',
+              child: Row(
+                children: [
+                  Icon(Icons.refresh, size: 18, color: Colors.blue),
+                  const SizedBox(width: 12),
+                  Text('Retry Authentication', style: TextStyle(color: Colors.blue)),
+                ],
+              ),
+            ),
+          ]);
+        } else {
+          // Guest user options
+          items.add(
+            PopupMenuItem<String>(
+              enabled: false,
+              child: Text(
+                'Please sign in to access your account',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ),
+          );
+        }
+        
+        return items;
+      },
+    );
+  }
+
+  // Handle logout
+  void _handleLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              context.read<GeneralUserBloc>().add(const UserSignOutEvent());
+              context.go('/login');
+            },
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Retry authentication
+  void _retryAuthentication(BuildContext context) {
+    // Trigger a refresh by getting all users again
+    context.read<GeneralUserBloc>().add(const GetAllUsersEvent());
   }
 
   @override

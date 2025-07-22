@@ -1,5 +1,6 @@
 // ignore_for_file: unnecessary_null_comparison
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/data/models/auth_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/data/model/delivery_data_model.dart'
@@ -55,6 +56,50 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
     : _pocketBaseClient = pocketBaseClient;
 
   final PocketBase _pocketBaseClient;
+  static const String _authTokenKey = 'auth_token';
+  static const String _authUserKey = 'auth_user';
+
+  // Helper method to ensure PocketBase client is authenticated
+  Future<void> _ensureAuthenticated() async {
+    try {
+      // Check if already authenticated
+      if (_pocketBaseClient.authStore.isValid) {
+        debugPrint('✅ PocketBase client already authenticated');
+        return;
+      }
+
+      debugPrint(
+        '⚠️ PocketBase client not authenticated, attempting to restore from storage',
+      );
+
+      // Try to restore authentication from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final authToken = prefs.getString(_authTokenKey);
+      final userDataString = prefs.getString(_authUserKey);
+
+      if (authToken != null && userDataString != null) {
+        debugPrint('🔄 Restoring authentication from storage');
+
+        // Restore the auth store with token only
+        // The PocketBase client will handle the record validation
+        _pocketBaseClient.authStore.save(authToken, null);
+
+        debugPrint('✅ Authentication restored from storage');
+      } else {
+        debugPrint('❌ No stored authentication found');
+        throw const ServerException(
+          message: 'User not authenticated. Please log in again.',
+          statusCode: '401',
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to ensure authentication: ${e.toString()}');
+      throw ServerException(
+        message: 'Authentication error: ${e.toString()}',
+        statusCode: '401',
+      );
+    }
+  }
 
   @override
   Future<List<TripModel>> filterTripsByDateRange({
@@ -63,6 +108,9 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
   }) async {
     try {
       debugPrint('🔍 Filtering trips by date range');
+
+      // Ensure PocketBase client is authenticated
+      await _ensureAuthenticated();
       debugPrint('📅 Start Date: ${startDate.toIso8601String()}');
       debugPrint('📅 End Date: ${endDate.toIso8601String()}');
 
@@ -141,6 +189,9 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
   Future<List<TripModel>> getAllTripTickets() async {
     try {
       debugPrint('🔄 Fetching all trip tickets');
+
+      // Ensure PocketBase client is authenticated
+      await _ensureAuthenticated();
 
       final records = await _pocketBaseClient
           .collection('tripticket')
@@ -561,7 +612,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           .getOne(
             tripId,
             expand:
-                'customers,deliveryTeam,personels,vehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
+                'customers,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
           );
 
       debugPrint('✅ Trip ticket found: ${record.id}');
@@ -734,7 +785,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
       }
 
       // Handle delivery vehicle - Updated to use single DeliveryVehicleModel
-      final vehicleData = record.expand['deliveryVehicle'];
+      final vehicleData = record.expand['deliveryVehicleData'];
       DeliveryVehicleModel? vehicleModel;
 
       if (vehicleData != null) {

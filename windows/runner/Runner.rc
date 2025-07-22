@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "desktop_app" "\0"
+            VALUE "CompanyName", "Xpro Delivery" "\0"
+            VALUE "FileDescription", "Xpro Delivery Admin" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "desktop_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "desktop_app.exe" "\0"
-            VALUE "ProductName", "desktop_app" "\0"
+            VALUE "InternalName", "Xpro Delivery Admin" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 Xpro Delivery. All rights reserved." "\0"
+            VALUE "OriginalFilename", "Xpro Delivery Admin.exe" "\0"
+            VALUE "ProductName", "Xpro Delivery Admin" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

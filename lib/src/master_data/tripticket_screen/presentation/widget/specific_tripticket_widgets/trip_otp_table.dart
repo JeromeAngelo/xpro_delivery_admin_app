@@ -14,9 +14,6 @@ class TripOtpTable extends StatelessWidget {
   final int currentPage;
   final int totalPages;
   final Function(int) onPageChanged;
-  final TextEditingController searchController;
-  final String searchQuery;
-  final Function(String) onSearchChanged;
   final String tripId; // Added tripId parameter
 
   const TripOtpTable({
@@ -26,9 +23,6 @@ class TripOtpTable extends StatelessWidget {
     required this.currentPage,
     required this.totalPages,
     required this.onPageChanged,
-    required this.searchController,
-    required this.searchQuery,
-    required this.onSearchChanged,
     required this.tripId, // Required parameter
   });
 
@@ -36,25 +30,6 @@ class TripOtpTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return DataTableLayout(
       title: 'In-Transit OTP Data',
-      searchBar: TextField(
-        controller: searchController,
-        decoration: InputDecoration(
-          hintText: 'Search by OTP code or status...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon:
-              searchQuery.isNotEmpty
-                  ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      searchController.clear();
-                      onSearchChanged('');
-                    },
-                  )
-                  : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        onChanged: onSearchChanged,
-      ),
       onCreatePressed: () {
         // // Generate new OTP for this specific trip
         // context.read<OtpBloc>().add(GenerateOtpForTripEvent(tripId));

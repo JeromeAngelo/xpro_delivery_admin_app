@@ -13,7 +13,8 @@ class InvoicePresetGroupScreen extends StatefulWidget {
   const InvoicePresetGroupScreen({super.key});
 
   @override
-  State<InvoicePresetGroupScreen> createState() => _InvoicePresetGroupScreenState();
+  State<InvoicePresetGroupScreen> createState() =>
+      _InvoicePresetGroupScreenState();
 }
 
 class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
@@ -27,7 +28,9 @@ class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
   void initState() {
     super.initState();
     // Load invoice preset groups when the screen initializes
-    context.read<InvoicePresetGroupBloc>().add(const GetAllInvoicePresetGroupsEvent());
+    context.read<InvoicePresetGroupBloc>().add(
+      const GetAllInvoicePresetGroupsEvent(),
+    );
   }
 
   @override
@@ -57,13 +60,14 @@ class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
       onProfileTap: () {
         // Handle profile tap
       },
-      title: 'Invoice Preset Groups',
       child: BlocBuilder<InvoicePresetGroupBloc, InvoicePresetGroupState>(
         builder: (context, state) {
           // Handle different states
           if (state is InvoicePresetGroupInitial) {
             // Initial state, trigger loading
-            context.read<InvoicePresetGroupBloc>().add(const GetAllInvoicePresetGroupsEvent());
+            context.read<InvoicePresetGroupBloc>().add(
+              const GetAllInvoicePresetGroupsEvent(),
+            );
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -86,10 +90,14 @@ class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
                 });
                 // If search query is not empty, search for preset groups
                 if (value.isNotEmpty) {
-                  context.read<InvoicePresetGroupBloc>().add(SearchPresetGroupByRefIdEvent(value));
+                  context.read<InvoicePresetGroupBloc>().add(
+                    SearchPresetGroupByRefIdEvent(value),
+                  );
                 } else {
                   // If search query is empty, load all preset groups
-                  context.read<InvoicePresetGroupBloc>().add(const GetAllInvoicePresetGroupsEvent());
+                  context.read<InvoicePresetGroupBloc>().add(
+                    const GetAllInvoicePresetGroupsEvent(),
+                  );
                 }
               },
             );
@@ -125,13 +133,15 @@ class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
             List<InvoicePresetGroupEntity> presetGroups = state.presetGroups;
 
             // Filter preset groups based on search query if not already filtered by the bloc
-            if (_searchQuery.isNotEmpty && state is! PresetGroupsSearchResults) {
-              presetGroups = presetGroups.where((group) {
-                final query = _searchQuery.toLowerCase();
-                return (group.id?.toLowerCase().contains(query) ?? false) ||
-                    (group.refId?.toLowerCase().contains(query) ?? false) ||
-                    (group.name?.toLowerCase().contains(query) ?? false);
-              }).toList();
+            if (_searchQuery.isNotEmpty &&
+                state is! PresetGroupsSearchResults) {
+              presetGroups =
+                  presetGroups.where((group) {
+                    final query = _searchQuery.toLowerCase();
+                    return (group.id?.toLowerCase().contains(query) ?? false) ||
+                        (group.refId?.toLowerCase().contains(query) ?? false) ||
+                        (group.name?.toLowerCase().contains(query) ?? false);
+                  }).toList();
             }
 
             // Calculate total pages
@@ -140,13 +150,15 @@ class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
 
             // Paginate preset groups
             final startIndex = (_currentPage - 1) * _itemsPerPage;
-            final endIndex = startIndex + _itemsPerPage > presetGroups.length
-                ? presetGroups.length
-                : startIndex + _itemsPerPage;
+            final endIndex =
+                startIndex + _itemsPerPage > presetGroups.length
+                    ? presetGroups.length
+                    : startIndex + _itemsPerPage;
 
-            final List<InvoicePresetGroupEntity> paginatedPresetGroups = startIndex < presetGroups.length
-                ? presetGroups.sublist(startIndex, endIndex)
-                : [];
+            final List<InvoicePresetGroupEntity> paginatedPresetGroups =
+                startIndex < presetGroups.length
+                    ? presetGroups.sublist(startIndex, endIndex)
+                    : [];
 
             return InvoicePresetGroupTable(
               presetGroups: paginatedPresetGroups,
@@ -167,15 +179,21 @@ class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
                 });
                 // If search query is not empty, search for preset groups
                 if (value.isNotEmpty) {
-                  context.read<InvoicePresetGroupBloc>().add(SearchPresetGroupByRefIdEvent(value));
+                  context.read<InvoicePresetGroupBloc>().add(
+                    SearchPresetGroupByRefIdEvent(value),
+                  );
                 } else {
                   // If search query is empty, load all preset groups
-                  context.read<InvoicePresetGroupBloc>().add(const GetAllInvoicePresetGroupsEvent());
+                  context.read<InvoicePresetGroupBloc>().add(
+                    const GetAllInvoicePresetGroupsEvent(),
+                  );
                 }
               },
               errorMessage: null,
               onRetry: () {
-                context.read<InvoicePresetGroupBloc>().add(const GetAllInvoicePresetGroupsEvent());
+                context.read<InvoicePresetGroupBloc>().add(
+                  const GetAllInvoicePresetGroupsEvent(),
+                );
               },
             );
           }
@@ -190,13 +208,15 @@ class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
 
             // Paginate preset groups
             final startIndex = (_currentPage - 1) * _itemsPerPage;
-            final endIndex = startIndex + _itemsPerPage > presetGroups.length
-                ? presetGroups.length
-                : startIndex + _itemsPerPage;
+            final endIndex =
+                startIndex + _itemsPerPage > presetGroups.length
+                    ? presetGroups.length
+                    : startIndex + _itemsPerPage;
 
-            final List<InvoicePresetGroupEntity> paginatedPresetGroups = startIndex < presetGroups.length
-                ? presetGroups.sublist(startIndex, endIndex)
-                : [];
+            final List<InvoicePresetGroupEntity> paginatedPresetGroups =
+                startIndex < presetGroups.length
+                    ? presetGroups.sublist(startIndex, endIndex)
+                    : [];
 
             return InvoicePresetGroupTable(
               presetGroups: paginatedPresetGroups,
@@ -217,18 +237,26 @@ class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
                 });
                 // If search query is not empty, search for preset groups
                 if (value.isNotEmpty) {
-                  context.read<InvoicePresetGroupBloc>().add(SearchPresetGroupByRefIdEvent(value));
+                  context.read<InvoicePresetGroupBloc>().add(
+                    SearchPresetGroupByRefIdEvent(value),
+                  );
                 } else {
                   // If search query is empty, load all preset groups
-                  context.read<InvoicePresetGroupBloc>().add(const GetAllInvoicePresetGroupsEvent());
+                  context.read<InvoicePresetGroupBloc>().add(
+                    const GetAllInvoicePresetGroupsEvent(),
+                  );
                 }
               },
               errorMessage: null,
               onRetry: () {
                 if (_searchQuery.isNotEmpty) {
-                  context.read<InvoicePresetGroupBloc>().add(SearchPresetGroupByRefIdEvent(_searchQuery));
+                  context.read<InvoicePresetGroupBloc>().add(
+                    SearchPresetGroupByRefIdEvent(_searchQuery),
+                  );
                 } else {
-                  context.read<InvoicePresetGroupBloc>().add(const GetAllInvoicePresetGroupsEvent());
+                  context.read<InvoicePresetGroupBloc>().add(
+                    const GetAllInvoicePresetGroupsEvent(),
+                  );
                 }
               },
             );
