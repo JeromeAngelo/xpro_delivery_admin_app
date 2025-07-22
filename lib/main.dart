@@ -27,6 +27,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/users_roles/pre
 import 'package:xpro_delivery_admin_app/core/common/app/provider/theme_provider.dart';
 import 'package:xpro_delivery_admin_app/core/services/injection_container.dart';
 import 'package:xpro_delivery_admin_app/core/services/router.dart';
+import 'package:xpro_delivery_admin_app/core/services/auth_interceptor.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 
@@ -90,43 +91,48 @@ class MyApp extends StatelessWidget {
             BlocProvider(create: (_) => sl<DeliveryReceiptBloc>()),
           ],
           child: MaterialApp.router(
-            debugShowCheckedModeBanner: false,
-            title: 'X-Pro Delivery Admin App',
-            theme: FlexThemeData.light(
-              scheme: FlexScheme.blueWhale,
-              // Add responsive typography
-              typography: Typography.material2018(
-                platform: TargetPlatform.windows,
-              ),
-            ),
-            darkTheme: FlexThemeData.dark(
-              scheme: FlexScheme.blueWhale,
-              // Add responsive typography
-              typography: Typography.material2018(
-                platform: TargetPlatform.windows,
-              ),
-            ),
-            themeMode: themeProvider.themeMode,
-            routerConfig: router,
-            builder: (context, child) {
-              // Apply minimum constraints to the entire app
-              return MediaQuery(
-                // Set minimum width and height
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: const TextScaler.linear(
-                    1.0,
-                  ), // Prevent text scaling
-                ),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minWidth: 600,
-                    minHeight: 400,
-                  ),
-                  child: child!,
-                ),
-              );
-            },
+          debugShowCheckedModeBanner: false,
+          title: 'X-Pro Delivery Admin App',
+          theme: FlexThemeData.light(
+          scheme: FlexScheme.blueWhale,
+          // Add responsive typography
+          typography: Typography.material2018(
+          platform: TargetPlatform.windows,
           ),
+          ),
+          darkTheme: FlexThemeData.dark(
+          scheme: FlexScheme.blueWhale,
+          // Add responsive typography
+          typography: Typography.material2018(
+          platform: TargetPlatform.windows,
+          ),
+          ),
+          themeMode: themeProvider.themeMode,
+          routerConfig: router,
+          builder: (context, child) {
+          // Initialize auth interceptor with context
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+          AuthInterceptor.initialize(context);
+          });
+          
+          // Apply minimum constraints to the entire app
+          return MediaQuery(
+          // Set minimum width and height
+          data: MediaQuery.of(context).copyWith(
+          textScaler: const TextScaler.linear(
+          1.0,
+          ), // Prevent text scaling
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+                minWidth: 600,
+                  minHeight: 400,
+                  ),
+                    child: child!,
+                  ),
+                );
+              },
+            ),
         );
       },
     );

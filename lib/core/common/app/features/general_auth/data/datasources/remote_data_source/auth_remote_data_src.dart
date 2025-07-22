@@ -48,6 +48,46 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
   final PocketBase _pocketBaseClient;
   static const String _authTokenKey = 'auth_token';
   static const String _authUserKey = 'auth_user';
+
+  // Helper method to ensure PocketBase client is authenticated
+  Future<void> _ensureAuthenticated() async {
+    try {
+      // Check if already authenticated
+      if (_pocketBaseClient.authStore.isValid) {
+        debugPrint('✅ PocketBase client already authenticated');
+        return;
+      }
+
+      debugPrint('⚠️ PocketBase client not authenticated, attempting to restore from storage');
+
+      // Try to restore authentication from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final authToken = prefs.getString(_authTokenKey);
+      final userDataString = prefs.getString(_authUserKey);
+
+      if (authToken != null && userDataString != null) {
+        debugPrint('🔄 Restoring authentication from storage');
+
+        // Restore the auth store with token only
+        // The PocketBase client will handle the record validation
+        _pocketBaseClient.authStore.save(authToken, null);
+        
+        debugPrint('✅ Authentication restored from storage');
+      } else {
+        debugPrint('❌ No stored authentication found');
+        throw const ServerException(
+          message: 'User not authenticated. Please log in again.',
+          statusCode: '401',
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to ensure authentication: ${e.toString()}');
+      throw ServerException(
+        message: 'Authentication error: ${e.toString()}',
+        statusCode: '401',
+      );
+    }
+  }
   @override
   Future<GeneralUserModel> signIn({
     required String email,
@@ -153,8 +193,8 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
         }
 
         // Store properly formatted auth data
-        await prefs.setString('auth_token', authData.token);
-        await prefs.setString('user_data', jsonEncode(userData));
+        await prefs.setString(_authTokenKey, authData.token);
+        await prefs.setString(_authUserKey, jsonEncode(userData));
 
         debugPrint('✅ Authentication successful');
         debugPrint('💾 Stored user data: ${userData['name']}');
@@ -215,6 +255,9 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
   Future<List<GeneralUserModel>> getAllUsers() async {
     try {
       debugPrint('🔄 Fetching all users');
+      
+      // Ensure PocketBase client is authenticated
+      await _ensureAuthenticated();
 
       // First, let's examine the structure of a single user record to understand the field names
       try {
@@ -522,6 +565,9 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
     try {
       debugPrint('🔄 Creating new user: ${user.email}');
 
+      // Ensure PocketBase client is authenticated
+      await _ensureAuthenticated();
+
       // Prepare data for creation
       final userData = user.toJson();
 
@@ -662,6 +708,9 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
   Future<GeneralUserModel> updateUser(GeneralUserModel user) async {
     try {
       debugPrint('🔄 Updating user: ${user.id}');
+      
+      // Ensure PocketBase client is authenticated
+      await _ensureAuthenticated();
 
       if (user.id == null || user.id!.isEmpty) {
         throw const ServerException(
@@ -737,6 +786,9 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
   Future<bool> deleteUser(String userId) async {
     try {
       debugPrint('🔄 Deleting user: $userId');
+      
+      // Ensure PocketBase client is authenticated
+      await _ensureAuthenticated();
 
       // First, check if the user exists
       await _pocketBaseClient.collection('users').getOne(userId);
@@ -783,6 +835,9 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
   Future<GeneralUserModel> getUserById(String userId) async {
     try {
       debugPrint('🔄 Fetching user by ID: $userId');
+      
+      // Ensure PocketBase client is authenticated
+      await _ensureAuthenticated();
 
       // Fetch the user with expanded relations
       final record = await _pocketBaseClient

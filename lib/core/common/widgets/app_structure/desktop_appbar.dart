@@ -1,12 +1,13 @@
 // ignore_for_file: unused_local_variable
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/provider/theme_provider.dart';
 
 class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onThemeToggle;
@@ -109,15 +110,8 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
 
-              // Theme Toggle
-              IconButton(
-                icon: Icon(
-                  Icons.desktop_windows,
-                  color: Theme.of(context).colorScheme.surface,
-                ),
-                onPressed: onThemeToggle,
-                tooltip: 'Toggle theme',
-              ),
+              // Theme Toggle with Choices
+              _buildThemeSelector(context),
 
               // Notifications
               IconButton(
@@ -166,7 +160,7 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
                               onProfileTap();
                             } else if (value == 'logout') {
                               context.read<GeneralUserBloc>().add(
-                                 UserSignOutEvent(),
+                                UserSignOutEvent(),
                               );
                               context.go('/');
                             }
@@ -211,6 +205,172 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  // Theme selector widget with choices
+  Widget _buildThemeSelector(BuildContext context) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        // Get current theme mode
+        final currentTheme = themeProvider.themeMode;
+
+        // Determine the appropriate icon based on current theme
+        IconData themeIcon;
+        String themeTooltip;
+
+        switch (currentTheme) {
+          case ThemeMode.light:
+            themeIcon = Icons.light_mode;
+            themeTooltip = 'Light Mode';
+            break;
+          case ThemeMode.dark:
+            themeIcon = Icons.dark_mode;
+            themeTooltip = 'Dark Mode';
+            break;
+          case ThemeMode.system:
+            themeIcon = Icons.brightness_auto;
+            themeTooltip = 'System Mode';
+            break;
+        }
+
+        return PopupMenuButton<ThemeMode>(
+          icon: Icon(themeIcon, color: Theme.of(context).colorScheme.surface),
+          tooltip: themeTooltip,
+          offset: const Offset(0, 40),
+          onSelected: (ThemeMode selectedTheme) {
+            themeProvider.setThemeMode(selectedTheme);
+          },
+          itemBuilder:
+              (context) => [
+                const PopupMenuItem<ThemeMode>(
+                  enabled: false,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      'Theme Selection',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem<ThemeMode>(
+                  value: ThemeMode.light,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.light_mode,
+                        size: 18,
+                        color:
+                            currentTheme == ThemeMode.light
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Light Mode',
+                        style: TextStyle(
+                          fontWeight:
+                              currentTheme == ThemeMode.light
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                          color:
+                              currentTheme == ThemeMode.light
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                        ),
+                      ),
+                      if (currentTheme == ThemeMode.light) ...[
+                        const Spacer(),
+                        Icon(
+                          Icons.check,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                PopupMenuItem<ThemeMode>(
+                  value: ThemeMode.dark,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.dark_mode,
+                        size: 18,
+                        color:
+                            currentTheme == ThemeMode.dark
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Dark Mode',
+                        style: TextStyle(
+                          fontWeight:
+                              currentTheme == ThemeMode.dark
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                          color:
+                              currentTheme == ThemeMode.dark
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                        ),
+                      ),
+                      if (currentTheme == ThemeMode.dark) ...[
+                        const Spacer(),
+                        Icon(
+                          Icons.check,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                PopupMenuItem<ThemeMode>(
+                  value: ThemeMode.system,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.brightness_auto,
+                        size: 18,
+                        color:
+                            currentTheme == ThemeMode.system
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'System Mode',
+                        style: TextStyle(
+                          fontWeight:
+                              currentTheme == ThemeMode.system
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                          color:
+                              currentTheme == ThemeMode.system
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                        ),
+                      ),
+                      if (currentTheme == ThemeMode.system) ...[
+                        const Spacer(),
+                        Icon(
+                          Icons.check,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
         );
       },
     );

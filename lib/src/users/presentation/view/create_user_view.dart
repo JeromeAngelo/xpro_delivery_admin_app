@@ -74,7 +74,6 @@ class _CreateUserViewState extends State<CreateUserView> {
     }
 
     // Create the user model directly instead of entity
-    // Create the user model directly instead of entity
     final user = GeneralUserModel(
       name: _nameController.text,
       email: _emailController.text,
