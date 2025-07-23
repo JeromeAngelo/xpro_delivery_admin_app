@@ -207,9 +207,9 @@ class _TripDataTableState extends State<TripDataTable> {
                   icon: const Icon(Icons.edit, color: Colors.orange),
                   tooltip: 'Edit',
                   onPressed: () {
-                    // Edit trip
+                    // Navigate to edit trip screen
                     if (trip.id != null) {
-                      // Navigate to edit screen with trip data
+                      context.go('/tripticket-edit/${trip.id}');
                     }
                   },
                 ),

@@ -128,7 +128,7 @@ class TripModel extends TripEntity {
     }
 
     // Handle Vehicle - Updated to handle a single DeliveryVehicleModel
-    final vehicleData = expandedData?['vehicle'] ?? json['vehicle'];
+    final vehicleData = expandedData?['deliveryVehicle'] ?? json['deliveryVehicle'];
     DeliveryVehicleModel? vehicleModel;
     if (vehicleData != null) {
       if (vehicleData is String) {
@@ -338,7 +338,7 @@ class TripModel extends TripEntity {
       'tripNumberId': tripNumberId,
       'personels': personels.map((personel) => personel.id).toList(),
       'checklist': checklist.map((item) => item.id).toList(),
-      'vehicle': vehicle?.id, // Updated: Changed from vehicle.map to vehicle?.id
+      'deliveryVehicle': vehicle?.id, // Updated: Changed from vehicle.map to vehicle?.id
       'deliveryData': deliveryData.map((data) => data.id).toList(), // Added: Map deliveryData to IDs
      'deliveryCollection': deliveryCollection!.map((collection) => collection.id).toList(),
       'cancelledInvoice': cancelledInvoice!.map((invoice) => invoice.id).toList(),

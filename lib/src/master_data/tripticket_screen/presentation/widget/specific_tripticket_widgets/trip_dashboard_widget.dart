@@ -8,11 +8,13 @@ import 'package:shimmer/shimmer.dart';
 class TripDashboardWidget extends StatefulWidget {
   final TripEntity? trip;
   final bool isLoading;
+  final VoidCallback? onEditTrip;
 
   const TripDashboardWidget({
     super.key,
     required this.trip,
     this.isLoading = false,
+    this.onEditTrip,
   });
 
   @override
@@ -193,6 +195,38 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
               ],
             ),
           ),
+
+        // Trip Actions Section
+        Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                const Icon(Icons.settings, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Trip Actions',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: widget.onEditTrip,
+                  icon: const Icon(Icons.edit),
+                  label: const Text('Edit Trip'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
 
         // Original Dashboard Summary
         DashboardSummary(

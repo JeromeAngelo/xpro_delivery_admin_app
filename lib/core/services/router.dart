@@ -30,6 +30,7 @@ import 'package:xpro_delivery_admin_app/src/users/presentation/view/update_user_
 
 import '../../src/master_data/delivery_data/view/specific_delivery_data_screen.dart';
 import '../../src/return_data/undelivered_customer_data/presentation/view/specific_cancelled_invoice_view.dart';
+import '../../src/master_data/tripticket_screen/presentation/view/edit_tripticket_screen_view.dart';
 
 final router = GoRouter(
   routes: [
@@ -58,6 +59,15 @@ final router = GoRouter(
     GoRoute(
       path: '/tripticket-create',
       builder: (context, state) => CreateTripTicketScreenView(),
+    ),
+    // Add this new route for editing trip tickets
+    GoRoute(
+      path: '/tripticket-edit/:tripId',
+      builder: (context, state) {
+        final tripId = state.pathParameters['tripId']!;
+        // We need to get the trip entity first, but we'll handle this in the edit screen
+        return EditTripTicketScreenView(tripId: tripId);
+      },
     ),
     GoRoute(
       path: '/customer-list',

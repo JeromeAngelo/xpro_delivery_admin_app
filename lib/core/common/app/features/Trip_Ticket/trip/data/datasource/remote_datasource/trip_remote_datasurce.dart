@@ -804,7 +804,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
       }
 
       // Handle delivery vehicle - Updated to use single DeliveryVehicleModel
-      final vehicleData = record.expand['deliveryVehicleData'];
+      final vehicleData = record.expand['deliveryVehicle'];
       DeliveryVehicleModel? vehicleModel;
 
       if (vehicleData != null) {
@@ -834,7 +834,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
       final deliveryDataList = record.expand['deliveryData'];
       List<DeliveryDataModel> deliveryDataModels = [];
 
-      if (deliveryDataList != null) {
+      if (deliveryDataList != null && deliveryDataList.isNotEmpty) {
         debugPrint('✅ Found delivery data: ${deliveryDataList.runtimeType}');
 
         try {
@@ -855,128 +855,84 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           debugPrint('❌ Error processing delivery data: $e');
         }
       } else {
-        debugPrint('⚠️ No delivery data found in record');
+        // Check if raw data has empty array (normal case for no delivery data)
+        final rawDeliveryData = record.data['deliveryData'];
+        if (rawDeliveryData != null && rawDeliveryData is List && rawDeliveryData.isEmpty) {
+          debugPrint('ℹ️ Trip has no delivery data (empty array)');
+        } else {
+          debugPrint('⚠️ No delivery data found in record');
+        }
       }
 
       // Handle delivery collection data - Map to CollectionModel objects
       final deliveryCollectionList = record.expand['deliveryCollection'];
       List<collection.CollectionModel> deliveryCollectionModels = [];
 
-      debugPrint(
-        '📊 Raw deliveryCollection from expand: $deliveryCollectionList',
-      );
-      debugPrint(
-        '📊 DeliveryCollection type: ${deliveryCollectionList?.runtimeType}',
-      );
-
-      if (deliveryCollectionList != null) {
-        debugPrint('📊 Processing delivery collection data');
+      // Check both expanded data and raw data field
+      if (deliveryCollectionList != null && deliveryCollectionList.isNotEmpty) {
+        debugPrint('✅ Found delivery collection data: ${deliveryCollectionList.runtimeType}');
 
         try {
-          debugPrint(
-            '📊 DeliveryCollection is a list with ${deliveryCollectionList.length} items',
-          );
-
           for (var collectionItem in deliveryCollectionList) {
-            debugPrint(
-              '📊 Processing collection item type: ${collectionItem.runtimeType}',
-            );
-
-            try {
-              // Handle RecordModel objects from PocketBase expand
-              final itemMap = {
+            deliveryCollectionModels.add(
+              collection.CollectionModel.fromJson({
                 'id': collectionItem.id,
                 'collectionId': collectionItem.collectionId,
                 'collectionName': collectionItem.collectionName,
-                'created': collectionItem.created,
-                'updated': collectionItem.updated,
-                ...Map<String, dynamic>.from(collectionItem.data),
-              };
-              final collectionModel = collection.CollectionModel.fromJson(
-                itemMap,
-              );
-              deliveryCollectionModels.add(collectionModel);
-              debugPrint('✅ Mapped collection item: ${collectionItem.id}');
-            } catch (e) {
-              debugPrint('❌ Error mapping collection item: $e');
-              debugPrint('❌ Item type: ${collectionItem.runtimeType}');
-              debugPrint('❌ Item data: $collectionItem');
-            }
+                ...collectionItem.data,
+              }),
+            );
           }
-
           debugPrint(
-            '✅ Successfully mapped ${deliveryCollectionModels.length} delivery collection items',
+            '✅ Processed ${deliveryCollectionModels.length} delivery collection items',
           );
         } catch (e) {
           debugPrint('❌ Error processing delivery collection data: $e');
         }
       } else {
-        debugPrint('⚠️ No delivery collection found in record expand');
+        // Check if raw data has empty array (normal case for no collections)
+        final rawCollectionData = record.data['deliveryCollection'];
+        if (rawCollectionData != null && rawCollectionData is List && rawCollectionData.isEmpty) {
+          debugPrint('ℹ️ Trip has no delivery collections (empty array)');
+        } else {
+          debugPrint('⚠️ No delivery collection data found in record');
+        }
       }
-
-      debugPrint(
-        '✅ Final mapping - Using ${deliveryCollectionModels.length} delivery collection models',
-      );
 
       // Handle cancelled invoice data - Map to CancelledInvoiceModel objects
       final cancelledInvoiceList = record.expand['cancelledInvoice'];
       List<CancelledInvoiceModel> cancelledInvoiceModels = [];
 
-      debugPrint(
-        '📊 Raw cancelledInvoice from expand: $cancelledInvoiceList',
-      );
-      debugPrint(
-        '📊 CancelledInvoice type: ${cancelledInvoiceList?.runtimeType}',
-      );
-
-      if (cancelledInvoiceList != null) {
-        debugPrint('📊 Processing cancelled invoice data');
+      // Check both expanded data and raw data field
+      if (cancelledInvoiceList != null && cancelledInvoiceList.isNotEmpty) {
+        debugPrint('✅ Found cancelled invoice data: ${cancelledInvoiceList.runtimeType}');
 
         try {
-          debugPrint(
-            '📊 CancelledInvoice is a list with ${cancelledInvoiceList.length} items',
-          );
-
           for (var invoiceItem in cancelledInvoiceList) {
-            debugPrint(
-              '📊 Processing cancelled invoice item type: ${invoiceItem.runtimeType}',
-            );
-
-            try {
-              // Handle RecordModel objects from PocketBase expand
-              final itemMap = {
+            cancelledInvoiceModels.add(
+              CancelledInvoiceModel.fromJson({
                 'id': invoiceItem.id,
                 'collectionId': invoiceItem.collectionId,
                 'collectionName': invoiceItem.collectionName,
-                'created': invoiceItem.created,
-                'updated': invoiceItem.updated,
-                ...Map<String, dynamic>.from(invoiceItem.data),
-              };
-              final cancelledInvoiceModel = CancelledInvoiceModel.fromJson(
-                itemMap,
-              );
-              cancelledInvoiceModels.add(cancelledInvoiceModel);
-              debugPrint('✅ Mapped cancelled invoice item: ${invoiceItem.id}');
-            } catch (e) {
-              debugPrint('❌ Error mapping cancelled invoice item: $e');
-              debugPrint('❌ Item type: ${invoiceItem.runtimeType}');
-              debugPrint('❌ Item data: $invoiceItem');
-            }
+                ...invoiceItem.data,
+              }),
+            );
           }
-
           debugPrint(
-            '✅ Successfully mapped ${cancelledInvoiceModels.length} cancelled invoice items',
+            '✅ Processed ${cancelledInvoiceModels.length} cancelled invoice items',
           );
         } catch (e) {
           debugPrint('❌ Error processing cancelled invoice data: $e');
         }
       } else {
-        debugPrint('⚠️ No cancelled invoice found in record expand');
+        // Check if raw data has empty array (normal case for no cancelled invoices)
+        final rawCancelledData = record.data['cancelledInvoice'];
+        if (rawCancelledData != null && rawCancelledData is List && rawCancelledData.isEmpty) {
+          debugPrint('ℹ️ Trip has no cancelled invoices (empty array)');
+        } else {
+          debugPrint('⚠️ No cancelled invoice data found in record');
+        }
       }
-
-      debugPrint(
-        '✅ Final mapping - Using ${cancelledInvoiceModels.length} cancelled invoice models',
-      );
 
       final mappedData = {
         'id': record.id,

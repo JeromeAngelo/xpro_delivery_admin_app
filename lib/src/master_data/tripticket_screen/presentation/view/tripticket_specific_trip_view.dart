@@ -271,7 +271,15 @@ class _TripTicketSpecificTripViewState
                       const SizedBox(height: 16),
 
                       // Trip Dashboard
-                      TripDashboardWidget(trip: trip),
+                      TripDashboardWidget(
+                        trip: trip,
+                        onEditTrip: () {
+                          // Navigate to edit trip screen using router
+                          if (trip.id != null) {
+                            context.go('/tripticket-edit/${trip.id}');
+                          }
+                        },
+                      ),
 
                       const SizedBox(height: 16),
 
