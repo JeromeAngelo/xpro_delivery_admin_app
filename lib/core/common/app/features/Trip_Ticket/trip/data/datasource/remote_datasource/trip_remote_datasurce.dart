@@ -6,6 +6,9 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/da
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/data/model/delivery_data_model.dart'
     show DeliveryDataModel;
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/data/model/collection_model.dart'
+    as collection;
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cancelled_invoices/data/model/cancelled_invoice_model.dart';
 import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
@@ -616,6 +619,22 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           );
 
       debugPrint('✅ Trip ticket found: ${record.id}');
+      debugPrint('📊 Available expand fields: ${record.expand.keys.toList()}');
+      debugPrint('📊 Available data fields: ${record.data.keys.toList()}');
+      debugPrint(
+        '📊 DeliveryCollection data: ${record.expand['deliveryCollection']}',
+      );
+      debugPrint(
+        '📊 DeliveryCollection type: ${record.expand['deliveryCollection']?.runtimeType}',
+      );
+      debugPrint(
+        '📊 Raw record data contains deliveryCollection: ${record.data.containsKey('deliveryCollection')}',
+      );
+      if (record.data.containsKey('deliveryCollection')) {
+        debugPrint(
+          '📊 Raw deliveryCollection value: ${record.data['deliveryCollection']}',
+        );
+      }
 
       return _mapRecordToTripModel(record);
     } catch (e) {
@@ -839,6 +858,126 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
         debugPrint('⚠️ No delivery data found in record');
       }
 
+      // Handle delivery collection data - Map to CollectionModel objects
+      final deliveryCollectionList = record.expand['deliveryCollection'];
+      List<collection.CollectionModel> deliveryCollectionModels = [];
+
+      debugPrint(
+        '📊 Raw deliveryCollection from expand: $deliveryCollectionList',
+      );
+      debugPrint(
+        '📊 DeliveryCollection type: ${deliveryCollectionList?.runtimeType}',
+      );
+
+      if (deliveryCollectionList != null) {
+        debugPrint('📊 Processing delivery collection data');
+
+        try {
+          debugPrint(
+            '📊 DeliveryCollection is a list with ${deliveryCollectionList.length} items',
+          );
+
+          for (var collectionItem in deliveryCollectionList) {
+            debugPrint(
+              '📊 Processing collection item type: ${collectionItem.runtimeType}',
+            );
+
+            try {
+              // Handle RecordModel objects from PocketBase expand
+              final itemMap = {
+                'id': collectionItem.id,
+                'collectionId': collectionItem.collectionId,
+                'collectionName': collectionItem.collectionName,
+                'created': collectionItem.created,
+                'updated': collectionItem.updated,
+                ...Map<String, dynamic>.from(collectionItem.data),
+              };
+              final collectionModel = collection.CollectionModel.fromJson(
+                itemMap,
+              );
+              deliveryCollectionModels.add(collectionModel);
+              debugPrint('✅ Mapped collection item: ${collectionItem.id}');
+            } catch (e) {
+              debugPrint('❌ Error mapping collection item: $e');
+              debugPrint('❌ Item type: ${collectionItem.runtimeType}');
+              debugPrint('❌ Item data: $collectionItem');
+            }
+          }
+
+          debugPrint(
+            '✅ Successfully mapped ${deliveryCollectionModels.length} delivery collection items',
+          );
+        } catch (e) {
+          debugPrint('❌ Error processing delivery collection data: $e');
+        }
+      } else {
+        debugPrint('⚠️ No delivery collection found in record expand');
+      }
+
+      debugPrint(
+        '✅ Final mapping - Using ${deliveryCollectionModels.length} delivery collection models',
+      );
+
+      // Handle cancelled invoice data - Map to CancelledInvoiceModel objects
+      final cancelledInvoiceList = record.expand['cancelledInvoice'];
+      List<CancelledInvoiceModel> cancelledInvoiceModels = [];
+
+      debugPrint(
+        '📊 Raw cancelledInvoice from expand: $cancelledInvoiceList',
+      );
+      debugPrint(
+        '📊 CancelledInvoice type: ${cancelledInvoiceList?.runtimeType}',
+      );
+
+      if (cancelledInvoiceList != null) {
+        debugPrint('📊 Processing cancelled invoice data');
+
+        try {
+          debugPrint(
+            '📊 CancelledInvoice is a list with ${cancelledInvoiceList.length} items',
+          );
+
+          for (var invoiceItem in cancelledInvoiceList) {
+            debugPrint(
+              '📊 Processing cancelled invoice item type: ${invoiceItem.runtimeType}',
+            );
+
+            try {
+              // Handle RecordModel objects from PocketBase expand
+              final itemMap = {
+                'id': invoiceItem.id,
+                'collectionId': invoiceItem.collectionId,
+                'collectionName': invoiceItem.collectionName,
+                'created': invoiceItem.created,
+                'updated': invoiceItem.updated,
+                ...Map<String, dynamic>.from(invoiceItem.data),
+              };
+              final cancelledInvoiceModel = CancelledInvoiceModel.fromJson(
+                itemMap,
+              );
+              cancelledInvoiceModels.add(cancelledInvoiceModel);
+              debugPrint('✅ Mapped cancelled invoice item: ${invoiceItem.id}');
+            } catch (e) {
+              debugPrint('❌ Error mapping cancelled invoice item: $e');
+              debugPrint('❌ Item type: ${invoiceItem.runtimeType}');
+              debugPrint('❌ Item data: $invoiceItem');
+            }
+          }
+
+          debugPrint(
+            '✅ Successfully mapped ${cancelledInvoiceModels.length} cancelled invoice items',
+          );
+        } catch (e) {
+          debugPrint('❌ Error processing cancelled invoice data: $e');
+        }
+      } else {
+        debugPrint('⚠️ No cancelled invoice found in record expand');
+      }
+
+      debugPrint(
+        '✅ Final mapping - Using ${cancelledInvoiceModels.length} cancelled invoice models',
+      );
+
       final mappedData = {
         'id': record.id,
         'collectionId': record.collectionId,
@@ -854,10 +993,11 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
                 .map((model) => model.toJson())
                 .toList(), // Added: Map delivery data
         'checklist': _mapExpandedList(record.expand['checklist']),
-        'cancelledInvoice': _mapExpandedList(record.expand['cancelledInvoice']),
-        'deliveryCollection': _mapExpandedList(
-          record.expand['deliveryCollection'],
-        ),
+        'cancelledInvoice': cancelledInvoiceModels
+            .map((model) => model.toJson())
+            .toList(),
+        'deliveryCollection':
+            deliveryCollectionModels.map((model) => model.toJson()).toList(),
 
         'trip_update_list': _mapExpandedList(record.expand['trip_update_list']),
         'user': usersModel?.toJson(),

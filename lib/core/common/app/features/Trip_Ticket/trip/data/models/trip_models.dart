@@ -16,6 +16,7 @@ import 'package:pocketbase/pocketbase.dart';
 // New imports for the updated model relationships
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/data/model/delivery_data_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/collection/data/model/collection_model.dart' as delivery_collection;
 
 class TripModel extends TripEntity {
   String? pocketbaseId;
@@ -32,7 +33,7 @@ class TripModel extends TripEntity {
     List<EndTripChecklistModel>? endTripChecklistItems,
     List<DeliveryTeamModel>? deliveryTeamList,
     List<TripUpdateModel>? tripUpdateList,
-    List<CollectionModel>? deliveryCollectionList,
+    List<delivery_collection.CollectionModel>? deliveryCollectionList,
     List<CancelledInvoiceModel>? cancelledInvoiceList, 
     super.latitude,
     super.longitude,
@@ -57,6 +58,8 @@ class TripModel extends TripEntity {
           checklist: checklistItems ?? [],
           vehicle: vehicleModel, // Updated: Changed from vehicleList to vehicleModel
           deliveryData: deliveryDataList ?? [], // Added: Initialize delivery data list
+          deliveryCollection: deliveryCollectionList ?? [], // Added: Initialize delivery collection list
+          cancelledInvoice: cancelledInvoiceList ?? [], // Added: Initialize cancelled invoice list
           endTripChecklist: endTripChecklistItems ?? [],
         );
 
@@ -159,17 +162,17 @@ class TripModel extends TripEntity {
     }
 
     final deliveryCollectionList = expandedData?['deliveryCollection'] ?? json['deliveryCollection'];
-    List<CollectionModel> deliveryCollectionModels = [];
+    List<delivery_collection.CollectionModel> deliveryCollectionModels = [];
     if (deliveryCollectionList != null) {
       if (deliveryCollectionList is List) {
         deliveryCollectionModels = deliveryCollectionList.map((data) {
           if (data is String) {
-            return CollectionModel(id: data);
+            return delivery_collection.CollectionModel(id: data);
           }
-          return CollectionModel.fromJson(data);
+          return delivery_collection.CollectionModel.fromJson(data);
         }).toList();    
           }else if (deliveryCollectionList is Map<String, dynamic>) {
-            deliveryCollectionModels = [CollectionModel.fromJson(deliveryCollectionList)];
+            deliveryCollectionModels = [delivery_collection.CollectionModel.fromJson(deliveryCollectionList)];
           }
         }
 
@@ -407,7 +410,7 @@ class TripModel extends TripEntity {
     List<DeliveryDataModel>? deliveryDataList, // Added: New parameter for delivery data
     List<EndTripChecklistModel>? endTripChecklistItems,
     List<TripUpdateModel>? tripUpdateList,
-    List<CollectionModel>? deliveryCollection, // Added: New parameter for delivery collection>
+    List<delivery_collection.CollectionModel>? deliveryCollection, // Added: New parameter for delivery collection>
     List<CancelledInvoiceModel>? cancelledInvoice, // Added: New parameter for cancelled invoice>
     double? latitude,
     double? longitude,
@@ -438,7 +441,7 @@ class TripModel extends TripEntity {
       vehicleModel: vehicleModel ?? vehicle as DeliveryVehicleModel?, // Updated: Changed from vehicleList to vehicleModel
       deliveryDataList: deliveryDataList ?? deliveryData.cast<DeliveryDataModel>(), // Added: Cast deliveryData to DeliveryDataModel
       cancelledInvoiceList: cancelledInvoice ?? cancelledInvoice!.cast<CancelledInvoiceModel>(),
-      deliveryCollectionList: deliveryCollection ?? deliveryCollection!.cast<CollectionModel>(),
+      deliveryCollectionList: deliveryCollection ?? deliveryCollection!.cast<delivery_collection.CollectionModel>(),
       endTripChecklistItems: endTripChecklistItems ?? endTripChecklist,
       tripUpdateList: tripUpdateList ?? tripUpdates,
       latitude: latitude ?? this.latitude,

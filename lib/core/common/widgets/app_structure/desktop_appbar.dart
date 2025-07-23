@@ -187,6 +187,7 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Profile Avatar with Status Indicator
             Stack(

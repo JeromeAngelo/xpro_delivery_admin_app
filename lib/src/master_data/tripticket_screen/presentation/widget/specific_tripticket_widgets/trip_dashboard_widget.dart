@@ -220,7 +220,13 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
             ),
             DashboardInfoItem(
               icon: Icons.check_circle,
-              value: widget.trip?.deliveryCollection?.length.toString() ?? '0',
+              value: () {
+                final deliveryCollectionLength = widget.trip?.deliveryCollection?.length;
+                debugPrint('📊 Dashboard - DeliveryCollection length: $deliveryCollectionLength');
+                debugPrint('📊 Dashboard - DeliveryCollection data: ${widget.trip?.deliveryCollection}');
+                debugPrint('📊 Dashboard - Trip ID: ${widget.trip?.id}');
+                return deliveryCollectionLength?.toString() ?? '0';
+              }(),
               label: 'Completed Deliveries',
             ),
             DashboardInfoItem(
