@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/domain/entity/trip_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/data/models/personel_models.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/domain/entity/trip_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/data/models/personel_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/presentation/bloc/personel_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/presentation/bloc/personel_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/presentation/bloc/personel_state.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/create_trip_ticket_forms/personnel_selection_dialog.dart';
 
 class EditTripPersonnelForm extends StatefulWidget {

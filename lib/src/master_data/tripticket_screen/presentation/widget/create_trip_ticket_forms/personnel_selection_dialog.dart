@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/data/models/personel_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/data/models/personel_models.dart';
 
 class PersonnelSelectionDialog extends StatefulWidget {
   final List<PersonelModel> availablePersonnel;

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/domain/entity/delivery_data_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 
-import '../../../../../core/common/app/features/Trip_Ticket/invoice_items/domain/entity/invoice_items_entity.dart';
+import '../../../../../core/common/app/features/trip_ticket/invoice_items/domain/entity/invoice_items_entity.dart';
 
 class InvoiceItemsDeliveryDataWidget extends StatefulWidget {
   final DeliveryDataEntity? deliveryData;

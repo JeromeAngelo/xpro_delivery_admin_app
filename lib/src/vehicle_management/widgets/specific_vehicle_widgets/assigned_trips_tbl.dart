@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 
-import '../../../../core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_bloc.dart'
+import '../../../../core/common/app/features/trip_ticket/trip/presentation/bloc/trip_bloc.dart'
     show TripBloc;
-import '../../../../core/common/app/features/Trip_Ticket/trip/presentation/bloc/trip_event.dart';
+import '../../../../core/common/app/features/trip_ticket/trip/presentation/bloc/trip_event.dart';
 import '../../../../core/common/app/features/vehicle/vehicle_profile/domain/entity/vehicle_profile_entity.dart';
 import '../../../../core/common/app/features/vehicle/vehicle_profile/presentation/bloc/vehicle_profile_bloc.dart';
 import '../../../../core/common/app/features/vehicle/vehicle_profile/presentation/bloc/vehicle_profile_event.dart';

@@ -6,7 +6,6 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/pr
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/presentation/bloc/auth_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/provider/theme_provider.dart';
-
 class DefaultDrawer extends StatefulWidget {
   const DefaultDrawer({super.key});
 
@@ -19,30 +18,57 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Drawer(
       elevation: 10,
-      child: Column(
-        children: [
-          _buildDrawerHeader(context),
-          _buildDrawerBody(context),
-          const Spacer(),
-          _buildLogoutButton(context),
-        ],
+      backgroundColor: scheme.surface,
+      child: SafeArea(
+        child: Column(
+          children: [
+            _buildDrawerHeader(context),
+            Expanded(
+              child: SingleChildScrollView(
+                child: _buildDrawerBody(context),
+              ),
+            ),
+            _buildLogoutButton(context),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildDrawerHeader(BuildContext context) {
-    return DrawerHeader(
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withOpacity(0.4),
+        border: Border(
+          bottom: BorderSide(
+            color: scheme.outline.withOpacity(0.12),
+          ),
+        ),
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset('assets/images/company-logo.png', height: 80, width: 80),
+          Image.asset(
+            'assets/images/company-logo.png',
+            height: 72,
+            width: 72,
+          ),
           const SizedBox(height: 10),
           Text(
             'X-Pro Delivery Admin',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: scheme.onSurface,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -52,56 +78,100 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
   }
 
   Widget _buildDrawerBody(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Column(
       children: [
-        // Main Dashboard
-        ListTile(
-          leading: const Icon(Icons.dashboard),
-          title: const Text('Main Dashboard'),
+        _buildDrawerTile(
+          context,
+          icon: Icons.dashboard,
+          title: 'Main Dashboard',
           onTap: () {
             context.go('/main-screen');
           },
         ),
-        const Divider(),
+        Divider(color: scheme.outline.withOpacity(0.12), height: 1),
 
-        // Reports
-        ListTile(
-          leading: const Icon(Icons.bar_chart),
-          title: const Text('Reports'),
+        _buildDrawerTile(
+          context,
+          icon: Icons.bar_chart,
+          title: 'Reports',
           onTap: () {
             Navigator.pop(context);
             Navigator.pushNamed(context, '/reports');
           },
         ),
 
-        // Settings
-        ListTile(
-          leading: const Icon(Icons.settings),
-          title: const Text('Settings'),
+        _buildDrawerTile(
+          context,
+          icon: Icons.settings,
+          title: 'Settings',
           onTap: () {
             Navigator.pop(context);
             Navigator.pushNamed(context, '/settings');
           },
         ),
 
-        // Theme Settings - Collapsible
-        ExpansionTile(
-          leading: const Icon(Icons.color_lens),
-          title: const Text('Theme'),
-          initiallyExpanded: _isThemeExpanded,
-          onExpansionChanged: (expanded) {
-            setState(() {
-              _isThemeExpanded = expanded;
-            });
-          },
-          children: [_buildThemeOptions(context)],
+        Theme(
+          data: theme.copyWith(
+            dividerColor: Colors.transparent,
+          ),
+          child: ExpansionTile(
+            leading: Icon(
+              Icons.color_lens,
+              color: scheme.onSurface,
+            ),
+            title: Text(
+              'Theme',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: scheme.onSurface,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            iconColor: scheme.onSurface,
+            collapsedIconColor: scheme.onSurface,
+            initiallyExpanded: _isThemeExpanded,
+            onExpansionChanged: (expanded) {
+              setState(() {
+                _isThemeExpanded = expanded;
+              });
+            },
+            children: [_buildThemeOptions(context)],
+          ),
         ),
       ],
     );
   }
 
+  Widget _buildDrawerTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return ListTile(
+      leading: Icon(icon, color: scheme.onSurface),
+      title: Text(
+        title,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: scheme.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      onTap: onTap,
+    );
+  }
+
   Widget _buildThemeOptions(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final scheme = Theme.of(context).colorScheme;
 
     return Column(
       children: [
@@ -111,10 +181,9 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
               Icon(
                 Icons.light_mode,
                 size: 20,
-                color:
-                    themeProvider.themeMode == ThemeMode.light
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
+                color: themeProvider.themeMode == ThemeMode.light
+                    ? scheme.primary
+                    : scheme.onSurface.withOpacity(0.7),
               ),
               const SizedBox(width: 12),
               const Text('Light'),
@@ -127,7 +196,7 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
               themeProvider.setThemeMode(value);
             }
           },
-          activeColor: Theme.of(context).colorScheme.primary,
+          activeColor: scheme.primary,
           dense: true,
         ),
         RadioListTile<ThemeMode>(
@@ -136,10 +205,9 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
               Icon(
                 Icons.brightness_auto,
                 size: 20,
-                color:
-                    themeProvider.themeMode == ThemeMode.system
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
+                color: themeProvider.themeMode == ThemeMode.system
+                    ? scheme.primary
+                    : scheme.onSurface.withOpacity(0.7),
               ),
               const SizedBox(width: 12),
               const Text('System'),
@@ -152,20 +220,18 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
               themeProvider.setThemeMode(value);
             }
           },
-          activeColor: Theme.of(context).colorScheme.primary,
+          activeColor: scheme.primary,
           dense: true,
         ),
-
         RadioListTile<ThemeMode>(
           title: Row(
             children: [
               Icon(
                 Icons.dark_mode,
                 size: 20,
-                color:
-                    themeProvider.themeMode == ThemeMode.dark
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
+                color: themeProvider.themeMode == ThemeMode.dark
+                    ? scheme.primary
+                    : scheme.onSurface.withOpacity(0.7),
               ),
               const SizedBox(width: 12),
               const Text('Dark'),
@@ -178,7 +244,7 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
               themeProvider.setThemeMode(value);
             }
           },
-          activeColor: Theme.of(context).colorScheme.primary,
+          activeColor: scheme.primary,
           dense: true,
         ),
       ],
@@ -186,40 +252,51 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
   }
 
   Widget _buildLogoutButton(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: BlocBuilder<GeneralUserBloc, GeneralUserState>(
         builder: (context, state) {
           return ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Logout', style: TextStyle(color: Colors.red)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            tileColor: scheme.error.withOpacity(0.08),
+            leading: Icon(Icons.logout, color: scheme.error),
+            title: Text(
+              'Logout',
+              style: TextStyle(
+                color: scheme.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             onTap: () {
               showDialog(
                 context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('Confirm Logout'),
-                      content: const Text('Are you sure you want to logout?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            context.go('/');
-
-                            Navigator.pop(context); // Close dialog
-                            context.read<GeneralUserBloc>().add(
-                              const UserSignOutEvent(),
-                            );
-
-                            context.go('/');
-                          },
-                          child: const Text('Logout'),
-                        ),
-                      ],
+                builder: (context) => AlertDialog(
+                  title: const Text('Confirm Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
                     ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.read<GeneralUserBloc>().add(
+                          const UserSignOutEvent(),
+                        );
+                        context.go('/');
+                      },
+                      child: Text(
+                        'Logout',
+                        style: TextStyle(color: scheme.error),
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           );

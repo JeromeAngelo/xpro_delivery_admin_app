@@ -1,11 +1,12 @@
 import 'dart:async';
 
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/domain/entity/delivery_data_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/presentation/bloc/delivery_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/presentation/bloc/delivery_data_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/presentation/bloc/delivery_data_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/default_drawer.dart';
 import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/customer_information_tile.dart';
+import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/customer_tile.dart';
 import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/delivery_status_icon.dart';
 import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/status_container.dart';
 import 'package:flutter/material.dart';
@@ -94,181 +95,268 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
       );
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      endDrawer: DeliveryTimelineDrawer(
-        onRefresh: () {
-          context.read<DeliveryDataBloc>().add(
-            const GetAllDeliveryDataWithTripsEvent(),
-          );
-        },
-        formatDate: _formatDateTime,
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    key: _scaffoldKey,
+    endDrawer: DeliveryTimelineDrawer(
+      onRefresh: () {
+        context.read<DeliveryDataBloc>().add(
+          const GetAllDeliveryDataWithTripsEvent(),
+        );
+      },
+      formatDate: _formatDateTime,
+    ),
+    appBar: AppBar(
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      iconTheme: IconThemeData(
+        color: Theme.of(context).colorScheme.surface,
       ),
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.surface),
-        title: Text(
-          'Delivery Monitoring',
-          style: TextStyle(color: Theme.of(context).colorScheme.surface),
+      title: Text(
+        'Delivery Monitoring',
+        style: TextStyle(color: Theme.of(context).colorScheme.surface),
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Center(
+            child: StreamBuilder<int>(
+              stream: Stream.periodic(
+                const Duration(seconds: 1),
+                (count) =>
+                    autoRefreshDuration.inSeconds -
+                    (count % autoRefreshDuration.inSeconds),
+              ),
+              builder: (context, snapshot) {
+                final remainingSeconds =
+                    snapshot.data ?? autoRefreshDuration.inSeconds;
+                final minutes = remainingSeconds ~/ 60;
+                final seconds = remainingSeconds % 60;
+                return Text(
+                  'Auto-refresh in: ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
+                );
+              },
+            ),
+          ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Center(
-              child: StreamBuilder<int>(
-                stream: Stream.periodic(
-                  const Duration(seconds: 1),
-                  (count) =>
-                      autoRefreshDuration.inSeconds -
-                      (count % autoRefreshDuration.inSeconds),
+        IconButton(
+          icon: Icon(
+            Icons.refresh,
+            color: Theme.of(context).colorScheme.surface,
+          ),
+          tooltip: 'Refresh',
+          onPressed: () {
+            searchController.clear();
+            context.read<DeliveryDataBloc>().add(
+              const GetAllDeliveryDataWithTripsEvent(),
+            );
+          },
+        ),
+        IconButton(
+          icon: Icon(
+            Icons.search,
+            color: Theme.of(context).colorScheme.surface,
+          ),
+          tooltip: 'Search Delivery Data',
+          onPressed: () {
+            CustomerSearchDialog.show(
+              context,
+              controller: searchController,
+              onSearch: () {
+                final query = searchController.text.trim();
+
+                if (query.isEmpty) return;
+
+                context.read<DeliveryDataBloc>().add(
+                  SearchDeliveryDataEvent(query),
+                );
+              },
+            );
+          },
+        ),
+        IconButton(
+          icon: Icon(
+            Icons.timeline,
+            color: Theme.of(context).colorScheme.surface,
+          ),
+          tooltip: 'View Timeline',
+          onPressed: () => _openTimelineDrawer(context),
+        ),
+        const SizedBox(width: 8),
+      ],
+    ),
+    drawer: const DefaultDrawer(),
+    body: BlocBuilder<DeliveryDataBloc, DeliveryDataState>(
+      builder: (context, state) {
+        if (state is DeliveryDataLoading || state is SearchingDeliveryData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (state is DeliveryDataError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading delivery data: ${state.message}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
                 ),
-                builder: (context, snapshot) {
-                  final remainingSeconds =
-                      snapshot.data ?? autoRefreshDuration.inSeconds;
-                  final minutes = remainingSeconds ~/ 60;
-                  final seconds = remainingSeconds % 60;
-                  return Text(
-                    'Auto-refresh in: ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.surface,
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    context.read<DeliveryDataBloc>().add(
+                      const GetAllDeliveryDataWithTripsEvent(),
+                    );
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // ✅ SEARCH RESULT VIEW
+        if (state is SearchDeliveryDataLoaded) {
+          return _buildSearchResultsView(context, state.results, state.query);
+        }
+
+        // ✅ NORMAL MONITORING VIEW
+        List<DeliveryDataEntity> deliveryDataList = [];
+
+        if (state is AllDeliveryDataWithTripsLoaded) {
+          deliveryDataList = state.deliveryData;
+        }
+
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(16.0),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 16.0,
+                  mainAxisSpacing: 16.0,
+                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final status = statuses[index];
+                  final statusDeliveryData = _filterDeliveryDataByStatus(
+                    deliveryDataList,
+                    status.name,
+                  );
+
+                  return SizedBox(
+                    height: 500,
+                    child: StatusContainer(
+                      statusName: status.name,
+                      statusIcon: status.icon,
+                      statusColor: status.color,
+                      deliveryDataList: statusDeliveryData,
+                      onDeliveryDataTap: (deliveryData) {
+                        _showDeliveryDataDetails(context, deliveryData);
+                      },
+                      subtitle: status.subtitle,
                     ),
+                  );
+                }, childCount: statuses.length),
+              ),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+}
+
+Widget _buildSearchResultsView(
+  BuildContext context,
+  List<DeliveryDataEntity> results,
+  String query,
+) {
+  return Column(
+    children: [
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+          border: Border(
+            bottom: BorderSide(color: Colors.grey.shade300),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.search,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Search results for "$query" • ${results.length} found',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: () {
+                searchController.clear();
+                context.read<DeliveryDataBloc>().add(
+                  const GetAllDeliveryDataWithTripsEvent(),
+                );
+              },
+              icon: const Icon(Icons.close),
+              label: const Text('Close Search'),
+            ),
+          ],
+        ),
+      ),
+      Expanded(
+        child: results.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_off, size: 56, color: Colors.grey[400]),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No delivery data found',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Try searching by customer name or trip number ID.',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: results.length,
+                itemBuilder: (context, index) {
+                  final delivery = results[index];
+                  return CustomerTile(
+                    deliveryData: delivery,
+                    onTap: () {
+                      _showDeliveryDataDetails(context, delivery);
+                    },
                   );
                 },
               ),
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.refresh,
-              color: Theme.of(context).colorScheme.surface,
-            ),
-            tooltip: 'Refresh',
-            onPressed: () {
-              // Manually refresh delivery data
-              context.read<DeliveryDataBloc>().add(
-                const GetAllDeliveryDataWithTripsEvent(),
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.repeat_rounded,
-              color: Theme.of(context).colorScheme.surface,
-            ),
-            tooltip: 'Change Delivery Status',
-            onPressed: () {
-              CustomerSearchDialog.show(
-                context,
-                controller: searchController,
-                onSearch: () {
-                  final query = searchController.text;
-
-                  // later: dispatch bloc event
-                  // context.read<CustomerBloc>().add(SearchCustomerEvent(query));
-
-                  debugPrint('Searching customer: $query');
-                },
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.timeline,
-              color: Theme.of(context).colorScheme.surface,
-            ),
-            tooltip: 'View Timeline',
-            onPressed: () => _openTimelineDrawer(context),
-          ),
-
-          const SizedBox(width: 8),
-        ],
       ),
-      drawer: const DefaultDrawer(),
-      body: BlocBuilder<DeliveryDataBloc, DeliveryDataState>(
-        builder: (context, state) {
-          if (state is DeliveryDataLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state is DeliveryDataError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading delivery data: ${state.message}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      // Retry loading delivery data
-                      context.read<DeliveryDataBloc>().add(
-                        const GetAllDeliveryDataWithTripsEvent(),
-                      );
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          List<DeliveryDataEntity> deliveryDataList = [];
-
-          // Handle different loaded states
-          if (state is AllDeliveryDataWithTripsLoaded) {
-            deliveryDataList = state.deliveryData;
-          }
-
-          return CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.all(16.0),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, // 3 columns
-                    childAspectRatio: 0.85, // Adjust for height
-                    crossAxisSpacing: 16.0,
-                    mainAxisSpacing: 16.0,
-                  ),
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final status = statuses[index];
-                    final statusDeliveryData = _filterDeliveryDataByStatus(
-                      deliveryDataList,
-                      status.name,
-                    );
-
-                    return SizedBox(
-                      height: 500, // Fixed height for each status container
-                      child: StatusContainer(
-                        statusName: status.name,
-                        statusIcon: status.icon,
-                        statusColor: status.color,
-                        deliveryDataList: statusDeliveryData,
-                        onDeliveryDataTap: (deliveryData) {
-                          _showDeliveryDataDetails(context, deliveryData);
-                        },
-                        subtitle: status.subtitle,
-                      ),
-                    );
-                  }, childCount: statuses.length),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
+    ],
+  );
+}
 
   // Filter delivery data by their delivery status
   List<DeliveryDataEntity> _filterDeliveryDataByStatus(

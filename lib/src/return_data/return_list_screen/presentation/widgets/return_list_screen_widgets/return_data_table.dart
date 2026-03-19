@@ -1,6 +1,6 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/entity/return_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/presentation/bloc/return_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/presentation/bloc/return_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/return_product/domain/entity/return_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/return_product/presentation/bloc/return_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/return_product/presentation/bloc/return_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 import 'package:xpro_delivery_admin_app/src/return_data/return_list_screen/presentation/widgets/return_list_screen_widgets/return_search_bar.dart';
 import 'package:xpro_delivery_admin_app/src/return_data/return_list_screen/presentation/widgets/return_list_screen_widgets/return_status_chip.dart';

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/domain/entity/personel_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/presentation/bloc/personel_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/domain/entity/personel_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/presentation/bloc/personel_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/presentation/bloc/personel_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/presentation/bloc/personel_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/personnels_trip/domain/entity/personnel_trip_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/personnels_trip/presentation/bloc/personnel_trip_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/personnels_trip/presentation/bloc/personnel_trip_event.dart';

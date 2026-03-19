@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/domain/entity/personel_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/domain/entity/personel_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_dashboard.dart';
 
 class SpecificPersonnelDashboard extends StatelessWidget {

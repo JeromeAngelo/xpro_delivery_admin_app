@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/domain/entity/delivery_data_entity.dart';
 
 class CustomerTile extends StatelessWidget {
   final DeliveryDataEntity deliveryData;
   final VoidCallback? onTap;
   final Color? borderColor;
+  final VoidCallback? onRightTap;
 
   const CustomerTile({
     super.key,
     required this.deliveryData,
     this.onTap,
     this.borderColor,
+    this.onRightTap,
   });
 
   @override
@@ -25,6 +27,7 @@ class CustomerTile extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
+        
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.all(12.0),

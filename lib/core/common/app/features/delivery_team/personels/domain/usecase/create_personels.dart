@@ -1,0 +1,37 @@
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/domain/entity/personel_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/domain/repo/personal_repo.dart';
+import 'package:xpro_delivery_admin_app/core/enums/user_role.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/usecases/usecase.dart';
+import 'package:equatable/equatable.dart';
+
+class CreatePersonel implements UsecaseWithParams<PersonelEntity, CreatePersonelParams> {
+  final PersonelRepo _repo;
+
+  const CreatePersonel(this._repo);
+
+  @override
+  ResultFuture<PersonelEntity> call(CreatePersonelParams params) => _repo.createPersonel(
+    name: params.name,
+    role: params.role,
+    deliveryTeamId: params.deliveryTeamId,
+    tripId: params.tripId,
+  );
+}
+
+class CreatePersonelParams extends Equatable {
+  final String name;
+  final UserRole role;
+  final String? deliveryTeamId;
+  final String? tripId;
+
+  const CreatePersonelParams({
+    required this.name,
+    required this.role,
+    this.deliveryTeamId,
+    this.tripId,
+  });
+
+  @override
+  List<Object?> get props => [name, role, deliveryTeamId, tripId];
+}

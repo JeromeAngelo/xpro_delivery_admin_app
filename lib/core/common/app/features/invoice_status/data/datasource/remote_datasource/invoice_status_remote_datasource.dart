@@ -4,11 +4,11 @@ import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/data/model/delivery_data_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/data/model/delivery_data_model.dart';
 
 import '../../../../../../../errors/exceptions.dart';
-import '../../../../Trip_Ticket/customer_data/data/model/customer_data_model.dart';
-import '../../../../Trip_Ticket/invoice_data/data/model/invoice_data_model.dart';
+import '../../../../trip_ticket/customer_data/data/model/customer_data_model.dart';
+import '../../../../trip_ticket/invoice_data/data/model/invoice_data_model.dart';
 import '../../model/invoice_status_model.dart';
 
 abstract class InvoiceStatusRemoteDatasource {

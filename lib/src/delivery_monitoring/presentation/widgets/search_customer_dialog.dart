@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-
 class CustomerSearchDialog extends StatelessWidget {
   final TextEditingController controller;
-
-  /// Optional search callback
   final VoidCallback? onSearch;
 
   const CustomerSearchDialog({
@@ -12,7 +9,6 @@ class CustomerSearchDialog extends StatelessWidget {
     this.onSearch,
   });
 
-  /// Helper method to open the dialog
   static Future<void> show(
     BuildContext context, {
     required TextEditingController controller,
@@ -37,7 +33,7 @@ class CustomerSearchDialog extends StatelessWidget {
         children: [
           Icon(Icons.search, color: Colors.blue),
           SizedBox(width: 8),
-          Text('Search Customer'),
+          Text('Search Delivery Data'),
         ],
       ),
       content: SizedBox(
@@ -56,22 +52,18 @@ class CustomerSearchDialog extends StatelessWidget {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 16),
-
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'You can search customer by:',
+                'You can search delivery data by:',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
                 ),
               ),
             ),
-
             const SizedBox(height: 6),
-
             const Row(
               children: [
                 Icon(Icons.circle, size: 6, color: Colors.grey),
@@ -84,9 +76,7 @@ class CustomerSearchDialog extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 4),
-
             const Row(
               children: [
                 Icon(Icons.circle, size: 6, color: Colors.grey),
@@ -117,16 +107,21 @@ class CustomerSearchDialog extends StatelessWidget {
   }
 
   void _handleSearch(BuildContext context) {
+    final query = controller.text.trim();
+
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter customer name or trip number ID'),
+        ),
+      );
+      return;
+    }
+
     Navigator.of(context).pop();
 
     if (onSearch != null) {
-      onSearch!();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Customer search functionality coming soon!'),
-        ),
-      );
+      Future.microtask(() => onSearch!());
     }
   }
 }

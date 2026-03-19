@@ -1,11 +1,12 @@
 import 'package:intl/intl.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cancelled_invoices/domain/entity/cancelled_invoice_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/cancelled_invoices/domain/entity/cancelled_invoice_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/domain/entity/delivery_data_entity.dart';
 import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/delivery_status_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/common/app/features/Trip_Ticket/delivery_update/domain/entity/delivery_update_entity.dart';
+import '../../../../core/common/app/features/trip_ticket/delivery_update/domain/entity/delivery_update_entity.dart';
+import 'revert_status_dialog.dart';
 
 class CustomerInformationTile extends StatelessWidget {
   const CustomerInformationTile({
@@ -17,48 +18,49 @@ class CustomerInformationTile extends StatelessWidget {
   final CancelledInvoiceEntity? cancelledInvoice;
 
   String _normalizeStatus(String? title) {
-  return (title ?? '')
-      .toLowerCase()
-      .trim();
-}
-List<DeliveryUpdateEntity> _deduplicateDeliveryUpdates(
-  List<DeliveryUpdateEntity> updates,
-) {
-  final Map<String, DeliveryUpdateEntity> latestByStatus = {};
-
-  for (final update in updates) {
-    final key = _normalizeStatus(update.title);
-
-    final updateTime =
-        update.time ?? update.created ?? DateTime.fromMillisecondsSinceEpoch(0);
-
-    if (!latestByStatus.containsKey(key)) {
-      latestByStatus[key] = update;
-    } else {
-      final existing = latestByStatus[key]!;
-      final existingTime =
-          existing.time ??
-          existing.created ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-
-      // Keep the LATEST update
-      if (updateTime.isAfter(existingTime)) {
-        latestByStatus[key] = update;
-      }
-    }
+    return (title ?? '').toLowerCase().trim();
   }
 
- final result = latestByStatus.values.toList();
-result.sort((a, b) {
-  final timeA = a.time ?? a.created ?? DateTime.fromMillisecondsSinceEpoch(0);
-  final timeB = b.time ?? b.created ?? DateTime.fromMillisecondsSinceEpoch(0);
-  return timeA.compareTo(timeB); // earliest first
-});
+  List<DeliveryUpdateEntity> _deduplicateDeliveryUpdates(
+    List<DeliveryUpdateEntity> updates,
+  ) {
+    final Map<String, DeliveryUpdateEntity> latestByStatus = {};
 
+    for (final update in updates) {
+      final key = _normalizeStatus(update.title);
 
-  return result;
-}
+      final updateTime =
+          update.time ??
+          update.created ??
+          DateTime.fromMillisecondsSinceEpoch(0);
 
+      if (!latestByStatus.containsKey(key)) {
+        latestByStatus[key] = update;
+      } else {
+        final existing = latestByStatus[key]!;
+        final existingTime =
+            existing.time ??
+            existing.created ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+
+        // Keep the LATEST update
+        if (updateTime.isAfter(existingTime)) {
+          latestByStatus[key] = update;
+        }
+      }
+    }
+
+    final result = latestByStatus.values.toList();
+    result.sort((a, b) {
+      final timeA =
+          a.time ?? a.created ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeB =
+          b.time ?? b.created ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return timeA.compareTo(timeB); // earliest first
+    });
+
+    return result;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -142,60 +144,80 @@ result.sort((a, b) {
           const Divider(height: 32),
 
           // Delivery status history
-          Text(
-  'Delivery Status History',
-  style: Theme.of(context)
-      .textTheme
-      .titleMedium
-      ?.copyWith(fontWeight: FontWeight.bold),
-),
-const SizedBox(height: 8),
-
-if (deliveryData.deliveryUpdates.isEmpty)
-  const Text('No status updates available')
-else
-  Builder(
-    builder: (context) {
-      final dedupedStatuses =
-          _deduplicateDeliveryUpdates(deliveryData.deliveryUpdates);
-
-      return ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: dedupedStatuses.length,
-        itemBuilder: (context, index) {
-          final status = dedupedStatuses[index];
-          final statusData = DeliveryStatusData.fromName(
-            status.title ?? 'Unknown',
-          );
-
-          final displaySubtitle =
-              (_normalizeStatus(status.title) == 'mark as undelivered')
-                  ? _humanize(status.remarks)
-                  : (status.subtitle ?? '');
-
-          return ListTile(
-            leading: Icon(statusData.icon, color: statusData.color),
-            title: Text(
-              status.title ?? 'Unknown Status',
-              style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            subtitle: Text(
-              displaySubtitle,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            trailing: Text(
-              status.time != null ? _formatDateTime(status.time) : '',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          );
-        },
-      );
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Delivery Status History',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+             IconButton(
+onPressed: () {
+  RevertDeliveryStatusDialog.show(
+    context,
+    deliveryData: deliveryData,
+    onConfirm: () {
+      // TODO: submit revert status
     },
+  );
+},
+  icon: Icon(
+    Icons.repeat,
+    color: Theme.of(context).colorScheme.primary,
   ),
+  tooltip: 'Revert Status',
+),
+            ],
+          ),
+          const SizedBox(height: 8),
 
+          if (deliveryData.deliveryUpdates.isEmpty)
+            const Text('No status updates available')
+          else
+            Builder(
+              builder: (context) {
+                final dedupedStatuses = _deduplicateDeliveryUpdates(
+                  deliveryData.deliveryUpdates,
+                );
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: dedupedStatuses.length,
+                  itemBuilder: (context, index) {
+                    final status = dedupedStatuses[index];
+                    final statusData = DeliveryStatusData.fromName(
+                      status.title ?? 'Unknown',
+                    );
+
+                    final displaySubtitle =
+                        (_normalizeStatus(status.title) ==
+                                'mark as undelivered')
+                            ? _humanize(status.remarks)
+                            : (status.subtitle ?? '');
+
+                    return ListTile(
+                      leading: Icon(statusData.icon, color: statusData.color),
+                      title: Text(
+                        status.title ?? 'Unknown Status',
+                        style: Theme.of(context).textTheme.titleMedium!
+                            .copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        displaySubtitle,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      trailing: Text(
+                        status.time != null ? _formatDateTime(status.time) : '',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
 
           const SizedBox(height: 24),
 
@@ -250,6 +272,7 @@ else
       ),
     );
   }
+
 
   String _humanize(String? raw) {
     if (raw == null) return 'N/A';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/domain/entity/customer_data_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/customer_data/domain/entity/customer_data_entity.dart';
 
 class CustomerMapScreen extends StatefulWidget {
   final CustomerDataEntity selectedCustomer;

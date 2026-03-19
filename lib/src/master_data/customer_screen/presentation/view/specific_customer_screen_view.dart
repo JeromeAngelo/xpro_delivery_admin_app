@@ -1,8 +1,8 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/customer_data/presentation/bloc/customer_data_state.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/invoice_data/presentation/bloc/invoice_data_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/customer_data/presentation/bloc/customer_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/customer_data/presentation/bloc/customer_data_event.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/customer_data/presentation/bloc/customer_data_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/invoice_data/presentation/bloc/invoice_data_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/invoice_data/presentation/bloc/invoice_data_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/customer_screen/presentation/widgets/specific_customer_widget/customer_dashboard_widget.dart';

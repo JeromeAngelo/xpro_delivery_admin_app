@@ -1,9 +1,9 @@
 import 'package:equatable/equatable.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/delivery_update/data/models/delivery_update_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_update/data/models/delivery_update_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/data/models/trip_models.dart';
 import 'package:xpro_delivery_admin_app/core/enums/notification_type_enum.dart';
 
-import '../../../Trip_Ticket/delivery_data/data/model/delivery_data_model.dart';
+import '../../../trip_ticket/delivery_data/data/model/delivery_data_model.dart';
 
 class NotificationEntity extends Equatable {
   String? id;

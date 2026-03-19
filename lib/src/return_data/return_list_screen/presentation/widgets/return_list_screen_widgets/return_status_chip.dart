@@ -1,4 +1,4 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/return_product/domain/entity/return_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/return_product/domain/entity/return_entity.dart';
 import 'package:xpro_delivery_admin_app/core/enums/product_return_reason.dart';
 import 'package:flutter/material.dart';
 

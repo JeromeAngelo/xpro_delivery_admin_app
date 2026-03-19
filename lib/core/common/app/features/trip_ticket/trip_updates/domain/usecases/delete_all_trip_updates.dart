@@ -1,0 +1,14 @@
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip_updates/domain/repo/trip_update_repo.dart';
+import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
+import 'package:xpro_delivery_admin_app/core/usecases/usecase.dart';
+
+class DeleteAllTripUpdates extends UsecaseWithoutParams<bool> {
+  final TripUpdateRepo _repo;
+
+  const DeleteAllTripUpdates(this._repo);
+
+  @override
+  ResultFuture<bool> call() async {
+    return _repo.deleteAllTripUpdates();
+  }
+}

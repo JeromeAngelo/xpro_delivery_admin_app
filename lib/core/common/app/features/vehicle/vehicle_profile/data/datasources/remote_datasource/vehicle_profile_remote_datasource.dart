@@ -4,8 +4,8 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle
 
 import '../../../../../../../../enums/vehicle_status.dart';
 import '../../../../../../../../errors/exceptions.dart';
-import '../../../../../Trip_Ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
-import '../../../../../Trip_Ticket/trip/data/models/trip_models.dart';
+import '../../../../../trip_ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
+import '../../../../../trip_ticket/trip/data/models/trip_models.dart';
 
 abstract class VehicleProfileRemoteDatasource {
   Future<List<VehicleProfileModel>> getVehicleProfiles();

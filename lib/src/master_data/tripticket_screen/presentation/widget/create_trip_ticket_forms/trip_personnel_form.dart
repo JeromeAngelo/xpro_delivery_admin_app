@@ -2,7 +2,7 @@ import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widget
 import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/form_title.dart';
 import 'package:flutter/material.dart';
 
-import 'package:xpro_delivery_admin_app/core/common/app/features/Delivery_Team/personels/data/models/personel_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/data/models/personel_models.dart';
 import 'personnel_selection_dialog.dart';
 import 'team_leader_selection_dialog.dart';
 

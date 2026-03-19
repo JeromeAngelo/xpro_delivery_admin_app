@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../Trip_Ticket/customer_data/domain/entity/customer_data_entity.dart';
-import '../../../Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
-import '../../../Trip_Ticket/invoice_data/domain/entity/invoice_data_entity.dart';
+import '../../../trip_ticket/customer_data/domain/entity/customer_data_entity.dart';
+import '../../../trip_ticket/delivery_data/domain/entity/delivery_data_entity.dart';
+import '../../../trip_ticket/invoice_data/domain/entity/invoice_data_entity.dart';
 
 class InvoiceStatusEntity extends Equatable {
   final String? id;

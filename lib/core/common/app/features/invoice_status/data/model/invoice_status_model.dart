@@ -1,9 +1,9 @@
 import 'package:pocketbase/pocketbase.dart';
 
 import '../../../../../../typedefs/typedefs.dart';
-import '../../../Trip_Ticket/customer_data/data/model/customer_data_model.dart';
-import '../../../Trip_Ticket/delivery_data/data/model/delivery_data_model.dart';
-import '../../../Trip_Ticket/invoice_data/data/model/invoice_data_model.dart';
+import '../../../trip_ticket/customer_data/data/model/customer_data_model.dart';
+import '../../../trip_ticket/delivery_data/data/model/delivery_data_model.dart';
+import '../../../trip_ticket/invoice_data/data/model/invoice_data_model.dart';
 import '../../domain/entity/invoice_status_entity.dart';
 
 class InvoiceStatusModel extends InvoiceStatusEntity {

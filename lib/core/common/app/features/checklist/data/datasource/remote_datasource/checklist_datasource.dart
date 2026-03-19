@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/trip/data/models/trip_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/data/models/trip_models.dart';
 import 'package:xpro_delivery_admin_app/core/errors/exceptions.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/data/model/checklist_model.dart';

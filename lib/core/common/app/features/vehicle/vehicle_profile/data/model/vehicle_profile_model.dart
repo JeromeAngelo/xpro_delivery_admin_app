@@ -3,8 +3,8 @@ import 'package:pocketbase/pocketbase.dart';
 import 'package:xpro_delivery_admin_app/core/typedefs/typedefs.dart';
 
 import '../../../../../../../enums/vehicle_status.dart';
-import '../../../../Trip_Ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
-import '../../../../Trip_Ticket/trip/data/models/trip_models.dart';
+import '../../../../trip_ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
+import '../../../../trip_ticket/trip/data/models/trip_models.dart';
 import '../../domain/entity/vehicle_profile_entity.dart';
 
 class VehicleProfileModel extends VehicleProfileEntity {

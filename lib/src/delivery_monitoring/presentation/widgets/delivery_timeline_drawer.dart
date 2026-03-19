@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/common/app/features/Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
-import '../../../../core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_bloc.dart';
-import '../../../../core/common/app/features/Trip_Ticket/delivery_data/presentation/bloc/delivery_data_state.dart';
-import '../../../../core/common/app/features/Trip_Ticket/delivery_update/domain/entity/delivery_update_entity.dart';
+import '../../../../core/common/app/features/trip_ticket/delivery_data/domain/entity/delivery_data_entity.dart';
+import '../../../../core/common/app/features/trip_ticket/delivery_data/presentation/bloc/delivery_data_bloc.dart';
+import '../../../../core/common/app/features/trip_ticket/delivery_data/presentation/bloc/delivery_data_state.dart';
+import '../../../../core/common/app/features/trip_ticket/delivery_update/domain/entity/delivery_update_entity.dart';
 import '../../../../core/common/widgets/reusable_widgets/custom_timeline.dart';
 import 'tile_for_timeline.dart';
 

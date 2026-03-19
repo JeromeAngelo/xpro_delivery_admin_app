@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/Trip_Ticket/cancelled_invoices/domain/entity/cancelled_invoice_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/cancelled_invoices/domain/entity/cancelled_invoice_entity.dart';
 
 class CancelledInvoiceHeaderWidget extends StatelessWidget {
   final CancelledInvoiceEntity cancelledInvoice;

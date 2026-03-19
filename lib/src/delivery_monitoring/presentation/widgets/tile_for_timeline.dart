@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/common/app/features/Trip_Ticket/delivery_data/domain/entity/delivery_data_entity.dart';
-import '../../../../core/common/app/features/Trip_Ticket/delivery_update/domain/entity/delivery_update_entity.dart';
+import '../../../../core/common/app/features/trip_ticket/delivery_data/domain/entity/delivery_data_entity.dart';
+import '../../../../core/common/app/features/trip_ticket/delivery_update/domain/entity/delivery_update_entity.dart';
 import '../../../../core/common/widgets/app_structure/status_icons.dart';
 
 class TileForTimeline extends StatelessWidget {
