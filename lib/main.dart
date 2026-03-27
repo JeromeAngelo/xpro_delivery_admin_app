@@ -105,7 +105,7 @@ class MyApp extends StatelessWidget {
           ],
           child: MaterialApp.router(
             debugShowCheckedModeBanner: false,
-            title: 'X-Pro Delivery Admin App',
+            title: 'XPro Delivery Admin App',
             theme: FlexThemeData.light(
               scheme: FlexScheme.blueWhale,
               // Add responsive typography

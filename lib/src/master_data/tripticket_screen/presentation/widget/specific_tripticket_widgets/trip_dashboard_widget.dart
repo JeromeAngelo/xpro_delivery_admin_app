@@ -228,7 +228,7 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
                               ),
                               const SizedBox(height: 16),
                               const Text(
-                                'Scan this QR code with the X-Pro Delivery mobile app to quickly access this trip.',
+                                'Scan this QR code with the XPro Delivery mobile app to quickly access this trip.',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey,

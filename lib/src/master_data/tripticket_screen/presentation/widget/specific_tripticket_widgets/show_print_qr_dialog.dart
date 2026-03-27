@@ -321,7 +321,7 @@ Future<Uint8List> _generateQrCodePdf(TripEntity trip) async {
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
                   pw.Text(
-                    'X-Pro Delivery',
+                    'XPro Delivery',
                     style: pw.TextStyle(
                       fontSize: 24,
                       fontWeight: pw.FontWeight.bold,
@@ -520,7 +520,7 @@ Future<Uint8List> _generateQrCodePdf(TripEntity trip) async {
                   ),
                   pw.SizedBox(height: 4),
                   pw.Text(
-                    'Scan this QR code with the X-Pro Delivery mobile app to quickly access this trip.',
+                    'Scan this QR code with the XPro Delivery mobile app to quickly access this trip.',
                     style: const pw.TextStyle(
                       fontSize: 11,
                       color: PdfColors.orange900,

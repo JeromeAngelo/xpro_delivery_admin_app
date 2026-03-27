@@ -65,7 +65,7 @@ class _DefaultDrawerState extends State<DefaultDrawer> {
           ),
           const SizedBox(height: 10),
           Text(
-            'X-Pro Delivery Admin',
+            'XPro Delivery Admin',
             textAlign: TextAlign.center,
             style: theme.textTheme.titleLarge?.copyWith(
               color: scheme.onSurface,

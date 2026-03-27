@@ -150,7 +150,7 @@ class DesktopAppBar extends StatelessWidget implements PreferredSizeWidget {
                     // If you don't have a logo yet, use a placeholder
                     errorBuilder:
                         (context, error, stackTrace) => const Text(
-                          'X-Pro Delivery',
+                          'XPro Delivery',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,

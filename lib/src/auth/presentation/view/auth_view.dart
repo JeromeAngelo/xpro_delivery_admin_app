@@ -131,7 +131,7 @@ class _AuthViewState extends State<AuthView> {
                       const SizedBox(height: 40),
                       Center(
                         child: Text(
-                          '© ${DateTime.now().year} X-Pro Delivery Admin',
+                          '© ${DateTime.now().year} XPro Delivery Admin',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.grey[500],
                           ),
@@ -199,7 +199,7 @@ class _AuthViewState extends State<AuthView> {
                 const SizedBox(height: 40),
                 Center(
                   child: Text(
-                    '© ${DateTime.now().year} X-Pro Delivery Admin',
+                    '© ${DateTime.now().year} XPro Delivery Admin',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.grey[500],
                     ),

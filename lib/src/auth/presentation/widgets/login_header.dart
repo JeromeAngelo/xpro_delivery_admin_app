@@ -11,7 +11,7 @@ class LoginHeader extends StatelessWidget {
         Image.asset('assets/images/app_icon.png', height: 100, width: 100),
         const SizedBox(height: 20),
         Text(
-          'X-Pro Delivery Admin App',
+          'XPro Delivery Admin App',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.surface,

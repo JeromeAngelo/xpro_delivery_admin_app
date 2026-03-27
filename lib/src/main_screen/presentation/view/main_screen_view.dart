@@ -68,7 +68,7 @@ class _MainScreenViewState extends State<MainScreenView> {
         scrolledUnderElevation: 0,
         iconTheme: IconThemeData(color: scheme.onSurface),
         title: Text(
-          'X-Pro Delivery Admin App',
+          'XPro Delivery Admin App',
           style: theme.textTheme.headlineSmall?.copyWith(color: scheme.surface),
         ),
         actions: const [
