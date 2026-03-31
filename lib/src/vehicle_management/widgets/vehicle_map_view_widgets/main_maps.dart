@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/domain/entity/trip_entity.dart';
 import 'dart:ui' as ui;
+
+import '../../../../core/services/location_tracking_service.dart';
 
 /// VehicleMapWidget
 /// - Uses same map patterns as TripMapWidget (tile toggle, markers, fullscreen)
@@ -32,15 +37,61 @@ class _VehicleMapWidgetState extends State<VehicleMapWidget> {
   bool _isSatellite = false;
   double _zoom = 6.0;
   bool _isMapReady = false;
+  
+  StreamSubscription<Position>? _locationSub;
+  LatLng? _currentLocation;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() => _isMapReady = true);
+  void _startTracking() async {
+  final service = LocationTrackingService();
+  await service.start();
+
+  _locationSub = service.locationStream.listen((position) {
+    final latLng = LatLng(position.latitude, position.longitude);
+
+    // filter small movements
+    if (_currentLocation != null) {
+      final distance = Distance().as(
+        LengthUnit.Meter,
+        _currentLocation!,
+        latLng,
+      );
+
+      if (distance < 3) return;
+    }
+
+    setState(() {
+      _currentLocation = latLng;
     });
-    widget.selectedTripNotifier?.addListener(_handleSelectedTrip);
-  }
+
+    // smooth camera follow (optional)
+    if (_isMapReady) {
+      final currentCenter = _mapController.camera.center;
+
+      final distance = Distance().as(
+        LengthUnit.Meter,
+        currentCenter,
+        latLng,
+      );
+
+      if (distance > 10) {
+        _mapController.move(latLng, _zoom);
+      }
+    }
+  });
+}
+
+ @override
+void initState() {
+  super.initState();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    setState(() => _isMapReady = true);
+  });
+
+  widget.selectedTripNotifier?.addListener(_handleSelectedTrip);
+
+  _startTracking(); // ✅ THIS LINE WAS MISSING
+}
 
   @override
   void didUpdateWidget(covariant VehicleMapWidget oldWidget) {
@@ -91,16 +142,20 @@ class _VehicleMapWidgetState extends State<VehicleMapWidget> {
 
   List<Marker> _buildMarkers() {
     final markers = <Marker>[];
+
+    // 📦 STATIC VEHICLES
     for (final trip in widget.trips) {
       final lat = trip.latitude;
       final lng = trip.longitude;
       if (lat == null || lng == null) continue;
+
       final vehicleName =
           (trip.vehicle != null)
               ? ((trip.vehicle as dynamic).name?.toString() ??
                   trip.tripNumberId ??
                   '')
               : (trip.tripNumberId ?? '');
+
       markers.add(
         Marker(
           point: LatLng(lat, lng),
@@ -124,18 +179,15 @@ class _VehicleMapWidgetState extends State<VehicleMapWidget> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.local_shipping,
-                        size: 18,
-                        color: Colors.black87,
-                      ),
+                      Icon(Icons.local_shipping, size: 18, color: Theme.of(context).colorScheme.surface,),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           vehicleName,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.surface,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -153,6 +205,9 @@ class _VehicleMapWidgetState extends State<VehicleMapWidget> {
         ),
       );
     }
+
+
+
     return markers;
   }
 

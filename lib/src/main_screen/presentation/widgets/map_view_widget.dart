@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/domain/entity/trip_entity.dart';
 import 'dart:ui' as ui;
+
+import '../../../../core/services/location_tracking_service.dart';
 
 class MapViewWidget extends StatefulWidget {
   final List<TripEntity> trips;
@@ -34,14 +39,55 @@ class _MapViewWidgetState extends State<MapViewWidget> {
   bool _isSatellite = false;
   double _zoom = 6.9;
   bool _isMapReady = false;
+  StreamSubscription<Position>? _locationSub;
+  LatLng? _currentLocation;
+
+  void _startTracking() async {
+    final service = LocationTrackingService();
+    await service.start();
+
+    _locationSub = service.locationStream.listen((position) {
+      final latLng = LatLng(position.latitude, position.longitude);
+
+      // filter small movements
+      if (_currentLocation != null) {
+        final distance = Distance().as(
+          LengthUnit.Meter,
+          _currentLocation!,
+          latLng,
+        );
+
+        if (distance < 3) return;
+      }
+
+      setState(() {
+        _currentLocation = latLng;
+      });
+
+      // smooth camera follow (optional)
+      if (_isMapReady) {
+        final currentCenter = _mapController.camera.center;
+
+        final distance = Distance().as(LengthUnit.Meter, currentCenter, latLng);
+
+        if (distance > 10) {
+          _mapController.move(latLng, _zoom);
+        }
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() => _isMapReady = true);
     });
+
     widget.selectedTripNotifier?.addListener(_handleSelectedTrip);
+
+    _startTracking(); // ✅ THIS LINE WAS MISSING
   }
 
   @override
@@ -56,6 +102,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
   @override
   void dispose() {
     widget.selectedTripNotifier?.removeListener(_handleSelectedTrip);
+    _locationSub?.cancel();
     super.dispose();
   }
 
@@ -93,16 +140,20 @@ class _MapViewWidgetState extends State<MapViewWidget> {
 
   List<Marker> _buildMarkers() {
     final markers = <Marker>[];
+
+    // 📦 STATIC VEHICLES
     for (final trip in widget.trips) {
       final lat = trip.latitude;
       final lng = trip.longitude;
       if (lat == null || lng == null) continue;
+
       final vehicleName =
           (trip.vehicle != null)
               ? ((trip.vehicle as dynamic).name?.toString() ??
                   trip.tripNumberId ??
                   '')
               : (trip.tripNumberId ?? '');
+
       markers.add(
         Marker(
           point: LatLng(lat, lng),
@@ -126,18 +177,15 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.local_shipping,
-                        size: 18,
-                        color: Colors.black87,
-                      ),
+                      Icon(Icons.local_shipping, size: 18, color: Theme.of(context).colorScheme.surface,),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           vehicleName,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.surface,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -155,6 +203,9 @@ class _MapViewWidgetState extends State<MapViewWidget> {
         ),
       );
     }
+
+
+
     return markers;
   }
 
