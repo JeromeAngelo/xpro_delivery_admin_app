@@ -164,7 +164,7 @@ class PersonnelForm extends StatelessWidget {
                             color:
                                 selectedTeamLeader == null
                                     ? Colors.grey
-                                    : Colors.black,
+                                    : Theme.of(context).colorScheme.onSurface,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -290,7 +290,7 @@ class PersonnelForm extends StatelessWidget {
                             color:
                                 selectedHelpers.isEmpty
                                     ? Colors.grey
-                                    : Colors.black,
+                                    : Theme.of(context).colorScheme.onSurface,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),

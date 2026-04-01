@@ -1042,6 +1042,18 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
         }
       }
 
+       DateTime? lastLocationUpdated;
+      if (record.data['lastLocationUpdated'] != null) {
+        try {
+          lastLocationUpdated = DateTime.parse(
+            record.data['lastLocationUpdated'],
+          );
+          debugPrint('✅ Parsed lastLocationUpdated: $lastLocationUpdated');
+        } catch (e) {
+          debugPrint('❌ Failed to parse lastLocationUpdated: ${e.toString()}');
+        }
+      }
+
       // Parse dates properly
       DateTime? deliveryDate;
       if (record.data['deliveryDate'] != null) {
@@ -1326,6 +1338,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
         'averageFillRate': record.data['averageFillRate'],
         'deliveryDate': deliveryDate?.toUtc().toIso8601String(),
         'expectedReturnDate': expectedReturnDate,
+        'lastLocationUpdated': lastLocationUpdated,
       };
 
       return TripModel.fromJson(mappedData);

@@ -1,4 +1,3 @@
-import 'package:intl/intl.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/data/models/trip_models.dart'
     show TripModel;
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/presentation/bloc/trip_bloc.dart';
@@ -34,12 +33,14 @@ import 'package:go_router/go_router.dart';
 import 'package:xpro_delivery_admin_app/core/services/core_utils.dart';
 
 // Form widgets
-import '../../../../../core/common/app/features/trip_ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_event.dart' show LoadAllDeliveryVehiclesEvent;
+import '../../../../../core/common/app/features/trip_ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_event.dart'
+    show LoadAllDeliveryVehiclesEvent;
 import '../../../../../core/utils/id_generator.dart';
 import '../widget/create_trip_ticket_forms/trip_details_form.dart';
 import '../widget/create_trip_ticket_forms/trip_vehicle_forms.dart';
 import '../widget/create_trip_ticket_forms/trip_personnel_form.dart';
 import '../widget/create_trip_ticket_forms/trip_checklist_form.dart';
+import '../widget/create_trip_ticket_forms/trip_delivery_date_forms.dart';
 
 class CreateTripTicketScreenView extends StatefulWidget {
   const CreateTripTicketScreenView({super.key});
@@ -336,7 +337,22 @@ class _CreateTripTicketScreenViewState
                 _buildChecklistForm(),
                 const SizedBox(height: 24),
 
-                _buildDeliveryDateForm(),
+                TripDeliveryDateForm(
+                  deliveryDate: _deliveryDate,
+                  expectedReturnDate: _expectedReturnDate,
+                  onDeliveryDateChanged: (picked) {
+                    setState(() => _deliveryDate = picked);
+                  },
+                  onDeliveryDateCleared: () {
+                    setState(() => _deliveryDate = null);
+                  },
+                  onExpectedReturnDateChanged: (picked) {
+                    setState(() => _expectedReturnDate = picked);
+                  },
+                  onExpectedReturnDateCleared: () {
+                    setState(() => _expectedReturnDate = null);
+                  },
+                ),
               ],
             ),
           ),
@@ -431,113 +447,6 @@ class _CreateTripTicketScreenViewState
           },
         );
       },
-    );
-  }
-
-  Widget _buildDeliveryDateForm() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Delivery Date Section
-          Expanded(
-            child: _buildDatePickerField(
-              label: 'Delivery Date',
-              date: _deliveryDate,
-              onPickDate: (picked) {
-                setState(() => _deliveryDate = picked);
-              },
-              onClear: () {
-                setState(() => _deliveryDate = null);
-              },
-            ),
-          ),
-
-          const SizedBox(width: 24),
-
-          // Expected Return Date Section
-          Expanded(
-            child: _buildDatePickerField(
-              label: 'Expected Return Date',
-              date: _expectedReturnDate,
-              onPickDate: (picked) {
-                setState(() => _expectedReturnDate = picked);
-              },
-              onClear: () {
-                setState(() => _expectedReturnDate = null);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Reusable date picker field widget
-  Widget _buildDatePickerField({
-    required String label,
-    required DateTime? date,
-    required ValueChanged<DateTime> onPickDate,
-    required VoidCallback onClear,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () async {
-                  final DateTime? pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: date ?? DateTime.now(),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime(2050),
-                  );
-                  if (pickedDate != null) onPickDate(pickedDate);
-                },
-                child: Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Center(
-                    child: Text(
-                      date != null
-                          ? DateFormat('MM/dd/yyyy').format(date)
-                          : 'Select $label',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: onClear,
-              icon: Icon(
-                Icons.clear,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              tooltip: 'Clear $label',
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

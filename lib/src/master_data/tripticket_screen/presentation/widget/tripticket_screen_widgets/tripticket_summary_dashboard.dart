@@ -48,7 +48,7 @@ class TripTicketSummaryDashboard extends StatelessWidget {
             isLoading
                 ? GridView.count(
                   crossAxisCount: 4,
-                  childAspectRatio: 3.2,
+                  childAspectRatio: 2.5,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisSpacing: 16,
@@ -60,7 +60,7 @@ class TripTicketSummaryDashboard extends StatelessWidget {
                 )
                 : GridView.count(
                   crossAxisCount: 4,
-                  childAspectRatio: 3.2,
+                  childAspectRatio: 2.5,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisSpacing: 16,
@@ -130,7 +130,7 @@ class TripTicketSummaryDashboard extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -159,7 +159,7 @@ class TripTicketSummaryDashboard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               value,
               style: theme.textTheme.headlineMedium?.copyWith(
@@ -183,49 +183,49 @@ class TripTicketSummaryDashboard extends StatelessWidget {
     ];
 
     return Shimmer.fromColors(
-      baseColor: Colors.white,
-      highlightColor: const Color(0xFF374151),
+      baseColor: const Color(0xFFE6EDF5),
+      highlightColor: const Color(0xFFF5F9FE),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: Colors.white,
-          border: Border.all(color: colors[index].withOpacity(0.5), width: 1),
+          color: const Color(0xFFF0F5FB),
+          border: Border.all(color: colors[index].withOpacity(0.25), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 80,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
+                  Expanded(
+                    child: Container(
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 12),
                   Container(
-                    width: 28,
-                    height: 28,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Container(
-                width: 48,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
+             
             ],
           ),
         ),

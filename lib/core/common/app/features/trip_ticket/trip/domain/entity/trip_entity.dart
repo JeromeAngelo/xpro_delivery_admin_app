@@ -53,6 +53,7 @@ class TripEntity extends Equatable {
   DateTime? timeAccepted;
   DateTime? deliveryDate;
   DateTime? expectedReturnDate;
+  DateTime? lastLocationUpdated;
   DateTime? created;
   DateTime? updated;
   String? qrCode;
@@ -89,6 +90,7 @@ class TripEntity extends Equatable {
     this.expectedReturnDate,
     this.isAccepted,
     this.qrCode,
+    this.lastLocationUpdated,
     this.created,
     this.updated,
     this.latitude,
@@ -136,6 +138,7 @@ class TripEntity extends Equatable {
     qrCode,
     isAccepted,
     created,
+    lastLocationUpdated,
     updated,
     latitude,
     longitude,

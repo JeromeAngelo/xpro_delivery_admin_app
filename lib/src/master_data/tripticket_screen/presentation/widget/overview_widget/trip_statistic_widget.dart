@@ -14,17 +14,17 @@ class TripStatisticsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Count active trips (accepted but not ended)
-    final activeTrips = trips.where((trip) => 
-      trip.isAccepted == true && trip.isEndTrip != true).length;
-    
+    final activeTrips =
+        trips
+            .where((trip) => trip.isAccepted == true && trip.isEndTrip != true)
+            .length;
+
     // Count completed trips (ended)
-    final completedTrips = trips.where((trip) => 
-      trip.isEndTrip == true).length;
-    
+    final completedTrips = trips.where((trip) => trip.isEndTrip == true).length;
+
     // Count pending trips (not accepted)
-    final pendingTrips = trips.where((trip) => 
-      trip.isAccepted != true).length;
-    
+    final pendingTrips = trips.where((trip) => trip.isAccepted != true).length;
+
     // Count total trips
     final totalTrips = trips.length;
 
@@ -38,9 +38,9 @@ class TripStatisticsWidget extends StatelessWidget {
           children: [
             Text(
               'Trip Statistics',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             if (isLoading)
@@ -105,7 +105,7 @@ class TripStatisticsWidget extends StatelessWidget {
           side: BorderSide(color: color.withOpacity(0.3)),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -114,10 +114,7 @@ class TripStatisticsWidget extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: color),
                   ),
                   Icon(icon, color: color, size: 24),
                 ],
@@ -125,7 +122,7 @@ class TripStatisticsWidget extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 value,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),

@@ -144,8 +144,9 @@ class _VehicleFormState extends State<VehicleForm> {
                             color:
                                 widget.selectedVehicles.isEmpty
                                     ? Colors.grey
-                                    : Colors.black,
+                                    : Theme.of(context).colorScheme.onSurface,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         Icon(
                           Icons.arrow_drop_down,

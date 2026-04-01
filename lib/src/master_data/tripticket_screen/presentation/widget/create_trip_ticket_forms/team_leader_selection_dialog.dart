@@ -128,9 +128,7 @@ class _TeamLeaderSelectionDialogState extends State<TeamLeaderSelectionDialog> {
                               },
                               title: Text(
                                 personnel.name ?? 'Unknown',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,

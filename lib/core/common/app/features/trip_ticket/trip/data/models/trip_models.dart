@@ -41,6 +41,7 @@ class TripModel extends TripEntity {
     super.averageFillRate,
     super.volumeRate,
     super.weightRate,
+    super.lastLocationUpdated,
     super.user,
     super.totalTripDistance,
     super.otp,
@@ -322,6 +323,9 @@ class TripModel extends TripEntity {
            expectedReturnDate: json['expectedReturnDate'] != null
           ? _parseDateTime(json['expectedReturnDate'])
           : null,
+          lastLocationUpdated: json['lastLocationUpdated'] != null
+          ? _parseDateTime(json['lastLocationUpdated'])
+          : null,
       created: json['created'] != null
           ? _parseDateTime(json['created'])
           : null,
@@ -425,6 +429,7 @@ static DateTime? _parseDateTime(dynamic value) {
       'timeAccepted': timeAccepted?.toIso8601String(),
       'isEndTrip': isEndTrip,
       'expectedReturnDate': expectedReturnDate?.toIso8601String(),
+      'lastLocationUpdated': lastLocationUpdated?.toIso8601String(),
       'timeEndTrip': timeEndTrip?.toIso8601String(),
       'deliveryDate': deliveryDate?.toIso8601String(),
       'created': created?.toIso8601String(),
@@ -460,6 +465,7 @@ static DateTime? _parseDateTime(dynamic value) {
       deliveryDate: entity.deliveryDate,
       endTripOtp: entity.endTripOtp,
       deliveryTeam: entity.deliveryTeam,
+      lastLocationUpdated: entity.lastLocationUpdated,
       dispatcher: entity.dispatcher,
       timeAccepted: entity.timeAccepted,
       expectedReturnDate: entity.expectedReturnDate,
@@ -501,6 +507,7 @@ static DateTime? _parseDateTime(dynamic value) {
     dispatcher: '',
     timeAccepted: null,
     expectedReturnDate: null,
+    lastLocationUpdated: null,
     isEndTrip: false,
     timeEndTrip: null,
     deliveryDate: null,
@@ -544,6 +551,7 @@ static DateTime? _parseDateTime(dynamic value) {
     DateTime? deliveryDate,
     DateTime? created,
     DateTime? expectedReturnDate,
+    DateTime? lastLocationUpdated,
     DateTime? updated,
     String? qrCode,
     bool? isAccepted,
@@ -581,6 +589,7 @@ static DateTime? _parseDateTime(dynamic value) {
       timeEndTrip: timeEndTrip ?? this.timeEndTrip,
       created: created ?? this.created,
       updated: updated ?? this.updated,
+      lastLocationUpdated: lastLocationUpdated ?? this.lastLocationUpdated,
       deliveryDate: deliveryDate ?? this.deliveryDate,
       qrCode: qrCode ?? this.qrCode,
       isAccepted: isAccepted ?? this.isAccepted,
