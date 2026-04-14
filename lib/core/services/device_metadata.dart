@@ -10,24 +10,24 @@ Future<Map<String, dynamic>> buildDeviceMetadata() async {
   String deviceType = 'desktop';
   String deviceModel = 'unknown';
   String manufacturer = '';
-  String osVersion = '';
+  String platformVersion = '';
 
   if (Platform.isWindows) {
     final w = await deviceInfo.windowsInfo;
     platform = 'windows';
     deviceModel = (w.computerName.isNotEmpty) ? w.computerName : 'windows-pc';
-    osVersion = w.productName; // e.g. "Windows 11 Pro"
+    platformVersion = w.productName; // e.g. "Windows 11 Pro"
   } else if (Platform.isMacOS) {
     final m = await deviceInfo.macOsInfo;
     platform = 'macos';
     deviceModel = (m.model.isNotEmpty) ? m.model : 'mac';
-    osVersion = m.osRelease; // e.g. "14.2.1"
+    platformVersion = m.osRelease; // e.g. "14.2.1"
     manufacturer = 'Apple';
   } else if (Platform.isLinux) {
     final l = await deviceInfo.linuxInfo;
     platform = 'linux';
     deviceModel = (l.machineId?.isNotEmpty ?? false) ? l.machineId! : 'linux';
-    osVersion = l.version ?? '';
+    platformVersion = l.version ?? '';
   }
 
   return {
@@ -35,7 +35,7 @@ Future<Map<String, dynamic>> buildDeviceMetadata() async {
     'deviceType': deviceType,
     'deviceModel': deviceModel,
     'manufacturer': manufacturer,
-    'osVersion': osVersion,
+    'platformVersion': platformVersion,
     'appVersion': '${pkg.version}+${pkg.buildNumber}',
   };
 }
