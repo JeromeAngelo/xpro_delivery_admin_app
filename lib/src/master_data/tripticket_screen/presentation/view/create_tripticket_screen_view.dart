@@ -28,6 +28,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/prese
 import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/presentation/bloc/checklist_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/data/model/checklist_model.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
 
 // Core utilities
 import 'package:xpro_delivery_admin_app/core/services/core_utils.dart';
@@ -57,6 +58,9 @@ class _CreateTripTicketScreenViewState
   final _qrCodeController = TextEditingController();
   final _tripNameController = TextEditingController();
 
+  // Idempotency key - prevents duplicate trip creation
+  late final String _requestIdempotencyKey;
+
   // Selected items - Updated to use new models
   List<DeliveryDataModel> _selectedDeliveries = [];
   DeliveryVehicleModel? _selectedVehicle;
@@ -68,10 +72,14 @@ class _CreateTripTicketScreenViewState
   bool _isLoading = false;
   String? _errorMessage;
   bool _hasNavigated = false;
+  bool _creationAttempted = false; // Prevent multiple rapid submissions
 
   @override
   void initState() {
     super.initState();
+    // Generate idempotency key once per screen session
+    _requestIdempotencyKey = const Uuid().v4();
+    debugPrint('🔑 Generated idempotency key: $_requestIdempotencyKey');
     _generateTripIdAndQrCode();
     _loadData();
   }
@@ -100,6 +108,15 @@ class _CreateTripTicketScreenViewState
 
   // Function to create a trip ticket
   void _createTripTicket() {
+    // Prevent multiple rapid submissions (concurrency control)
+    if (_creationAttempted) {
+      CoreUtils.showSnackBar(
+        context,
+        'Trip creation already in progress. Please wait...',
+      );
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       // Form validation failed
       CoreUtils.showSnackBar(context, 'Please fill all required fields');
@@ -148,10 +165,12 @@ class _CreateTripTicketScreenViewState
       return;
     }
 
-    // Set loading state
+    // Set loading state and mark creation attempt
     setState(() {
       _errorMessage = null;
       _hasNavigated = false;
+      _isLoading = true;
+      _creationAttempted = true;
     });
 
     // Create trip model with the selected data
@@ -175,6 +194,8 @@ class _CreateTripTicketScreenViewState
       deliveryDate: _deliveryDate,
       expectedReturnDate: _expectedReturnDate,
       checklistItems: _selectedChecklists,
+      idempotencyKey: _requestIdempotencyKey, // Add idempotency key
+      createdAt: DateTime.now(), // Add creation timestamp
     );
 
     // Dispatch the create event

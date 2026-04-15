@@ -1,6 +1,7 @@
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/tripticket_screen_widgets/trip_delete_dialog.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/tripticket_screen_widgets/trip_search_bar.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/tripticket_screen_widgets/trip_status_chip.dart';
+import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/tripticket_screen_widgets/trip_date_filter_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/data/models/trip_models.dart';
@@ -12,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../../../../core/common/widgets/filter_widgets/filter_option.dart';
+
 class TripDataTable extends StatefulWidget {
   final List<TripEntity> trips;
   final bool isLoading;
@@ -25,6 +27,13 @@ class TripDataTable extends StatefulWidget {
   /// Optional: notify parent when filter changes (e.g. reset page)
   final Function(String?)? onFiltered;
 
+  /// Optional: notify parent when date filter changes
+  final Function(DateTime? startDate, DateTime? endDate)? onDateFilterChanged;
+
+  /// Optional: initial date filter values
+  final DateTime? initialStartDate;
+  final DateTime? initialEndDate;
+
   const TripDataTable({
     super.key,
     required this.trips,
@@ -36,6 +45,9 @@ class TripDataTable extends StatefulWidget {
     required this.searchQuery,
     required this.onSearchChanged,
     this.onFiltered,
+    this.onDateFilterChanged,
+    this.initialStartDate,
+    this.initialEndDate,
   });
 
   @override
@@ -47,8 +59,27 @@ class _TripDataTableState extends State<TripDataTable> {
 
   DateTime? _filterStartDate;
   DateTime? _filterEndDate;
+  String? _activeStatusFilter; // Track active status filter
 
-  String? _statusFilter; // null = no filter (show all)
+  @override
+  void initState() {
+    super.initState();
+    _filterStartDate = widget.initialStartDate;
+    _filterEndDate = widget.initialEndDate;
+  }
+
+  @override
+  void didUpdateWidget(TripDataTable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // ✅ Sync date filter state when parent updates
+    if (oldWidget.initialStartDate != widget.initialStartDate ||
+        oldWidget.initialEndDate != widget.initialEndDate) {
+      setState(() {
+        _filterStartDate = widget.initialStartDate;
+        _filterEndDate = widget.initialEndDate;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +88,8 @@ class _TripDataTableState extends State<TripDataTable> {
       color: Colors.black,
     );
 
-    final visibleTrips = _visibleTrips();
+    // ✅ Don't filter locally - parent handles all filtering and pagination
+    final visibleTrips = widget.trips;
 
     return DataTableLayout(
       title: 'Trip Tickets',
@@ -77,31 +109,53 @@ class _TripDataTableState extends State<TripDataTable> {
         DataColumn(label: Text('Status', style: headerStyle)),
         DataColumn(label: Text('Actions', style: headerStyle)),
       ],
-      rows: widget.isLoading ? _buildLoadingRows() : _buildDataRows(visibleTrips),
+      rows:
+          widget.isLoading ? _buildLoadingRows() : _buildDataRows(visibleTrips),
       currentPage: widget.currentPage,
       totalPages: widget.totalPages,
       onPageChanged: widget.onPageChanged,
       isLoading: widget.isLoading,
       enableSelection: true,
 
-      // ✅ Enable filter UI only when you provide categories
+      // ✅ Filter categories (Status + Date in filter menu)
       filterCategories: _tripFilterCategories(),
-
-      // ✅ This receives selected values from DataTableLayout
       onFilterApplied: _handleFilterApplied,
-
-      // optional: DataTableLayout calls this on Apply/Clear (no values)
-      // keep it as empty to avoid double triggers
       onFiltered: () {},
 
+      // ✅ Handle custom filter category selections
+      onCustomFilterCategorySelected: (categoryId) {
+        if (categoryId == 'date') {
+          _openDateFilterDialog();
+        }
+      },
+
       onRowsSelected: _handleRowsSelected,
-      dataLength: '${visibleTrips.length}', // ✅ show filtered count (only if filter selected)
+      dataLength: '${visibleTrips.length}',
       onDeleted: () {},
     );
   }
 
+  void _openDateFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return TripDateFilterDialog(
+          initialStartDate: _filterStartDate,
+          initialEndDate: _filterEndDate,
+          onApply: (startDate, endDate) {
+            setState(() {
+              _filterStartDate = startDate;
+              _filterEndDate = endDate;
+            });
+            widget.onDateFilterChanged?.call(startDate, endDate);
+          },
+        );
+      },
+    );
+  }
+
   // ----------------------------
-  // ✅ FILTERING (ONLY IF USER SELECTED A FILTER)
+  // ✅ FILTERING - COMMUNICATE CHANGES TO PARENT
   // ----------------------------
 
   void _handleFilterApplied(Map<String, List<dynamic>> filters) {
@@ -112,33 +166,13 @@ class _TripDataTableState extends State<TripDataTable> {
             ? statusValues.first.toString()
             : null;
 
-    // ✅ Only rebuild when something actually changed
-    if (newStatus == _statusFilter) return;
-
+    // ✅ Track active status filter for UI feedback
     setState(() {
-      _statusFilter = newStatus;
-      _selectedRows = []; // optional: clear selection when filter changes
+      _activeStatusFilter = newStatus;
     });
 
-    // optional: notify parent (ex: reset page)
-    widget.onFiltered?.call(_statusFilter);
-  }
-
-  String _mapTripStatus(TripEntity trip) {
-    // Adjust mapping if you have direct status field
-    if (trip.isEndTrip == true) return 'Completed';
-    if (trip.isAccepted == true) return 'In progress';
-    return 'Pending';
-  }
-
-  /// ✅ Returns all trips if user DID NOT select a filter.
-  /// ✅ Returns filtered trips only when _statusFilter is set.
-  List<TripEntity> _visibleTrips() {
-    final trips = widget.trips;
-
-    if (_statusFilter == null) return trips;
-
-    return trips.where((t) => _mapTripStatus(t) == _statusFilter).toList();
+    // ✅ Notify parent about status filter change (reset page to 1)
+    widget.onFiltered?.call(newStatus);
   }
 
   List<FilterCategory> _tripFilterCategories() {
@@ -168,6 +202,14 @@ class _TripDataTableState extends State<TripDataTable> {
             value: 'Completed',
           ),
         ],
+      ),
+      // ✅ Date filter category
+      FilterCategory(
+        id: 'date',
+        title: 'Date',
+        icon: Icons.calendar_month,
+        allowMultiple: false,
+        options: [], // Empty options - handled separately by date picker
       ),
     ];
   }
@@ -258,7 +300,9 @@ class _TripDataTableState extends State<TripDataTable> {
                     if (trip is TripModel) {
                       showTripDeleteDialog(context, trip);
                     } else if (trip.id != null) {
-                      context.read<TripBloc>().add(DeleteTripTicketEvent(trip.id!));
+                      context.read<TripBloc>().add(
+                        DeleteTripTicketEvent(trip.id!),
+                      );
                     }
                   },
                 ),
@@ -302,11 +346,15 @@ class _TripDataTableState extends State<TripDataTable> {
       _selectedRows = selectedIndices;
     });
 
-    final trips = _visibleTrips(); // ✅ selection matches what is displayed
-    final selectedTrips = _selectedRows
-        .map((index) => index < trips.length ? trips[index] : null)
-        .whereType<TripEntity>()
-        .toList();
+    // ✅ Get selected trips from the displayed trips
+    final selectedTrips =
+        selectedIndices
+            .map(
+              (index) =>
+                  index < widget.trips.length ? widget.trips[index] : null,
+            )
+            .whereType<TripEntity>()
+            .toList();
 
     debugPrint('Selected ${selectedTrips.length} trips');
   }

@@ -9,6 +9,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/tri
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/presentation/bloc/trip_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:go_router/go_router.dart';
+
 class TripTicketScreenView extends StatefulWidget {
   const TripTicketScreenView({super.key});
 
@@ -25,6 +26,8 @@ class _TripTicketScreenViewState extends State<TripTicketScreenView> {
   final TextEditingController _searchController = TextEditingController();
 
   String? _statusFilter; // null = All
+  DateTime? _filterStartDate; // Date range filter
+  DateTime? _filterEndDate; // Date range filter
 
   @override
   void initState() {
@@ -46,26 +49,113 @@ class _TripTicketScreenViewState extends State<TripTicketScreenView> {
     return 'Pending';
   }
 
-  // ✅ Apply search + status filters
+  // ✅ Apply search + status + date range filters
   List<TripEntity> _applyFilters(List<TripEntity> trips) {
     var filtered = trips;
 
     // Search
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      filtered = filtered.where((trip) {
-        return (trip.id?.toLowerCase().contains(query) ?? false) ||
-            (trip.tripNumberId?.toLowerCase().contains(query) ?? false) ||
-            (trip.user?.name?.toLowerCase().contains(query) ?? false) ||
-            (trip.name?.toLowerCase().contains(query) ?? false);
-      }).toList();
+      filtered =
+          filtered.where((trip) {
+            return (trip.id?.toLowerCase().contains(query) ?? false) ||
+                (trip.tripNumberId?.toLowerCase().contains(query) ?? false) ||
+                (trip.user?.name?.toLowerCase().contains(query) ?? false) ||
+                (trip.name?.toLowerCase().contains(query) ?? false);
+          }).toList();
     }
 
     // Status filter
     if (_statusFilter != null && _statusFilter!.isNotEmpty) {
-      filtered = filtered.where((trip) {
-        return _mapTripStatus(trip) == _statusFilter;
-      }).toList();
+      filtered =
+          filtered.where((trip) {
+            return _mapTripStatus(trip) == _statusFilter;
+          }).toList();
+    }
+
+    // 📅 Date range filter (start date only)
+    if (_filterStartDate != null && _filterEndDate == null) {
+      filtered =
+          filtered.where((trip) {
+            final tripDate = trip.timeAccepted ?? trip.deliveryDate;
+            if (tripDate == null) return false;
+
+            final startOfDay = DateTime(
+              _filterStartDate!.year,
+              _filterStartDate!.month,
+              _filterStartDate!.day,
+            );
+            return tripDate.isAtSameMomentAs(startOfDay) ||
+                tripDate.isAfter(startOfDay);
+          }).toList();
+    }
+
+    // 📅 Date range filter (end date only)
+    if (_filterEndDate != null && _filterStartDate == null) {
+      filtered =
+          filtered.where((trip) {
+            final tripDate = trip.timeEndTrip ?? trip.deliveryDate;
+            if (tripDate == null) return false;
+
+            final endOfDay = DateTime(
+              _filterEndDate!.year,
+              _filterEndDate!.month,
+              _filterEndDate!.day,
+              23,
+              59,
+              59,
+            );
+            return tripDate.isBefore(endOfDay) ||
+                tripDate.isAtSameMomentAs(endOfDay);
+          }).toList();
+    }
+
+    // 📅 Date range filter (both start and end date)
+    if (_filterStartDate != null && _filterEndDate != null) {
+      filtered =
+          filtered.where((trip) {
+            final tripStartDate = trip.timeAccepted ?? trip.deliveryDate;
+            final tripEndDate = trip.timeEndTrip ?? trip.deliveryDate;
+
+            if (tripStartDate == null && tripEndDate == null) return false;
+
+            final startOfDay = DateTime(
+              _filterStartDate!.year,
+              _filterStartDate!.month,
+              _filterStartDate!.day,
+            );
+
+            final endOfDay = DateTime(
+              _filterEndDate!.year,
+              _filterEndDate!.month,
+              _filterEndDate!.day,
+              23,
+              59,
+              59,
+            );
+
+            if (tripStartDate != null) {
+              final isAfterStart =
+                  tripStartDate.isAtSameMomentAs(startOfDay) ||
+                  tripStartDate.isAfter(startOfDay);
+              final isBeforeEnd =
+                  tripStartDate.isBefore(endOfDay) ||
+                  tripStartDate.isAtSameMomentAs(endOfDay);
+              if (isAfterStart && isBeforeEnd) return true;
+            }
+
+            if (tripEndDate != null) {
+              final isAfterStart =
+                  tripEndDate.isAtSameMomentAs(startOfDay) ||
+                  tripEndDate.isAfter(startOfDay);
+              final isBeforeEnd =
+                  tripEndDate.isBefore(endOfDay) ||
+                  tripEndDate.isAtSameMomentAs(endOfDay);
+              if (isAfterStart && isBeforeEnd) return true;
+            }
+
+            return false;
+          }).toList();
     }
 
     return filtered;
@@ -76,9 +166,10 @@ class _TripTicketScreenViewState extends State<TripTicketScreenView> {
     final startIndex = (_currentPage - 1) * _itemsPerPage;
     if (startIndex >= trips.length) return const <TripEntity>[];
 
-    final endIndex = (startIndex + _itemsPerPage > trips.length)
-        ? trips.length
-        : startIndex + _itemsPerPage;
+    final endIndex =
+        (startIndex + _itemsPerPage > trips.length)
+            ? trips.length
+            : startIndex + _itemsPerPage;
 
     return List<TripEntity>.from(trips.sublist(startIndex, endIndex));
   }
@@ -129,6 +220,15 @@ class _TripTicketScreenViewState extends State<TripTicketScreenView> {
                   _currentPage = 1;
                 });
               },
+              onDateFilterChanged: (startDate, endDate) {
+                setState(() {
+                  _filterStartDate = startDate;
+                  _filterEndDate = endDate;
+                  _currentPage = 1;
+                });
+              },
+              initialStartDate: _filterStartDate,
+              initialEndDate: _filterEndDate,
             );
           }
 
@@ -136,9 +236,12 @@ class _TripTicketScreenViewState extends State<TripTicketScreenView> {
             return TripErrorWidget(errorMessage: state.message);
           }
 
-          if (state is AllTripTicketsLoaded || state is TripTicketsSearchResults) {
+          if (state is AllTripTicketsLoaded ||
+              state is TripTicketsSearchResults) {
             final List<TripEntity> baseTrips =
-                (state is AllTripTicketsLoaded) ? state.trips : (state as TripTicketsSearchResults).trips;
+                (state is AllTripTicketsLoaded)
+                    ? state.trips
+                    : (state as TripTicketsSearchResults).trips;
 
             // ✅ Apply search + status filters
             final filteredTrips = _applyFilters(baseTrips);
@@ -168,6 +271,15 @@ class _TripTicketScreenViewState extends State<TripTicketScreenView> {
                   _currentPage = 1;
                 });
               },
+              onDateFilterChanged: (startDate, endDate) {
+                setState(() {
+                  _filterStartDate = startDate;
+                  _filterEndDate = endDate;
+                  _currentPage = 1;
+                });
+              },
+              initialStartDate: _filterStartDate,
+              initialEndDate: _filterEndDate,
             );
           }
 

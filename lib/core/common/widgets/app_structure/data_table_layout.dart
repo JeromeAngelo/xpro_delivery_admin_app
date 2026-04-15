@@ -31,6 +31,17 @@ class DataTableLayout extends StatefulWidget {
   final IconData? customActionIcon; // Icon for custom action
   final Color? customActionColor; // Color for custom action
 
+  // Custom filter support
+  final VoidCallback?
+  onCustomFilterPressed; // Callback for custom filter button
+  final String? customFilterLabel; // Label for custom filter button
+  final IconData? customFilterIcon; // Icon for custom filter button
+  final Widget? customFilterChip; // Widget to display active custom filter
+  final VoidCallback?
+  onCustomFilterCleared; // Callback when custom filter is cleared
+  final Function(String)?
+  onCustomFilterCategorySelected; // Callback to handle custom filter categories
+
   const DataTableLayout({
     super.key,
     required this.title,
@@ -48,7 +59,7 @@ class DataTableLayout extends StatefulWidget {
     this.onRetry,
     this.onRowsSelected,
     required this.dataLength,
-     this.onFiltered,
+    this.onFiltered,
     required this.onDeleted,
     this.filterCategories,
     this.onFilterApplied,
@@ -59,6 +70,12 @@ class DataTableLayout extends StatefulWidget {
     this.customActionTooltip,
     this.customActionIcon,
     this.customActionColor,
+    this.onCustomFilterPressed,
+    this.customFilterLabel,
+    this.customFilterIcon,
+    this.customFilterChip,
+    this.onCustomFilterCleared,
+    this.onCustomFilterCategorySelected,
   });
 
   @override
@@ -172,6 +189,18 @@ class _DataTableLayoutState extends State<DataTableLayout> {
         return;
       }
 
+      // ✅ Check if this is a custom filter category (like 'date')
+      // Only use it if the handler is provided AND it returns void/true
+      if (widget.onCustomFilterCategorySelected != null) {
+        // Let the custom handler try to handle it
+        widget.onCustomFilterCategorySelected!(value);
+        // If it's a custom category that needs special handling, return
+        // Otherwise, fall through to show the standard filter dialog
+        if (value == 'date') {
+          return;
+        }
+      }
+
       // Find the selected category
       final selectedCategory = widget.filterCategories!.firstWhere(
         (category) => category.id == value,
@@ -184,264 +213,288 @@ class _DataTableLayoutState extends State<DataTableLayout> {
   }
 
   void _showFilterDialog(BuildContext context, FilterCategory category) {
-  // Local copy so we can cancel without mutating original until Apply
-  final options = category.options
-      .map(
-        (o) => FilterOption(
-          id: o.id,
-          label: o.label,
-          value: o.value,
-          isSelected: o.isSelected,
-        ),
-      )
-      .toList();
+    // Local copy so we can cancel without mutating original until Apply
+    final options =
+        category.options
+            .map(
+              (o) => FilterOption(
+                id: o.id,
+                label: o.label,
+                value: o.value,
+                isSelected: o.isSelected,
+              ),
+            )
+            .toList();
 
-  // For single select, track selected index (better UX)
-  int? selectedIndex;
-  if (!category.allowMultiple) {
-    final idx = options.indexWhere((o) => o.isSelected);
-    selectedIndex = idx >= 0 ? idx : null;
-  }
+    // For single select, track selected index (better UX)
+    int? selectedIndex;
+    if (!category.allowMultiple) {
+      final idx = options.indexWhere((o) => o.isSelected);
+      selectedIndex = idx >= 0 ? idx : null;
+    }
 
-  showDialog(
-    context: context,
-    builder: (dialogContext) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          Widget buildOptionTile(int index) {
-            final opt = options[index];
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            Widget buildOptionTile(int index) {
+              final opt = options[index];
 
-            // Card wrapper for pro look
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Material(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
+              // Card wrapper for pro look
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Material(
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    setState(() {
-                      if (category.allowMultiple) {
-                        opt.isSelected = !opt.isSelected;
-                      } else {
-                        selectedIndex = index;
-                        for (int i = 0; i < options.length; i++) {
-                          options[i].isSelected = i == index;
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      setState(() {
+                        if (category.allowMultiple) {
+                          opt.isSelected = !opt.isSelected;
+                        } else {
+                          selectedIndex = index;
+                          for (int i = 0; i < options.length; i++) {
+                            options[i].isSelected = i == index;
+                          }
                         }
-                      }
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: opt.isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey.shade300,
-                        width: opt.isSelected ? 1.2 : 1,
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color:
+                              opt.isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.grey.shade300,
+                          width: opt.isSelected ? 1.2 : 1,
+                        ),
+                      ),
+                      child:
+                          category.allowMultiple
+                              ? CheckboxListTile(
+                                contentPadding: EdgeInsets.zero,
+
+                                dense: true,
+                                title: Text(opt.label),
+                                value: opt.isSelected,
+                                controlAffinity:
+                                    ListTileControlAffinity.trailing,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                onChanged: (v) {
+                                  setState(() => opt.isSelected = v ?? false);
+                                },
+                              )
+                              : RadioListTile<int>(
+                                contentPadding: EdgeInsets.zero,
+
+                                dense: true,
+                                title: Text(opt.label),
+                                value: index,
+                                groupValue: selectedIndex,
+                                controlAffinity:
+                                    ListTileControlAffinity.trailing,
+                                onChanged: (v) {
+                                  setState(() {
+                                    selectedIndex = v;
+                                    for (int i = 0; i < options.length; i++) {
+                                      options[i].isSelected = i == v;
+                                    }
+                                  });
+                                },
+                              ),
                     ),
-                    child: category.allowMultiple
-                        ? CheckboxListTile(
-                            contentPadding: EdgeInsets.zero,
-                            
-                            dense: true,
-                            title: Text(opt.label),
-                            value: opt.isSelected,
-                            controlAffinity: ListTileControlAffinity.trailing,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            }
+
+            void clearAll() {
+              setState(() {
+                for (final o in options) {
+                  o.isSelected = false;
+                }
+                selectedIndex = null;
+              });
+            }
+
+            void selectAll() {
+              setState(() {
+                for (final o in options) {
+                  o.isSelected = true;
+                }
+              });
+            }
+
+            final selectedCount = options.where((o) => o.isSelected).length;
+
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 24,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header
+                      Row(
+                        children: [
+                          Icon(category.icon, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Filter by ${category.title}',
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  category.allowMultiple
+                                      ? 'Select one or more options'
+                                      : 'Select one option',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: Colors.grey.shade600),
+                                ),
+                              ],
                             ),
-                            onChanged: (v) {
-                              setState(() => opt.isSelected = v ?? false);
-                            },
-                          )
-                        : RadioListTile<int>(
-                            contentPadding: EdgeInsets.zero,
-                            
-                            dense: true,
-                            title: Text(opt.label),
-                            value: index,
-                            groupValue: selectedIndex,
-                            controlAffinity: ListTileControlAffinity.trailing,
-                            onChanged: (v) {
-                              setState(() {
-                                selectedIndex = v;
-                                for (int i = 0; i < options.length; i++) {
-                                  options[i].isSelected = i == v;
-                                }
-                              });
-                            },
                           ),
+                          // Selected counter chip
+                          if (selectedCount > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(.1),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                '$selectedCount selected',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 14),
+                      Divider(color: Colors.grey.shade300, height: 1),
+                      const SizedBox(height: 14),
+
+                      // Action row (Select all / Clear)
+                      Row(
+                        children: [
+                          if (category.allowMultiple)
+                            TextButton.icon(
+                              onPressed: selectAll,
+                              icon: const Icon(Icons.done_all, size: 18),
+                              label: const Text('Select all'),
+                            ),
+                          if (category.allowMultiple) const SizedBox(width: 8),
+                          TextButton.icon(
+                            onPressed: clearAll,
+                            icon: const Icon(Icons.clear, size: 18),
+                            label: const Text('Clear'),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      // Options list
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 360),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: options.length,
+                          itemBuilder:
+                              (context, index) => buildOptionTile(index),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+                      Divider(color: Colors.grey.shade300, height: 1),
+                      const SizedBox(height: 12),
+
+                      // Footer actions
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            child: const Text('Cancel'),
+                          ),
+                          const Spacer(),
+                          FilledButton.icon(
+                            onPressed: () {
+                              // Update original options
+                              for (
+                                int i = 0;
+                                i < category.options.length;
+                                i++
+                              ) {
+                                category.options[i].isSelected =
+                                    options[i].isSelected;
+                              }
+
+                              // Collect all selected filters across all categories
+                              final Map<String, List<dynamic>> selectedFilters =
+                                  {};
+                              for (final cat in widget.filterCategories!) {
+                                final selectedValues =
+                                    cat.options
+                                        .where((o) => o.isSelected)
+                                        .map((o) => o.value)
+                                        .toList();
+                                if (selectedValues.isNotEmpty) {
+                                  selectedFilters[cat.id] = selectedValues;
+                                }
+                              }
+
+                              widget.onFilterApplied?.call(selectedFilters);
+                              widget.onFiltered?.call();
+
+                              Navigator.pop(dialogContext);
+                            },
+                            icon: const Icon(Icons.check, size: 18),
+                            label: const Text('Apply'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
             );
-          }
-
-          void clearAll() {
-            setState(() {
-              for (final o in options) {
-                o.isSelected = false;
-              }
-              selectedIndex = null;
-            });
-          }
-
-          void selectAll() {
-            setState(() {
-              for (final o in options) {
-                o.isSelected = true;
-              }
-            });
-          }
-
-          final selectedCount = options.where((o) => o.isSelected).length;
-
-          return Dialog(
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header
-                    Row(
-                      children: [
-                        Icon(category.icon, size: 20),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Filter by ${category.title}',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                category.allowMultiple
-                                    ? 'Select one or more options'
-                                    : 'Select one option',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.grey.shade600,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Selected counter chip
-                        if (selectedCount > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(.1),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              '$selectedCount selected',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 14),
-                    Divider(color: Colors.grey.shade300, height: 1),
-                    const SizedBox(height: 14),
-
-                    // Action row (Select all / Clear)
-                    Row(
-                      children: [
-                        if (category.allowMultiple)
-                          TextButton.icon(
-                            onPressed: selectAll,
-                            icon: const Icon(Icons.done_all, size: 18),
-                            label: const Text('Select all'),
-                          ),
-                        if (category.allowMultiple) const SizedBox(width: 8),
-                        TextButton.icon(
-                          onPressed: clearAll,
-                          icon: const Icon(Icons.clear, size: 18),
-                          label: const Text('Clear'),
-                        ),
-                        const Spacer(),
-                      ],
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    // Options list
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 360),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: options.length,
-                        itemBuilder: (context, index) => buildOptionTile(index),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-                    Divider(color: Colors.grey.shade300, height: 1),
-                    const SizedBox(height: 12),
-
-                    // Footer actions
-                    Row(
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: const Text('Cancel'),
-                        ),
-                        const Spacer(),
-                        FilledButton.icon(
-                          onPressed: () {
-                            // Update original options
-                            for (int i = 0; i < category.options.length; i++) {
-                              category.options[i].isSelected = options[i].isSelected;
-                            }
-
-                            // Collect all selected filters across all categories
-                            final Map<String, List<dynamic>> selectedFilters = {};
-                            for (final cat in widget.filterCategories!) {
-                              final selectedValues = cat.options
-                                  .where((o) => o.isSelected)
-                                  .map((o) => o.value)
-                                  .toList();
-                              if (selectedValues.isNotEmpty) {
-                                selectedFilters[cat.id] = selectedValues;
-                              }
-                            }
-
-                            widget.onFilterApplied?.call(selectedFilters);
-                            widget.onFiltered?.call();
-
-                            Navigator.pop(dialogContext);
-                          },
-                          icon: const Icon(Icons.check, size: 18),
-                          label: const Text('Apply'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    },
-  );
-}
+          },
+        );
+      },
+    );
+  }
 
   void _showSelectionMenu(BuildContext context) {
     final RenderBox? renderBox =
@@ -616,291 +669,319 @@ class _DataTableLayoutState extends State<DataTableLayout> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-          // Title row
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              widget.title,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
-              ),
+        // Title row
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            widget.title,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
             ),
           ),
+        ),
 
-          // Search bar and Create button in the same row
+        // Search bar and Create button in the same row
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            children: [
+              // Search bar (expanded to take available space)
+              if (widget.searchBar != null) Expanded(child: widget.searchBar!),
+
+              // Add some spacing between search and button
+              if (widget.searchBar != null && widget.onCreatePressed != null)
+                const Spacer(),
+
+              // Create button
+              if (widget.onCreatePressed != null)
+                ElevatedButton.icon(
+                  onPressed: widget.onCreatePressed,
+                  icon: Icon(
+                    Icons.add,
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
+                  label: Text(
+                    widget.createButtonText,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.surface,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        // Error message if present
+        if (widget.errorMessage != null)
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 16.0,
               vertical: 8.0,
             ),
-            child: Row(
-              children: [
-                // Search bar (expanded to take available space)
-                if (widget.searchBar != null)
-                  Expanded(child: widget.searchBar!),
-
-                // Add some spacing between search and button
-                if (widget.searchBar != null && widget.onCreatePressed != null)
-                  const Spacer(),
-
-                // Create button
-                if (widget.onCreatePressed != null)
-                  ElevatedButton.icon(
-                    onPressed: widget.onCreatePressed,
-                    icon: Icon(
-                      Icons.add,
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
-                    label: Text(
-                      widget.createButtonText,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.surface,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red[300]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red[700]),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.errorMessage!,
+                      style: TextStyle(color: Colors.red[700]),
                     ),
                   ),
-              ],
+                  if (widget.onRetry != null)
+                    TextButton.icon(
+                      onPressed: widget.onRetry,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                ],
+              ),
             ),
           ),
 
-          // Error message if present
-          if (widget.errorMessage != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red[300]!),
-                ),
-                child: Row(
+        // Data table content - Always show the table structure
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Horizontal scroll hint with conditional visibility for delete button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Icon(Icons.error_outline, color: Colors.red[700]),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        widget.errorMessage!,
-                        style: TextStyle(color: Colors.red[700]),
+                    // Replace the existing filter icon code with this
+                    GestureDetector(
+                      onTap: () => _showFilterMenu(context),
+                      key: _showFilterKey,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Icon(
+                              Icons.filter_alt_rounded,
+                              color:
+                                  hasActiveFilters()
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                            ),
+                            const SizedBox(width: 4),
+                            if (hasActiveFilters())
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  _getActiveFilterCount().toString(),
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onPrimary,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            Icon(Icons.arrow_drop_down),
+                          ],
+                        ),
                       ),
                     ),
-                    if (widget.onRetry != null)
-                      TextButton.icon(
-                        onPressed: widget.onRetry,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
-                      ),
-                  ],
-                ),
-              ),
-            ),
 
-          // Data table content - Always show the table structure
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Horizontal scroll hint with conditional visibility for delete button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      // Replace the existing filter icon code with this
+                    // ✅ Custom Filter Button (e.g., Date Filter)
+                    if (widget.onCustomFilterPressed != null)
                       GestureDetector(
-                        onTap: () => _showFilterMenu(context),
-                        key: _showFilterKey,
+                        onTap: widget.onCustomFilterPressed,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              Icon(
+                                widget.customFilterIcon ?? Icons.calendar_month,
+                                color:
+                                    widget.customFilterChip != null
+                                        ? Theme.of(context).colorScheme.primary
+                                        : null,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                widget.customFilterLabel ?? 'Filter by Date',
+                                style: TextStyle(
+                                  color:
+                                      widget.customFilterChip != null
+                                          ? Theme.of(
+                                            context,
+                                          ).colorScheme.primary
+                                          : null,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    // ✅ Custom Filter Chip Display
+                    if (widget.customFilterChip != null) ...[
+                      const SizedBox(width: 8),
+                      widget.customFilterChip!,
+                    ],
+
+                    // Custom Action Widget (NEW)
+                    Visibility(
+                      visible:
+                          hasSelectedRows &&
+                          (widget.showCustomAction ||
+                              widget.customActionWidget != null),
+                      child:
+                          widget.customActionWidget ??
+                          GestureDetector(
+                            onTap: widget.onCustomAction,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Tooltip(
+                                message:
+                                    widget.customActionTooltip ??
+                                    'Custom Action',
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Icon(
+                                      widget.customActionIcon ??
+                                          Icons.more_vert,
+                                      color:
+                                          hasSelectedRows
+                                              ? (widget.customActionColor ??
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary)
+                                              : null,
+                                    ),
+                                    Icon(Icons.arrow_drop_down),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                    ),
+
+                    // Only show delete button when rows are selected
+                    Visibility(
+                      visible: hasSelectedRows,
+                      child: GestureDetector(
+                        onLongPress: () => _showDeleteMenu(context),
+                        key: _showDeletekey,
+                        onTap:
+                            () => _showDeleteMenu(
+                              context,
+                            ), // Also allow regular tap for better UX
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Icon(
-                                Icons.filter_alt_rounded,
+                                Icons.delete,
                                 color:
-                                    hasActiveFilters()
+                                    hasSelectedRows
                                         ? Theme.of(context).colorScheme.primary
                                         : null,
                               ),
-                              const SizedBox(width: 4),
-                              if (hasActiveFilters())
-                                Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Text(
-                                    _getActiveFilterCount().toString(),
-                                    style: TextStyle(
-                                      color:
-                                          Theme.of(
-                                            context,
-                                          ).colorScheme.onPrimary,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
                               Icon(Icons.arrow_drop_down),
                             ],
                           ),
                         ),
                       ),
+                    ),
+                  ],
+                ),
 
-                      // Custom Action Widget (NEW)
-                      Visibility(
-                        visible:
-                            hasSelectedRows &&
-                            (widget.showCustomAction ||
-                                widget.customActionWidget != null),
-                        child:
-                            widget.customActionWidget ??
-                            GestureDetector(
-                              onTap: widget.onCustomAction,
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Tooltip(
-                                  message:
-                                      widget.customActionTooltip ??
-                                      'Custom Action',
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Icon(
-                                        widget.customActionIcon ??
-                                            Icons.more_vert,
-                                        color:
-                                            hasSelectedRows
-                                                ? (widget.customActionColor ??
-                                                    Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary)
-                                                : null,
-                                      ),
-                                      Icon(Icons.arrow_drop_down),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
+                // Table with horizontal scrolling - Always show the structure
+                Scrollbar(
+                  controller: _horizontalScrollController,
+                  thickness: 5,
+                  thumbVisibility: true,
+                  trackVisibility: true,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    controller: _horizontalScrollController,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        // Set a minimum width that's wider than the screen
+                        minWidth: MediaQuery.of(context).size.width - 100,
                       ),
+                      child: _buildTableContent(),
+                    ),
+                  ),
+                ),
 
-                      // Only show delete button when rows are selected
-                      Visibility(
-                        visible: hasSelectedRows,
-                        child: GestureDetector(
-                          onLongPress: () => _showDeleteMenu(context),
-                          key: _showDeletekey,
-                          onTap:
-                              () => _showDeleteMenu(
-                                context,
-                              ), // Also allow regular tap for better UX
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Icon(
-                                  Icons.delete,
-                                  color:
-                                      hasSelectedRows
-                                          ? Theme.of(
-                                            context,
-                                          ).colorScheme.primary
-                                          : null,
-                                ),
-                                Icon(Icons.arrow_drop_down),
-                              ],
-                            ),
-                          ),
-                        ),
+                // Pagination controls
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8.0,
+                    horizontal: 16.0,
+                  ),
+                  decoration: BoxDecoration(
+                    // color: const Color.fromARGB(255, 36, 34, 34),
+                    border: Border(
+                      top: BorderSide(color: Colors.grey[300]!, width: 1),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed:
+                            widget.currentPage > 1
+                                ? () =>
+                                    widget.onPageChanged(widget.currentPage - 1)
+                                : null,
+                        child: const Text('Previous'),
+                      ),
+                      Text(
+                        'Page ${widget.currentPage}-${widget.totalPages} of ${widget.dataLength}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      TextButton(
+                        onPressed:
+                            widget.currentPage < widget.totalPages
+                                ? () =>
+                                    widget.onPageChanged(widget.currentPage + 1)
+                                : null,
+                        child: const Text('Next'),
                       ),
                     ],
                   ),
-
-                  // Table with horizontal scrolling - Always show the structure
-                  Scrollbar(
-                    controller: _horizontalScrollController,
-                    thickness: 5,
-                    thumbVisibility: true,
-                    trackVisibility: true,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      controller: _horizontalScrollController,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          // Set a minimum width that's wider than the screen
-                          minWidth: MediaQuery.of(context).size.width - 100,
-                        ),
-                        child: _buildTableContent(),
-                      ),
-                    ),
-                  ),
-
-                  // Pagination controls
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8.0,
-                      horizontal: 16.0,
-                    ),
-                    decoration: BoxDecoration(
-                      // color: const Color.fromARGB(255, 36, 34, 34),
-                      border: Border(
-                        top: BorderSide(color: Colors.grey[300]!, width: 1),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed:
-                              widget.currentPage > 1
-                                  ? () => widget.onPageChanged(
-                                    widget.currentPage - 1,
-                                  )
-                                  : null,
-                          child: const Text('Previous'),
-                        ),
-                        Text(
-                          'Page ${widget.currentPage}-${widget.totalPages} of ${widget.dataLength}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        TextButton(
-                          onPressed:
-                              widget.currentPage < widget.totalPages
-                                  ? () => widget.onPageChanged(
-                                    widget.currentPage + 1,
-                                  )
-                                  : null,
-                          child: const Text('Next'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
+      ],
     );
   }
 

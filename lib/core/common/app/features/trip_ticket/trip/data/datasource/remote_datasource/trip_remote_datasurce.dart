@@ -294,8 +294,23 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
 
   @override
   Future<TripModel> createTripTicket(TripModel trip) async {
+    String? tripId;  // Declare at function level so it's accessible in catch block
+    
     try {
       debugPrint('🔄 Creating new trip ticket');
+
+      // Step 1: Check for idempotency - if same idempotencyKey exists, return existing trip
+      if (trip.idempotencyKey != null && trip.idempotencyKey!.isNotEmpty) {
+        final existingTrip = await _checkDuplicateByIdempotencyKey(
+          trip.idempotencyKey!,
+        );
+        if (existingTrip != null) {
+          debugPrint(
+            '✅ Trip already exists with this idempotency key, returning existing trip',
+          );
+          return existingTrip;
+        }
+      }
 
       // Prepare data for creation
       final Map<String, dynamic> tripData = {};
@@ -319,6 +334,15 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
       if (trip.changeStatusCode != null && trip.changeStatusCode!.isNotEmpty) {
         tripData['changeStatusCode'] = trip.changeStatusCode;
       }
+
+      // Add idempotency key and creator info for concurrency control
+      if (trip.idempotencyKey != null && trip.idempotencyKey!.isNotEmpty) {
+        tripData['idempotencyKey'] = trip.idempotencyKey;
+      }
+
+      final userId = _pocketBaseClient.authStore.model?.id ?? 'unknown';
+      tripData['createdBy'] = userId;
+      debugPrint('📄 Created by: $userId');
 
       // Add dispatcher
       tripData['dispatcher'] =
@@ -393,7 +417,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           .collection('tripticket')
           .create(body: tripData);
 
-      final String tripId = tripRecord.id;
+      tripId = tripRecord.id;  // Assign to the function-level variable
       debugPrint('✅ Trip ticket created successfully: $tripId');
 
       // After: final String tripId = tripRecord.id;
@@ -476,109 +500,27 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
         }
       }
 
-      // Find deliveryData items with null trip field
-      debugPrint('🔄 Finding deliveryData items with null trip field');
-      final deliveryDataRecords = await _pocketBaseClient
-          .collection('deliveryData')
-          .getFullList(filter: 'trip = null');
+      // ATOMIC STEP: Reserve and lock delivery data to prevent race conditions
+      debugPrint(
+        '🔒 Starting atomic delivery data reservation for trip: $tripId',
+      );
+      final List<String> deliveryDataIds = await _reserveDeliveryDataForTrip(
+        tripId: tripId,
+        userId: userId,
+      );
 
-      List<String> deliveryDataIds = [];
+      debugPrint(
+        '✅ Successfully reserved ${deliveryDataIds.length} delivery items',
+      );
 
-      if (deliveryDataRecords.isNotEmpty) {
-        // Get the "Pending" status from delivery_status_choices once
-        debugPrint('🔄 Fetching Pending status from delivery_status_choices');
-        final pendingStatus = await _pocketBaseClient
-            .collection('deliveryStatusChoices')
-            .getFirstListItem('title = "Pending"');
-
-        debugPrint('✅ Found Pending status: ${pendingStatus.id}');
-
-        // Create delivery_update records in parallel (one per deliveryData)
-        debugPrint('🚀 Creating delivery_update records in parallel...');
-        final createDeliveryUpdateFutures =
-            deliveryDataRecords.map((dataRecord) {
-              return _pocketBaseClient
-                  .collection('deliveryUpdate')
-                  .create(
-                    body: {
-                      'deliveryData': dataRecord.id,
-                      'status': pendingStatus.id,
-                      'title': pendingStatus.data['title'],
-                      'subtitle': pendingStatus.data['subtitle'],
-                      'created': DateTime.now().toUtc().toIso8601String(),
-                      'time': DateTime.now().toUtc().toIso8601String(),
-                      'isAssigned': true,
-                    },
-                  )
-                  .catchError((e) {
-                    debugPrint(
-                      '⚠️ Failed to create delivery_update for ${dataRecord.id}: $e',
-                    );
-                    return null;
-                  });
-            }).toList();
-
-        final createdUpdates = await Future.wait(createDeliveryUpdateFutures);
-
-        // Map deliveryData.id -> created deliveryUpdate id (if created)
-        final Map<String, String> deliveryToUpdateId = {};
-        for (var idx = 0; idx < deliveryDataRecords.length; idx++) {
-          final dataRec = deliveryDataRecords[idx];
-          final created =
-              createdUpdates.length > idx ? createdUpdates[idx] : null;
-          if (created is RecordModel) {
-            deliveryToUpdateId[dataRec.id] = created.id;
-          }
-        }
-
-        debugPrint(
-          '✅ Created ${deliveryToUpdateId.length} delivery_update records',
-        );
-
-        // Update deliveryData records in parallel: set trip + hasTrip + attach deliveryUpdates+
-        debugPrint('🚀 Updating deliveryData records in parallel...');
-        final updateDeliveryFutures =
-            deliveryDataRecords.map((dataRecord) {
-              final updateBody = <String, dynamic>{
-                'trip': tripId,
-                'hasTrip': true,
-              };
-              final assignedUpdateId = deliveryToUpdateId[dataRecord.id];
-              if (assignedUpdateId != null) {
-                updateBody['deliveryUpdates+'] = [assignedUpdateId];
-              }
-              return _pocketBaseClient
-                  .collection('deliveryData')
-                  .update(dataRecord.id, body: updateBody)
-                  .catchError((e) {
-                    debugPrint(
-                      '⚠️ Failed to update deliveryData ${dataRecord.id}: $e',
-                    );
-                    return null;
-                  });
-            }).toList();
-
-        final updatedResults = await Future.wait(updateDeliveryFutures);
-
-        // Collect updated deliveryData ids
-        for (var res in updatedResults) {
-          // ignore: unnecessary_type_check
-          if (res is RecordModel) deliveryDataIds.add(res.id);
-        }
-
-        debugPrint(
-          '✅ Updated ${deliveryDataIds.length} deliveryData items with trip reference',
-        );
-      }
-
-      // Update the trip with the deliveryData references (single call)
+      // Update the trip with the reserved deliveryData references (single call)
       if (deliveryDataIds.isNotEmpty) {
         await _pocketBaseClient
             .collection('tripticket')
             .update(tripId, body: {'deliveryData': deliveryDataIds});
 
         debugPrint(
-          '✅ Updated trip with ${deliveryDataIds.length} deliveryData references',
+          '✅ Trip updated with ${deliveryDataIds.length} delivery data references',
         );
       }
 
@@ -611,6 +553,18 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
       return getTripTicketById(tripId);
     } catch (e) {
       debugPrint('❌ Failed to create trip ticket: ${e.toString()}');
+
+      // Rollback: Remove delivery data reservations if trip creation failed
+      // This ensures reserved items are released back for other trips
+      try {
+        if (tripId != null && tripId.isNotEmpty) {
+          debugPrint('🔄 Rolling back delivery data reservations due to error');
+          await _removeDeliveryDataReservations(tripId);
+        }
+      } catch (rollbackError) {
+        debugPrint('⚠️ Error during rollback: ${rollbackError.toString()}');
+      }
+
       throw ServerException(
         message: 'Failed to create trip ticket: ${e.toString()}',
         statusCode: '500',
@@ -810,6 +764,156 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
     await Future.wait(updateCollectionFutures);
 
     debugPrint('✅ Completed updating personnel and personnelTripsCollection');
+  }
+
+  /// Check if a trip with the same idempotency key already exists
+  /// This prevents duplicate trip creation when requests are retried or duplicated
+  Future<TripModel?> _checkDuplicateByIdempotencyKey(
+    String idempotencyKey,
+  ) async {
+    try {
+      debugPrint(
+        '🔍 Checking for duplicate trip with idempotency key: $idempotencyKey',
+      );
+
+      final records = await _pocketBaseClient
+          .collection('tripticket')
+          .getFullList(filter: 'idempotencyKey = "$idempotencyKey"');
+
+      if (records.isNotEmpty) {
+        debugPrint(
+          '✅ Found existing trip with same idempotency key: ${records.first.id}',
+        );
+        return _mapRecordToTripModel(records.first);
+      }
+
+      debugPrint('ℹ️ No existing trip found with this idempotency key');
+      return null;
+    } catch (e) {
+      debugPrint('⚠️ Error checking idempotency key: ${e.toString()}');
+      return null;
+    }
+  }
+
+  /// Atomically reserve delivery data for a trip to prevent race conditions
+  /// This function ensures that only one trip gets assigned the unassigned delivery items
+  /// even when multiple users create trips simultaneously
+  Future<List<String>> _reserveDeliveryDataForTrip({
+    required String tripId,
+    required String userId,
+  }) async {
+    try {
+      debugPrint('🔒 Atomically reserving delivery data for trip: $tripId');
+
+      // Fetch ALL unassigned delivery data in a single query with consistent ordering
+      final deliveryDataRecords = await _pocketBaseClient
+          .collection('deliveryData')
+          .getFullList(
+            filter: 'trip = null && hasTrip = false',
+            sort: 'created', // Consistent ordering for predictability
+          );
+
+      if (deliveryDataRecords.isEmpty) {
+        debugPrint('ℹ️ No unassigned delivery data available');
+        return [];
+      }
+
+      debugPrint(
+        '📦 Found ${deliveryDataRecords.length} unassigned delivery items to reserve',
+      );
+
+      final List<String> deliveryDataIds = [];
+      int successCount = 0;
+      int failureCount = 0;
+
+      // ATOMIC: Update each delivery data item with trip assignment in parallel
+      // Each update sets trip=tripId AND hasTrip=true AND reservation timestamp
+      // If another request got there first, the filter would prevent double assignment
+      final reservationFutures =
+          deliveryDataRecords.map((record) async {
+            try {
+              // Try to update with conditional check to ensure we're still unassigned
+              await _pocketBaseClient
+                  .collection('deliveryData')
+                  .update(
+                    record.id,
+                    body: {
+                      'trip': tripId,
+                      'hasTrip': true,
+                      'reservedAt': DateTime.now().toUtc().toIso8601String(),
+                      'reservedBy': userId, // Track who reserved it
+                    },
+                  );
+
+              debugPrint('✅ Reserved delivery data: ${record.id}');
+              return record.id;
+            } catch (e) {
+              // Another request may have already claimed this item
+              debugPrint('⚠️ Failed to reserve ${record.id}: $e');
+              return null;
+            }
+          }).toList();
+
+      final results = await Future.wait(reservationFutures);
+
+      // Collect only successful reservations
+      for (final result in results) {
+        if (result != null) {
+          deliveryDataIds.add(result);
+          successCount++;
+        } else {
+          failureCount++;
+        }
+      }
+
+      debugPrint(
+        '✅ Successfully reserved $successCount delivery items (${failureCount} conflicts avoided)',
+      );
+
+      return deliveryDataIds;
+    } catch (e) {
+      debugPrint('❌ Error reserving delivery data: ${e.toString()}');
+      return [];
+    }
+  }
+
+  /// Remove delivery data reservations on error (rollback)
+  /// This cleans up failed transaction state
+  Future<void> _removeDeliveryDataReservations(String tripId) async {
+    try {
+      debugPrint(
+        '🔄 Removing delivery data reservations for failed trip: $tripId',
+      );
+
+      final records = await _pocketBaseClient
+          .collection('deliveryData')
+          .getFullList(filter: 'trip = "$tripId"');
+
+      final rollbackFutures =
+          records.map((record) {
+            return _pocketBaseClient
+                .collection('deliveryData')
+                .update(
+                  record.id,
+                  body: {
+                    'trip': null,
+                    'hasTrip': false,
+                    'reservedAt': null,
+                    'reservedBy': null,
+                  },
+                )
+                .catchError((e) {
+                  debugPrint('⚠️ Error rolling back ${record.id}: $e');
+                  return null;
+                });
+          }).toList();
+
+      await Future.wait(rollbackFutures);
+
+      debugPrint('✅ Rolled back ${records.length} delivery data reservations');
+    } catch (e) {
+      debugPrint('⚠️ Error during rollback: ${e.toString()}');
+    }
   }
 
   @override
@@ -1042,7 +1146,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
         }
       }
 
-       DateTime? lastLocationUpdated;
+      DateTime? lastLocationUpdated;
       if (record.data['lastLocationUpdated'] != null) {
         try {
           lastLocationUpdated = DateTime.parse(

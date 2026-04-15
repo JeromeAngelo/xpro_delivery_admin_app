@@ -68,7 +68,6 @@ class CustomerDataTable extends StatelessWidget {
       },
       createButtonText: 'Create Customer',
       columns: [
-        DataColumn(label: Text('ID', style: headerStyle)),
         DataColumn(label: Text('Name', style: headerStyle)),
         DataColumn(label: Text('Reference ID', style: headerStyle)),
         DataColumn(label: Text('Location', style: headerStyle)),
@@ -79,10 +78,7 @@ class CustomerDataTable extends StatelessWidget {
           customers.map((customer) {
             return DataRow(
               cells: [
-                DataCell(
-                  Text(customer.id ?? 'N/A'),
-                  onTap: () => _navigateToCustomerDetails(context, customer),
-                ),
+                
                 DataCell(
                   Text(customer.name ?? 'N/A'),
                   onTap: () => _navigateToCustomerDetails(context, customer),

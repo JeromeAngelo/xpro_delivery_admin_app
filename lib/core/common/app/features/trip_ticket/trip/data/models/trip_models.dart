@@ -2,7 +2,8 @@ import 'package:intl/intl.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/delivery_team/data/models/delivery_team_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/data/models/personel_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/domain/entity/trip_entity.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip_updates/data/model/trip_update_model.dart' show TripUpdateModel;
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip_updates/data/model/trip_update_model.dart'
+    show TripUpdateModel;
 import 'package:xpro_delivery_admin_app/core/common/app/features/checklist/data/model/checklist_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/general_auth/data/models/auth_models.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_checklist/data/model/end_trip_checklist_model.dart';
@@ -17,10 +18,14 @@ import 'package:pocketbase/pocketbase.dart';
 // New imports for the updated model relationships
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/data/model/delivery_data_model.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/collection/data/model/collection_model.dart' as delivery_collection;
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/collection/data/model/collection_model.dart'
+    as delivery_collection;
 
 class TripModel extends TripEntity {
   String? pocketbaseId;
+  final String? idempotencyKey; // Unique key for request deduplication
+  final String? createdBy; // User who created the trip
+  final DateTime? createdAt; // When the trip was created
 
   TripModel({
     super.id,
@@ -29,13 +34,15 @@ class TripModel extends TripEntity {
     super.tripNumberId,
     List<PersonelModel>? personelsList,
     List<ChecklistModel>? checklistItems,
-    DeliveryVehicleModel? vehicleModel, // Updated: Changed from List<VehicleModel> to DeliveryVehicleModel
-    List<DeliveryDataModel>? deliveryDataList, // Added: New parameter for delivery data
+    DeliveryVehicleModel?
+    vehicleModel, // Updated: Changed from List<VehicleModel> to DeliveryVehicleModel
+    List<DeliveryDataModel>?
+    deliveryDataList, // Added: New parameter for delivery data
     List<EndTripChecklistModel>? endTripChecklistItems,
     List<DeliveryTeamModel>? deliveryTeamList,
     List<TripUpdateModel>? tripUpdateList,
     List<delivery_collection.CollectionModel>? deliveryCollectionList,
-    List<CancelledInvoiceModel>? cancelledInvoiceList, 
+    List<CancelledInvoiceModel>? cancelledInvoiceList,
     super.latitude,
     super.longitude,
     super.averageFillRate,
@@ -59,16 +66,25 @@ class TripModel extends TripEntity {
     super.changeStatusCode,
     super.qrCode,
     super.isAccepted,
+    this.idempotencyKey,
+    this.createdBy,
+    this.createdAt,
   }) : super(
-          tripUpdates: tripUpdateList,
-          personels: personelsList ?? [],
-          checklist: checklistItems ?? [],
-          vehicle: vehicleModel, // Updated: Changed from vehicleList to vehicleModel
-          deliveryData: deliveryDataList ?? [], // Added: Initialize delivery data list
-          deliveryCollection: deliveryCollectionList ?? [], // Added: Initialize delivery collection list
-          cancelledInvoice: cancelledInvoiceList ?? [], // Added: Initialize cancelled invoice list
-          endTripChecklist: endTripChecklistItems ?? [],
-        );
+         tripUpdates: tripUpdateList,
+         personels: personelsList ?? [],
+         checklist: checklistItems ?? [],
+         vehicle:
+             vehicleModel, // Updated: Changed from vehicleList to vehicleModel
+         deliveryData:
+             deliveryDataList ?? [], // Added: Initialize delivery data list
+         deliveryCollection:
+             deliveryCollectionList ??
+             [], // Added: Initialize delivery collection list
+         cancelledInvoice:
+             cancelledInvoiceList ??
+             [], // Added: Initialize cancelled invoice list
+         endTripChecklist: endTripChecklistItems ?? [],
+       );
 
   factory TripModel.fromJson(dynamic json) {
     debugPrint('🔄 MODEL: Creating TripModel from JSON');
@@ -79,7 +95,6 @@ class TripModel extends TripEntity {
     }
 
     final expandedData = json['expand'] as Map<String, dynamic>?;
-
 
     // Handle delivery team data
     final deliveryTeamData = expandedData?['deliveryTeam'];
@@ -94,7 +109,8 @@ class TripModel extends TripEntity {
         });
       } else if (deliveryTeamData is Map) {
         deliveryTeamModel = DeliveryTeamModel.fromJson(
-            deliveryTeamData as Map<String, dynamic>);
+          deliveryTeamData as Map<String, dynamic>,
+        );
       }
     }
 
@@ -109,7 +125,7 @@ class TripModel extends TripEntity {
           'collectionId': userData.collectionId,
           'collectionName': userData.collectionName,
           'name': userData.data['name'],
-          ...userData.data
+          ...userData.data,
         });
       } else if (userData is Map) {
         usersModel = GeneralUserModel.fromJson(userData as DataMap);
@@ -128,19 +144,21 @@ class TripModel extends TripEntity {
     List<PersonelModel> personelsList = [];
     if (personelsData != null) {
       if (personelsData is List) {
-        personelsList = personelsData.map((personel) {
-          if (personel is String) {
-            return PersonelModel(id: personel);
-          }
-          return PersonelModel.fromJson(personel);
-        }).toList();
+        personelsList =
+            personelsData.map((personel) {
+              if (personel is String) {
+                return PersonelModel(id: personel);
+              }
+              return PersonelModel.fromJson(personel);
+            }).toList();
       } else if (personelsData is Map<String, dynamic>) {
         personelsList = [PersonelModel.fromJson(personelsData)];
       }
     }
 
     // Handle Vehicle - Updated to handle a single DeliveryVehicleModel
-    final vehicleData = expandedData?['deliveryVehicle'] ?? json['deliveryVehicle'];
+    final vehicleData =
+        expandedData?['deliveryVehicle'] ?? json['deliveryVehicle'];
     DeliveryVehicleModel? vehicleModel;
     if (vehicleData != null) {
       if (vehicleData is String) {
@@ -158,99 +176,109 @@ class TripModel extends TripEntity {
     }
 
     // Handle DeliveryData - New relationship
-    final deliveryDataList = expandedData?['deliveryData'] ?? json['deliveryData'];
+    final deliveryDataList =
+        expandedData?['deliveryData'] ?? json['deliveryData'];
     List<DeliveryDataModel> deliveryDataModels = [];
     if (deliveryDataList != null) {
       if (deliveryDataList is List) {
-        deliveryDataModels = deliveryDataList.map((data) {
-          if (data is String) {
-            return DeliveryDataModel(id: data);
-          }
-          return DeliveryDataModel.fromJson(data);
-        }).toList();
+        deliveryDataModels =
+            deliveryDataList.map((data) {
+              if (data is String) {
+                return DeliveryDataModel(id: data);
+              }
+              return DeliveryDataModel.fromJson(data);
+            }).toList();
       } else if (deliveryDataList is Map<String, dynamic>) {
         deliveryDataModels = [DeliveryDataModel.fromJson(deliveryDataList)];
       }
     }
 
-    final deliveryCollectionList = expandedData?['deliveryCollection'] ?? json['deliveryCollection'];
+    final deliveryCollectionList =
+        expandedData?['deliveryCollection'] ?? json['deliveryCollection'];
     List<delivery_collection.CollectionModel> deliveryCollectionModels = [];
     if (deliveryCollectionList != null) {
       if (deliveryCollectionList is List) {
-        deliveryCollectionModels = deliveryCollectionList.map((data) {
-          if (data is String) {
-            return delivery_collection.CollectionModel(id: data);
-          }
-          return delivery_collection.CollectionModel.fromJson(data);
-        }).toList();    
-          }else if (deliveryCollectionList is Map<String, dynamic>) {
-            deliveryCollectionModels = [delivery_collection.CollectionModel.fromJson(deliveryCollectionList)];
-          }
-        }
+        deliveryCollectionModels =
+            deliveryCollectionList.map((data) {
+              if (data is String) {
+                return delivery_collection.CollectionModel(id: data);
+              }
+              return delivery_collection.CollectionModel.fromJson(data);
+            }).toList();
+      } else if (deliveryCollectionList is Map<String, dynamic>) {
+        deliveryCollectionModels = [
+          delivery_collection.CollectionModel.fromJson(deliveryCollectionList),
+        ];
+      }
+    }
 
-        final cancelledInvoiceList = expandedData?['cancelledInvoice'] ?? json['cancelledInvoice'];
-        List<CancelledInvoiceModel> cancelledInvoiceModels = [];
-        if (cancelledInvoiceList != null) {
-          if (cancelledInvoiceList is List) {
-            cancelledInvoiceModels = cancelledInvoiceList.map((data) {
+    final cancelledInvoiceList =
+        expandedData?['cancelledInvoice'] ?? json['cancelledInvoice'];
+    List<CancelledInvoiceModel> cancelledInvoiceModels = [];
+    if (cancelledInvoiceList != null) {
+      if (cancelledInvoiceList is List) {
+        cancelledInvoiceModels =
+            cancelledInvoiceList.map((data) {
               if (data is String) {
                 return CancelledInvoiceModel(id: data);
               }
               return CancelledInvoiceModel.fromJson(data);
             }).toList();
-          } else if (cancelledInvoiceList is Map<String, dynamic>) {
-            cancelledInvoiceModels = [CancelledInvoiceModel.fromJson(cancelledInvoiceList)];
-          }
-        }
-      
-    
+      } else if (cancelledInvoiceList is Map<String, dynamic>) {
+        cancelledInvoiceModels = [
+          CancelledInvoiceModel.fromJson(cancelledInvoiceList),
+        ];
+      }
+    }
 
     // Handle Checklist
     final checklistData = expandedData?['checklist'] ?? json['checklist'];
     List<ChecklistModel> checklistItems = [];
     if (checklistData != null) {
       if (checklistData is List) {
-        checklistItems = checklistData.map((item) {
-          if (item is String) {
-            return ChecklistModel(id: item);
-          }
-          return ChecklistModel.fromJson(item);
-        }).toList();
+        checklistItems =
+            checklistData.map((item) {
+              if (item is String) {
+                return ChecklistModel(id: item);
+              }
+              return ChecklistModel.fromJson(item);
+            }).toList();
       } else if (checklistData is Map<String, dynamic>) {
         checklistItems = [ChecklistModel.fromJson(checklistData)];
       }
     }
 
-   
     // Handle EndTripChecklist
     final endTripData =
         expandedData?['endTripChecklist'] ?? json['endTripChecklist'];
     List<EndTripChecklistModel> endTripList = [];
     if (endTripData != null) {
       if (endTripData is List) {
-        endTripList = endTripData.map((item) {
-          if (item is String) {
-            return EndTripChecklistModel(id: item);
-          }
-          return EndTripChecklistModel.fromJson(item);
-        }).toList();
+        endTripList =
+            endTripData.map((item) {
+              if (item is String) {
+                return EndTripChecklistModel(id: item);
+              }
+              return EndTripChecklistModel.fromJson(item);
+            }).toList();
       } else if (endTripData is Map<String, dynamic>) {
         endTripList = [EndTripChecklistModel.fromJson(endTripData)];
       }
     }
 
-        // Handle Trip Updates
+    // Handle Trip Updates
     final tripUpdatesData =
         expandedData?['trip_update_list'] ?? json['trip_update_list'];
     List<TripUpdateModel> tripUpdatesList = [];
     if (tripUpdatesData != null) {
       if (tripUpdatesData is List) {
-        tripUpdatesList = tripUpdatesData.map((update) {
-          if (update is String) {
-            return TripUpdateModel(id: update);
-          }
-          return TripUpdateModel.fromJson(update);
-        }).toList();
+        tripUpdatesList =
+            tripUpdatesData.map((update) {
+              if (update is String) {
+                return TripUpdateModel(id: update);
+              }
+              return TripUpdateModel.fromJson(update);
+            }).toList();
       } else if (tripUpdatesData is Map<String, dynamic>) {
         tripUpdatesList = [TripUpdateModel.fromJson(tripUpdatesData)];
       }
@@ -278,124 +306,147 @@ class TripModel extends TripEntity {
       }
     }
 
-  
-
     return TripModel(
       id: json['id']?.toString(),
       collectionId: json['collectionId']?.toString(),
       collectionName: json['collectionName']?.toString(),
       tripNumberId: json['tripNumberId']?.toString(),
       name: json['name']?.toString(),
+      idempotencyKey: json['idempotencyKey']?.toString(),
+      createdBy: json['createdBy']?.toString(),
+      createdAt:
+          json['createdAt'] != null
+              ? TripModel._parseDateTime(json['createdAt'])
+              : null,
       personelsList: personelsList,
       checklistItems: checklistItems,
-      vehicleModel: vehicleModel, // Updated: Changed from vehicleList to vehicleModel
-      deliveryDataList: deliveryDataModels, // Added: Initialize delivery data list
+      vehicleModel:
+          vehicleModel, // Updated: Changed from vehicleList to vehicleModel
+      deliveryDataList:
+          deliveryDataModels, // Added: Initialize delivery data list
       endTripChecklistItems: endTripList,
       dispatcher: json['dispatcher']?.toString(),
       cancelledInvoiceList: cancelledInvoiceModels,
       deliveryCollectionList: deliveryCollectionModels,
       changeStatusCode: json['changeStatusCode']?.toString(),
       tripUpdateList: tripUpdatesList,
-      latitude: json['latitude'] != null
-          ? double.tryParse(json['latitude'].toString())
-          : null,
-      longitude: json['longitude'] != null
-          ? double.tryParse(json['longitude'].toString())
-          : null,
-       volumeRate: json['volumeRate'] != null ? double.tryParse(json['volumeRate'].toString()) : null,
-       weightRate: json['weightRate'] != null ? double.tryParse(json['weightRate'].toString()) : null,
-       averageFillRate: json['averageFillRate'] != null ? double.tryParse(json['averageFillRate'].toString()) : null,   
+      latitude:
+          json['latitude'] != null
+              ? double.tryParse(json['latitude'].toString())
+              : null,
+      longitude:
+          json['longitude'] != null
+              ? double.tryParse(json['longitude'].toString())
+              : null,
+      volumeRate:
+          json['volumeRate'] != null
+              ? double.tryParse(json['volumeRate'].toString())
+              : null,
+      weightRate:
+          json['weightRate'] != null
+              ? double.tryParse(json['weightRate'].toString())
+              : null,
+      averageFillRate:
+          json['averageFillRate'] != null
+              ? double.tryParse(json['averageFillRate'].toString())
+              : null,
       user: usersModel,
       totalTripDistance: json['totalTripDistance']?.toString(),
       otp: otpModel,
       endTripOtp: endTripOtpModel,
       deliveryTeam: deliveryTeamModel,
-      timeAccepted: json['timeAccepted'] != null
-          ? _parseDateTime(json['timeAccepted'])
-          : null,
+      timeAccepted:
+          json['timeAccepted'] != null
+              ? _parseDateTime(json['timeAccepted'])
+              : null,
       isEndTrip: json['isEndTrip'] as bool?,
-      timeEndTrip: json['timeEndTrip'] != null
-          ? _parseDateTime(json['timeEndTrip'])
-          : null,
-          deliveryDate: json['deliveryDate'] != null
-          ? _parseDateTime(json['deliveryDate'])
-          : null,
-           expectedReturnDate: json['expectedReturnDate'] != null
-          ? _parseDateTime(json['expectedReturnDate'])
-          : null,
-          lastLocationUpdated: json['lastLocationUpdated'] != null
-          ? _parseDateTime(json['lastLocationUpdated'])
-          : null,
-      created: json['created'] != null
-          ? _parseDateTime(json['created'])
-          : null,
-      updated: json['updated'] != null
-          ? _parseDateTime(json['updated'])
-          : null,
+      timeEndTrip:
+          json['timeEndTrip'] != null
+              ? _parseDateTime(json['timeEndTrip'])
+              : null,
+      deliveryDate:
+          json['deliveryDate'] != null
+              ? _parseDateTime(json['deliveryDate'])
+              : null,
+      expectedReturnDate:
+          json['expectedReturnDate'] != null
+              ? _parseDateTime(json['expectedReturnDate'])
+              : null,
+      lastLocationUpdated:
+          json['lastLocationUpdated'] != null
+              ? _parseDateTime(json['lastLocationUpdated'])
+              : null,
+      created: json['created'] != null ? _parseDateTime(json['created']) : null,
+      updated: json['updated'] != null ? _parseDateTime(json['updated']) : null,
       qrCode: json['qrCode']?.toString(),
       isAccepted: json['isAccepted'] as bool?,
     );
   }
 
   // Helper method for safe date parsing
-static DateTime? _parseDateTime(dynamic value) {
-  if (value == null) return null;
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
 
-  // ✅ If it's already a DateTime
-  if (value is DateTime) return value;
+    // ✅ If it's already a DateTime
+    if (value is DateTime) return value;
 
-  try {
-    // ✅ Handle epoch timestamps (seconds or milliseconds)
-    if (value is int) {
-      // If timestamp is too large, assume it's milliseconds
-      if (value > 9999999999) {
-        return DateTime.fromMillisecondsSinceEpoch(value, isUtc: true).toLocal();
-      } else {
-        return DateTime.fromMillisecondsSinceEpoch(value * 1000, isUtc: true).toLocal();
-      }
-    }
-
-    // ✅ Convert to string for flexible parsing
-    final strValue = value.toString().trim();
-
-    // ✅ Common formats to try if ISO parsing fails
-    final possibleFormats = [
-      "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-      "yyyy-MM-dd'T'HH:mm:ss'Z'",
-      "yyyy-MM-dd HH:mm:ss",
-      "yyyy/MM/dd HH:mm:ss",
-      "MM/dd/yyyy HH:mm:ss",
-      "MM/dd/yyyy",
-      "yyyy-MM-dd",
-    ];
-
-    // ✅ Try direct ISO8601 parse first (fast path)
     try {
-      final parsed = DateTime.parse(strValue);
-      return parsed.isUtc ? parsed.toLocal() : parsed;
-    } catch (_) {
-      // continue with custom formats
-    }
-
-    // ✅ Try parsing with known formats
-    for (final format in possibleFormats) {
-      try {
-        final parsed = DateFormat(format).parseUtc(strValue);
-        return parsed.toLocal();
-      } catch (_) {
-        continue;
+      // ✅ Handle epoch timestamps (seconds or milliseconds)
+      if (value is int) {
+        // If timestamp is too large, assume it's milliseconds
+        if (value > 9999999999) {
+          return DateTime.fromMillisecondsSinceEpoch(
+            value,
+            isUtc: true,
+          ).toLocal();
+        } else {
+          return DateTime.fromMillisecondsSinceEpoch(
+            value * 1000,
+            isUtc: true,
+          ).toLocal();
+        }
       }
+
+      // ✅ Convert to string for flexible parsing
+      final strValue = value.toString().trim();
+
+      // ✅ Common formats to try if ISO parsing fails
+      final possibleFormats = [
+        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy/MM/dd HH:mm:ss",
+        "MM/dd/yyyy HH:mm:ss",
+        "MM/dd/yyyy",
+        "yyyy-MM-dd",
+      ];
+
+      // ✅ Try direct ISO8601 parse first (fast path)
+      try {
+        final parsed = DateTime.parse(strValue);
+        return parsed.isUtc ? parsed.toLocal() : parsed;
+      } catch (_) {
+        // continue with custom formats
+      }
+
+      // ✅ Try parsing with known formats
+      for (final format in possibleFormats) {
+        try {
+          final parsed = DateFormat(format).parseUtc(strValue);
+          return parsed.toLocal();
+        } catch (_) {
+          continue;
+        }
+      }
+
+      // ❌ If all failed, log and return null
+      debugPrint('⚠️ Date parsing failed for value: $strValue');
+      return null;
+    } catch (e) {
+      debugPrint('❌ _parseDateTime() error: $e for value: $value');
+      return null;
     }
-
-    // ❌ If all failed, log and return null
-    debugPrint('⚠️ Date parsing failed for value: $strValue');
-    return null;
-  } catch (e) {
-    debugPrint('❌ _parseDateTime() error: $e for value: $value');
-    return null;
   }
-}
-
 
   DataMap toJson() {
     return {
@@ -405,16 +456,24 @@ static DateTime? _parseDateTime(dynamic value) {
       'collectionName': collectionName,
       'tripNumberId': tripNumberId,
       'dispatcher': dispatcher,
+      'idempotencyKey': idempotencyKey,
+      'createdBy': createdBy,
+      'createdAt': createdAt?.toUtc().toIso8601String(),
       'personels': personels.map((personel) => personel.id).toList(),
       'checklist': checklist.map((item) => item.id).toList(),
-      'deliveryVehicle': vehicle?.id, // Updated: Changed from vehicle.map to vehicle?.id
-      'deliveryData': deliveryData.map((data) => data.id).toList(), // Added: Map deliveryData to IDs
-     'deliveryCollection': deliveryCollection!.map((collection) => collection.id).toList(),
-      'cancelledInvoice': cancelledInvoice!.map((invoice) => invoice.id).toList(),
+      'deliveryVehicle':
+          vehicle?.id, // Updated: Changed from vehicle.map to vehicle?.id
+      'deliveryData':
+          deliveryData
+              .map((data) => data.id)
+              .toList(), // Added: Map deliveryData to IDs
+      'deliveryCollection':
+          deliveryCollection!.map((collection) => collection.id).toList(),
+      'cancelledInvoice':
+          cancelledInvoice!.map((invoice) => invoice.id).toList(),
       'returns': returns.map((returnItem) => returnItem.id).toList(),
-     'changeStatusCode': changeStatusCode,
-      'endTripChecklist':
-          endTripChecklist.map((item) => item.id).toList(),
+      'changeStatusCode': changeStatusCode,
+      'endTripChecklist': endTripChecklist.map((item) => item.id).toList(),
       'trip_update_list': tripUpdates.map((update) => update.id).toList(),
       'latitude': latitude,
       'longitude': longitude,
@@ -446,14 +505,25 @@ static DateTime? _parseDateTime(dynamic value) {
       collectionName: entity.collectionName,
       name: entity.name,
       tripNumberId: entity.tripNumberId,
+      idempotencyKey: null,
+      createdBy: null,
+      createdAt: null,
       personelsList: entity.personels,
       checklistItems: entity.checklist,
-      vehicleModel: entity.vehicle as DeliveryVehicleModel?, // Updated: Changed from vehicleList to vehicleModel
-      deliveryDataList: entity.deliveryData.cast<DeliveryDataModel>(), // Added: Cast deliveryData to DeliveryDataModel
+      vehicleModel:
+          entity.vehicle
+              as DeliveryVehicleModel?, // Updated: Changed from vehicleList to vehicleModel
+      deliveryDataList:
+          entity.deliveryData
+              .cast<
+                DeliveryDataModel
+              >(), // Added: Cast deliveryData to DeliveryDataModel
       endTripChecklistItems: entity.endTripChecklist,
       tripUpdateList: entity.tripUpdates,
       changeStatusCode: entity.changeStatusCode,
-       deliveryCollectionList: entity.deliveryCollection!.cast<delivery_collection.CollectionModel>(),
+      deliveryCollectionList:
+          entity.deliveryCollection!
+              .cast<delivery_collection.CollectionModel>(),
       latitude: entity.latitude,
       longitude: entity.longitude,
       volumeRate: entity.volumeRate,
@@ -479,45 +549,47 @@ static DateTime? _parseDateTime(dynamic value) {
   }
 
   factory TripModel.empty() {
-  return TripModel(
-    id: '',
-    name: '',
-    collectionId: '',
-    collectionName: '',
-    tripNumberId: '',
-    personelsList: [],
-    checklistItems: [],
-    vehicleModel: null,
-    deliveryDataList: [],
-    endTripChecklistItems: [],
-    tripUpdateList: [],
-    deliveryCollectionList: [],
-    changeStatusCode: '',
-    cancelledInvoiceList: [],
-    latitude: null,
-    longitude: null,
-    volumeRate: null,
-    weightRate: null,
-    averageFillRate: null,
-    user: null,
-    totalTripDistance: '',
-    otp: null,
-    endTripOtp: null,
-    deliveryTeam: null,
-    dispatcher: '',
-    timeAccepted: null,
-    expectedReturnDate: null,
-    lastLocationUpdated: null,
-    isEndTrip: false,
-    timeEndTrip: null,
-    deliveryDate: null,
-    created: null,
-    updated: null,
-    qrCode: '',
-    isAccepted: false,
-  );
-}
-
+    return TripModel(
+      id: '',
+      name: '',
+      collectionId: '',
+      collectionName: '',
+      tripNumberId: '',
+      idempotencyKey: null,
+      createdBy: null,
+      createdAt: null,
+      personelsList: [],
+      checklistItems: [],
+      vehicleModel: null,
+      deliveryDataList: [],
+      endTripChecklistItems: [],
+      tripUpdateList: [],
+      deliveryCollectionList: [],
+      changeStatusCode: '',
+      cancelledInvoiceList: [],
+      latitude: null,
+      longitude: null,
+      volumeRate: null,
+      weightRate: null,
+      averageFillRate: null,
+      user: null,
+      totalTripDistance: '',
+      otp: null,
+      endTripOtp: null,
+      deliveryTeam: null,
+      dispatcher: '',
+      timeAccepted: null,
+      expectedReturnDate: null,
+      lastLocationUpdated: null,
+      isEndTrip: false,
+      timeEndTrip: null,
+      deliveryDate: null,
+      created: null,
+      updated: null,
+      qrCode: '',
+      isAccepted: false,
+    );
+  }
 
   TripModel copyWith({
     String? id,
@@ -525,14 +597,21 @@ static DateTime? _parseDateTime(dynamic value) {
     String? collectionName,
     String? tripNumberId,
     String? name,
+    String? idempotencyKey,
+    String? createdBy,
+    DateTime? createdAt,
     List<PersonelModel>? personelsList,
     List<ChecklistModel>? checklistItems,
-    DeliveryVehicleModel? vehicleModel, // Updated: Changed from List<VehicleModel> to DeliveryVehicleModel
-    List<DeliveryDataModel>? deliveryDataList, // Added: New parameter for delivery data
+    DeliveryVehicleModel?
+    vehicleModel, // Updated: Changed from List<VehicleModel> to DeliveryVehicleModel
+    List<DeliveryDataModel>?
+    deliveryDataList, // Added: New parameter for delivery data
     List<EndTripChecklistModel>? endTripChecklistItems,
     List<TripUpdateModel>? tripUpdateList,
-    List<delivery_collection.CollectionModel>? deliveryCollection, // Added: New parameter for delivery collection>
-    List<CancelledInvoiceModel>? cancelledInvoice, // Added: New parameter for cancelled invoice>
+    List<delivery_collection.CollectionModel>?
+    deliveryCollection, // Added: New parameter for delivery collection>
+    List<CancelledInvoiceModel>?
+    cancelledInvoice, // Added: New parameter for cancelled invoice>
     double? latitude,
     double? longitude,
     double? volumeRate,
@@ -563,12 +642,26 @@ static DateTime? _parseDateTime(dynamic value) {
       collectionId: collectionId ?? this.collectionId,
       collectionName: collectionName ?? this.collectionName,
       tripNumberId: tripNumberId ?? this.tripNumberId,
+      idempotencyKey: idempotencyKey ?? this.idempotencyKey,
+      createdBy: createdBy ?? this.createdBy,
+      createdAt: createdAt ?? this.createdAt,
       personelsList: personelsList ?? personels,
       checklistItems: checklistItems ?? checklist,
-      vehicleModel: vehicleModel ?? vehicle as DeliveryVehicleModel?, // Updated: Changed from vehicleList to vehicleModel
-      deliveryDataList: deliveryDataList ?? deliveryData.cast<DeliveryDataModel>(), // Added: Cast deliveryData to DeliveryDataModel
-      cancelledInvoiceList: cancelledInvoice ?? cancelledInvoice!.cast<CancelledInvoiceModel>(),
-      deliveryCollectionList: deliveryCollection ?? deliveryCollection!.cast<delivery_collection.CollectionModel>(),
+      vehicleModel:
+          vehicleModel ??
+          vehicle
+              as DeliveryVehicleModel?, // Updated: Changed from vehicleList to vehicleModel
+      deliveryDataList:
+          deliveryDataList ??
+          deliveryData
+              .cast<
+                DeliveryDataModel
+              >(), // Added: Cast deliveryData to DeliveryDataModel
+      cancelledInvoiceList:
+          cancelledInvoice ?? cancelledInvoice!.cast<CancelledInvoiceModel>(),
+      deliveryCollectionList:
+          deliveryCollection ??
+          deliveryCollection!.cast<delivery_collection.CollectionModel>(),
       endTripChecklistItems: endTripChecklistItems ?? endTripChecklist,
       tripUpdateList: tripUpdateList ?? tripUpdates,
       latitude: latitude ?? this.latitude,
@@ -596,4 +689,3 @@ static DateTime? _parseDateTime(dynamic value) {
     );
   }
 }
-

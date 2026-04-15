@@ -52,7 +52,6 @@ class InvoiceDataTable extends StatelessWidget {
       },
       createButtonText: 'Create Invoice',
       columns: const [
-        DataColumn(label: Text('ID')),
         DataColumn(label: Text('Reference ID')),
         DataColumn(label: Text('Name')),
         DataColumn(label: Text('Customer')),
@@ -65,10 +64,7 @@ class InvoiceDataTable extends StatelessWidget {
       rows: invoices.map((invoice) {
         return DataRow(
           cells: [
-            DataCell(
-              Text(invoice.id?.substring(0, 8) ?? 'N/A'),
-              onTap: () => _navigateToInvoiceDetails(context, invoice),
-            ),
+           
             DataCell(
               Text(invoice.refId ?? 'N/A'),
               onTap: () => _navigateToInvoiceDetails(context, invoice),
