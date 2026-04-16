@@ -283,7 +283,9 @@ Future<List<InvoicePresetGroupModel>> getAllUnassignedInvoicePresetGroups() asyn
                 debugPrint('⚠️ Customer chunk fetch failed: $e');
                 return <RecordModel>[];
               });
-          for (var r in results) customerMap[r.id] = r;
+          for (var r in results) {
+            customerMap[r.id] = r;
+          }
         }
       }
 
@@ -359,8 +361,9 @@ Future<List<InvoicePresetGroupModel>> getAllUnassignedInvoicePresetGroups() asyn
               );
             }
 
-            for (var id in invoiceIdsForCustomer)
+            for (var id in invoiceIdsForCustomer) {
               invoiceToDelivery[id] = actualDeliveryId;
+            }
             customerToDelivery[custId] = actualDeliveryId;
           }).toList();
 
@@ -517,6 +520,11 @@ for (var i = 0; i < allInvoiceIds.length; i += updateBatchSize) {
       // NOTE: SKIP invoiceItems fetching/attaching to deliveryData to maximize speed.
       // If required later, re-enable a separate background job to attach invoiceItems.
 
+      // -------------------------------------------------------------
+      // ✅ NEW STEP: Calculate and update totalAmount for each deliveryData
+      // -------------------------------------------------------------
+      await _updateDeliveryTotalAmounts(invoiceToDelivery, allInvoiceIds);
+
       final duration = DateTime.now().difference(startTime);
       debugPrint(
         '✨ (FAST) Completed in ${duration.inSeconds}s for ${allInvoiceIds.length} invoices across ${invoicesByCustomer.length} customers',
@@ -530,6 +538,92 @@ for (var i = 0; i < allInvoiceIds.length; i += updateBatchSize) {
         statusCode: '500',
       );
     }
+  }
+
+  /// Calculates totalAmount from all assigned invoiceData records and
+  /// updates each deliveryData record with the summed totalAmount.
+  Future<void> _updateDeliveryTotalAmounts(
+    Map<String, String> invoiceToDelivery,
+    List<String> allInvoiceIds,
+  ) async {
+    if (invoiceToDelivery.isEmpty || allInvoiceIds.isEmpty) {
+      debugPrint('⚠️ No invoices to calculate totalAmounts from');
+      return;
+    }
+
+    debugPrint('🔄 Calculating totalAmounts for each deliveryData...');
+
+    // Group invoice IDs by delivery ID
+    final Map<String, List<String>> deliveryToInvoiceIds = {};
+    for (final invId in allInvoiceIds) {
+      final delId = invoiceToDelivery[invId];
+      if (delId == null || delId.isEmpty) continue;
+      deliveryToInvoiceIds.putIfAbsent(delId, () => []).add(invId);
+    }
+
+    debugPrint('✅ Found ${deliveryToInvoiceIds.length} deliveries to update');
+
+    // Fetch totalAmount from all invoiceData records in bulk
+    final Map<String, double> deliveryTotalAmounts = {};
+    const chunkSize = 200;
+
+    for (var i = 0; i < allInvoiceIds.length; i += chunkSize) {
+      final end = (i + chunkSize < allInvoiceIds.length)
+          ? i + chunkSize
+          : allInvoiceIds.length;
+      final chunk = allInvoiceIds.sublist(i, end);
+      final filter = chunk.map((id) => 'id = "$id"').join(' || ');
+
+      try {
+        final invoiceRecords = await _pocketBaseClient
+            .collection('invoiceData')
+            .getFullList(filter: filter, fields: 'id,totalAmount');
+
+        for (final record in invoiceRecords) {
+          final invId = record.id;
+          final delId = invoiceToDelivery[invId];
+          if (delId == null || delId.isEmpty) continue;
+
+          final amount = record.data['totalAmount'];
+          final numericAmount = _parseDouble(amount);
+
+          deliveryTotalAmounts.update(
+            delId,
+            (existing) => existing + numericAmount,
+            ifAbsent: () => numericAmount,
+          );
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to fetch invoiceData totalAmounts: $e');
+      }
+    }
+
+    // Update each deliveryData with the calculated totalAmount
+    for (final entry in deliveryTotalAmounts.entries) {
+      final delId = entry.key;
+      final totalAmount = entry.value;
+
+      try {
+        await _pocketBaseClient
+            .collection('deliveryData')
+            .update(delId, body: {'totalAmount': totalAmount});
+        debugPrint(
+          '✅ Updated deliveryData $delId with totalAmount: $totalAmount',
+        );
+      } catch (e) {
+        debugPrint('⚠️ Failed to update totalAmount for delivery $delId: $e');
+      }
+    }
+
+    debugPrint('✅ totalAmount calculation and update completed');
+  }
+
+  double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 
 Future<Map<String, List<String>>> _fetchInvoiceItemIdsByInvoiceIds(

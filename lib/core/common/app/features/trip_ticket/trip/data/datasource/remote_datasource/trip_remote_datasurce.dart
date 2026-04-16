@@ -294,8 +294,9 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
 
   @override
   Future<TripModel> createTripTicket(TripModel trip) async {
-    String? tripId;  // Declare at function level so it's accessible in catch block
-    
+    String?
+    tripId; // Declare at function level so it's accessible in catch block
+
     try {
       debugPrint('🔄 Creating new trip ticket');
 
@@ -417,7 +418,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           .collection('tripticket')
           .create(body: tripData);
 
-      tripId = tripRecord.id;  // Assign to the function-level variable
+      tripId = tripRecord.id; // Assign to the function-level variable
       debugPrint('✅ Trip ticket created successfully: $tripId');
 
       // After: final String tripId = tripRecord.id;
@@ -512,6 +513,13 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
       debugPrint(
         '✅ Successfully reserved ${deliveryDataIds.length} delivery items',
       );
+
+      // Create pending delivery updates for all reserved delivery data
+      if (deliveryDataIds.isNotEmpty) {
+        await _createDeliveryUpdatesForReservedData(
+          deliveryDataIds: deliveryDataIds,
+        );
+      }
 
       // Update the trip with the reserved deliveryData references (single call)
       if (deliveryDataIds.isNotEmpty) {
@@ -867,7 +875,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
       }
 
       debugPrint(
-        '✅ Successfully reserved $successCount delivery items (${failureCount} conflicts avoided)',
+        '✅ Successfully reserved $successCount delivery items ($failureCount conflicts avoided)',
       );
 
       return deliveryDataIds;
@@ -913,6 +921,71 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
       debugPrint('✅ Rolled back ${records.length} delivery data reservations');
     } catch (e) {
       debugPrint('⚠️ Error during rollback: ${e.toString()}');
+    }
+  }
+
+  /// Create pending delivery updates for all reserved delivery data
+  /// This records the initial "Pending" status for each delivery item
+  Future<void> _createDeliveryUpdatesForReservedData({
+    required List<String> deliveryDataIds,
+  }) async {
+    if (deliveryDataIds.isEmpty) return;
+
+    try {
+      debugPrint(
+        '🔄 Creating delivery updates for ${deliveryDataIds.length} delivery items',
+      );
+
+      final now = DateTime.now().toUtc().toIso8601String();
+
+      // Create delivery updates in parallel
+      final deliveryUpdateFutures =
+          deliveryDataIds.map((deliveryDataId) async {
+            try {
+              // Create a pending delivery update record
+              final deliveryUpdateRecord = await _pocketBaseClient
+                  .collection('deliveryUpdate')
+                  .create(
+                    body: {
+                      'title': 'Pending',
+                      'subtitle': 'Waiting to Accept the Trip',
+                      'time': now,
+                      'isAssigned': true,
+                      'deliveryData': deliveryDataId,
+                    },
+                  );
+
+              debugPrint(
+                '✅ Created delivery update ${deliveryUpdateRecord.id} for deliveryData: $deliveryDataId',
+              );
+
+              // Update the deliveryData record to reference this delivery update
+              await _pocketBaseClient
+                  .collection('deliveryData')
+                  .update(
+                    deliveryDataId,
+                    body: {
+                      'deliveryUpdates': [deliveryUpdateRecord.id],
+                    },
+                  );
+
+              debugPrint(
+                '✅ Updated deliveryData $deliveryDataId with delivery update reference',
+              );
+            } catch (e) {
+              debugPrint(
+                '❌ Error creating delivery update for deliveryData $deliveryDataId: ${e.toString()}',
+              );
+            }
+          }).toList();
+
+      await Future.wait(deliveryUpdateFutures);
+
+      debugPrint(
+        '✅ Successfully created and linked ${deliveryDataIds.length} delivery updates',
+      );
+    } catch (e) {
+      debugPrint('❌ Error creating delivery updates: ${e.toString()}');
     }
   }
 
