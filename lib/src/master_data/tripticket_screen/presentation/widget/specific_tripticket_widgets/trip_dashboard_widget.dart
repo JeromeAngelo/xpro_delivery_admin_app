@@ -99,7 +99,10 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
     String formatDateTime(DateTime? dateTime) {
       if (dateTime == null) return 'N/A';
 
-      final hour24 = dateTime.hour;
+      // Convert UTC to Philippine Time (UTC+8)
+      final phDateTime = dateTime.add(const Duration(hours: 8));
+
+      final hour24 = phDateTime.hour;
       final hour12 =
           hour24 == 0
               ? 12
@@ -109,13 +112,13 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
 
       final amPm = hour24 >= 12 ? 'PM' : 'AM';
 
-      final month = dateTime.month.toString().padLeft(2, '0');
-      final day = dateTime.day.toString().padLeft(2, '0');
-      final year = dateTime.year;
+      final month = phDateTime.month.toString().padLeft(2, '0');
+      final day = phDateTime.day.toString().padLeft(2, '0');
+      final year = phDateTime.year;
 
       return '$month/$day/$year '
           '${hour12.toString().padLeft(2, '0')}:'
-          '${dateTime.minute.toString().padLeft(2, '0')} $amPm';
+          '${phDateTime.minute.toString().padLeft(2, '0')} $amPm';
     }
 
     String dateFormat(DateTime? date) {
