@@ -79,7 +79,6 @@ class MyApp extends StatelessWidget {
             BlocProvider(create: (_) => sl<ReturnBloc>()),
             BlocProvider(create: (_) => sl<DeliveryUpdateBloc>()),
             BlocProvider(create: (_) => sl<DeliveryStatusChoicesBloc>()),
-
             BlocProvider(create: (_) => sl<ChecklistBloc>()),
             BlocProvider(create: (_) => sl<EndTripChecklistBloc>()),
             BlocProvider(create: (_) => sl<OtpBloc>()),
@@ -87,8 +86,7 @@ class MyApp extends StatelessWidget {
             BlocProvider(create: (_) => sl<VehicleBloc>()),
             BlocProvider(create: (_) => sl<VehicleProfileBloc>()),
             BlocProvider(create: (_) => sl<PersonelBloc>()),
-            BlocProvider(create: (_) => sl<TripCoordinatesUpdateBloc>()),
-            //new entities
+            BlocProvider(create: (_) => sl<TripCoordinatesUpdateBloc>()),          //new entities
             BlocProvider(create: (_) => sl<CustomerDataBloc>()),
             BlocProvider(create: (_) => sl<InvoiceDataBloc>()),
             BlocProvider(create: (_) => sl<InvoiceItemsBloc>()),

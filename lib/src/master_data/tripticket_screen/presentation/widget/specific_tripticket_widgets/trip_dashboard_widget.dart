@@ -123,6 +123,22 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
       return DateFormat('MM/dd/yyyy').format(date);
     }
 
+    String calculateTripDuration(DateTime? startTime, DateTime? endTime) {
+      if (startTime == null || endTime == null) return 'N/A';
+
+      final duration = endTime.difference(startTime);
+      final hours = duration.inHours;
+      final minutes = duration.inMinutes.remainder(60);
+
+      if (hours == 0) {
+        return '$minutes min';
+      } else if (minutes == 0) {
+        return '${hours}h';
+      } else {
+        return '${hours}h ${minutes}m';
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -358,6 +374,14 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
               label: 'End of Trip',
             ),
             DashboardInfoItem(
+              icon: Icons.schedule,
+              value: calculateTripDuration(
+                widget.trip?.otp?.verifiedAt,
+                widget.trip?.timeEndTrip,
+              ),
+              label: 'Trip Total Time',
+            ),
+            DashboardInfoItem(
               icon: Icons.check_circle,
               value: () {
                 final deliveryCollectionLength =
@@ -376,7 +400,7 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
             DashboardInfoItem(
               icon: Icons.cancel,
               value: widget.trip?.cancelledInvoice?.length.toString() ?? '0',
-              label: 'Undelivered',
+              label: 'Cancelled Deliveries',
             ),
             DashboardInfoItem(
               icon: Icons.route,
