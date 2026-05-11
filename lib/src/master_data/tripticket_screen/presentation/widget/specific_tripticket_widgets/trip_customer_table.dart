@@ -19,6 +19,8 @@ class TripCustomersTable extends StatelessWidget {
   final TextEditingController searchController;
   final String searchQuery;
   final Function(String) onSearchChanged;
+  final List<DeliveryDataEntity> deliveries;
+  final String? errorMessage;
 
   const TripCustomersTable({
     super.key,
@@ -31,165 +33,123 @@ class TripCustomersTable extends StatelessWidget {
     required this.searchController,
     required this.searchQuery,
     required this.onSearchChanged,
+    required this.deliveries,
+    this.errorMessage,
   });
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DeliveryDataBloc, DeliveryDataState>(
-      builder: (context, state) {
-        List<DeliveryDataEntity> deliveries = [];
-        bool loading = isLoading;
-        String? errorMessage;
-
-        if (state is DeliveryDataLoading) {
-          loading = true;
-        } else if (state is DeliveryDataByTripLoaded &&
-            state.tripId == tripId) {
-          deliveries = state.deliveryData;
-          loading = false;
-        } else if (state is DeliveryDataError) {
-          loading = false;
-          errorMessage = state.message;
-        }
-
-        // Filter deliveries based on search query if needed
-        if (searchQuery.isNotEmpty) {
-          deliveries =
-              deliveries.where((delivery) {
-                final customerName =
-                    delivery.customer?.name?.toLowerCase() ?? '';
-                final invoiceNumber =
-                    delivery.invoice?.name?.toLowerCase() ?? '';
-                final query = searchQuery.toLowerCase();
-
-                return customerName.contains(query) ||
-                    invoiceNumber.contains(query);
-              }).toList();
-        }
-
-        return DataTableLayout(
-          title: 'Deliveries',
-          searchBar: TextField(
-            controller: searchController,
-            decoration: InputDecoration(
-              hintText: 'Search by customer name or invoice number...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon:
-                  searchQuery.isNotEmpty
-                      ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          onSearchChanged('');
-                        },
-                      )
-                      : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onChanged: onSearchChanged,
-          ),
-          onCreatePressed: onAttachCustomer,
-          createButtonText: 'Attach Delivery',
-          columns: const [
-           // DataColumn(label: Text('ID')),
-            DataColumn(label: Text('Customer Name')),
-            DataColumn(label: Text('Invoice Number')),
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Total Amount')),
-            DataColumn(label: Text('Actions')),
-          ],
-          rows:
-              deliveries.map((delivery) {
-                return DataRow(
-                  cells: [
-                    // ID
-                    // DataCell(
-                    //   Text(delivery.id ?? 'N/A'),
-                    //   onTap:
-                    //       () => _navigateToDeliveryDetails(context, delivery),
-                    // ),
-
-                    // Customer Name
-                    DataCell(
-                      Text(delivery.customer?.name ?? 'N/A'),
-                      onTap:
-                          () => _navigateToDeliveryDetails(context, delivery),
-                    ),
-
-                    // Invoice Number
-                    DataCell(
-                      Text(_formatInvoiceNumbers(delivery)),
-                      onTap:
-                          () => _navigateToDeliveryDetails(context, delivery),
-                    ),
-
-                    // Status
-                    DataCell(
-                      _buildDeliveryStatusChip(delivery),
-                      onTap:
-                          () => _navigateToDeliveryDetails(context, delivery),
-                    ),
-
-                    // Total Amount
-                    DataCell(
-                      Text(_formatCurrency(delivery)),
-                      onTap:
-                          () => _navigateToDeliveryDetails(context, delivery),
-                    ),
-
-                    // Actions
-                    DataCell(
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.visibility,
-                              color: Colors.blue,
-                            ),
-                            tooltip: 'View Details',
-                            onPressed: () {
-                              _navigateToDeliveryDetails(context, delivery);
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.orange),
-                            tooltip: 'Edit',
-                            onPressed: () {
-                              // Navigate to edit delivery screen
-                              context.go('/delivery/edit/${delivery.id}');
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            tooltip: 'Delete',
-                            onPressed: () {
-                              _showDeleteDeliveryDialog(context, delivery);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
-          currentPage: currentPage,
-          totalPages: totalPages,
-          onPageChanged: onPageChanged,
-          isLoading: loading,
-          errorMessage: errorMessage,
-          onRetry:
-              errorMessage != null
-                  ? () => context.read<DeliveryDataBloc>().add(
-                    GetDeliveryDataByTripIdEvent(tripId),
+    return DataTableLayout(
+      title: 'Deliveries',
+      searchBar: TextField(
+        controller: searchController,
+        decoration: InputDecoration(
+          hintText: 'Search by customer name or invoice number...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon:
+              searchQuery.isNotEmpty
+                  ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      searchController.clear();
+                      onSearchChanged('');
+                    },
                   )
                   : null,
-          
-          dataLength: '${deliveries.length}',
-          onDeleted: () {},
-        );
-      },
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        onChanged: onSearchChanged,
+      ),
+      onCreatePressed: onAttachCustomer,
+      createButtonText: 'Attach Delivery',
+      columns: const [
+        // DataColumn(label: Text('ID')),
+        DataColumn(label: Text('Customer Name')),
+        DataColumn(label: Text('Invoice Number')),
+        DataColumn(label: Text('Status')),
+        DataColumn(label: Text('Total Amount')),
+        DataColumn(label: Text('Actions')),
+      ],
+      rows:
+          deliveries.map((delivery) {
+            return DataRow(
+              cells: [
+                // ID
+                // DataCell(
+                //   Text(delivery.id ?? 'N/A'),
+                //   onTap:
+                //       () => _navigateToDeliveryDetails(context, delivery),
+                // ),
+
+                // Customer Name
+                DataCell(
+                  Text(delivery.customer?.name ?? 'N/A'),
+                  onTap: () => _navigateToDeliveryDetails(context, delivery),
+                ),
+
+                // Invoice Number
+                DataCell(
+                  Text(_formatInvoiceNumbers(delivery)),
+                  onTap: () => _navigateToDeliveryDetails(context, delivery),
+                ),
+
+                // Status
+                DataCell(
+                  _buildDeliveryStatusChip(delivery),
+                  onTap: () => _navigateToDeliveryDetails(context, delivery),
+                ),
+
+                // Total Amount
+                DataCell(
+                  Text(_formatCurrency(delivery)),
+                  onTap: () => _navigateToDeliveryDetails(context, delivery),
+                ),
+
+                // Actions
+                DataCell(
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.visibility, color: Colors.blue),
+                        tooltip: 'View Details',
+                        onPressed: () {
+                          _navigateToDeliveryDetails(context, delivery);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.orange),
+                        tooltip: 'Edit',
+                        onPressed: () {
+                          // Navigate to edit delivery screen
+                          context.go('/delivery/edit/${delivery.id}');
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        tooltip: 'Delete',
+                        onPressed: () {
+                          _showDeleteDeliveryDialog(context, delivery);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+      currentPage: currentPage,
+      totalPages: totalPages,
+      onPageChanged: onPageChanged,
+      isLoading: isLoading,
+      errorMessage: errorMessage,
+      onRetry:
+          errorMessage != null
+              ? () => context.read<DeliveryDataBloc>().add(
+                GetDeliveryDataByTripIdEvent(tripId),
+              )
+              : null,
+      dataLength: '${deliveries.length}',
+      onDeleted: () {},
     );
   }
 
@@ -219,7 +179,7 @@ class TripCustomersTable extends StatelessWidget {
       case 'in transit':
         color = Colors.indigo;
         break;
-         case 'waiting for customer':
+      case 'waiting for customer':
         color = Colors.yellow;
         break;
       case 'delivered':
@@ -269,11 +229,11 @@ class TripCustomersTable extends StatelessWidget {
 
   String _formatCurrency(DeliveryDataEntity delivery) {
     double totalAmount = 0.0;
-    
+
     // Calculate total from all invoices if available
     if (delivery.invoices != null && delivery.invoices!.isNotEmpty) {
       totalAmount = delivery.invoices!.fold<double>(
-        0.0, 
+        0.0,
         (sum, invoice) => sum + (invoice.totalAmount ?? 0.0),
       );
     } else if (delivery.invoice?.totalAmount != null) {
@@ -282,7 +242,7 @@ class TripCustomersTable extends StatelessWidget {
     } else {
       return 'N/A';
     }
-    
+
     // Format with commas and currency symbol
     final formatter = NumberFormat('#,##0.00');
     return '₱${formatter.format(totalAmount)}';
@@ -344,5 +304,4 @@ class TripCustomersTable extends StatelessWidget {
       context.go('/delivery-details/${delivery.id}');
     }
   }
-
 }

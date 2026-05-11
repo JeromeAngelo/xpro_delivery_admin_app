@@ -119,108 +119,122 @@ class InvoicePresetGroupRemoteDataSourceImpl
       );
     }
   }
+
   @override
-Future<List<InvoicePresetGroupModel>> getAllUnassignedInvoicePresetGroups() async {
-  try {
-    debugPrint('🔄 Fetching all unassigned invoice preset groups (FAST)');
+  Future<List<InvoicePresetGroupModel>>
+  getAllUnassignedInvoicePresetGroups() async {
+    try {
+      debugPrint('🔄 Fetching all unassigned invoice preset groups (FAST)');
 
-    await _ensureAuthenticated();
+      await _ensureAuthenticated();
 
-    // ------------------------------------------------------------
-    // ✅ 1) Fetch preset groups + assigned invoice IDs in PARALLEL
-    // ------------------------------------------------------------
-    final results = await Future.wait([
-      _pocketBaseClient.collection('invoicePresetGroup').getFullList(
-        sort: '-created',
-        expand: 'invoices',
-        // Keep group fields minimal
-        fields: 'id,refID,name,description,created,updated,expand.invoices',
-      ),
+      // ------------------------------------------------------------
+      // ✅ 1) Fetch preset groups + assigned invoice IDs in PARALLEL
+      // ------------------------------------------------------------
+      final results = await Future.wait([
+        _pocketBaseClient
+            .collection('invoicePresetGroup')
+            .getFullList(
+              sort: '-created',
+              expand: 'invoices',
 
-      // IMPORTANT: DO NOT expand invoiceData (we only need IDs)
-      _pocketBaseClient.collection('invoiceStatus').getFullList(
-        fields: 'invoiceData', // just the relation ids
-      ),
-    ]);
+              // Keep group fields minimal
+              fields:
+                  'id,refID,name,description,created,updated,expand.invoices',
+            ),
 
-    final presetGroups = results[0];
-    final assignedStatus = results[1];
+        // IMPORTANT: DO NOT expand invoiceData (we only need IDs)
+        _pocketBaseClient
+            .collection('invoiceStatus')
+            .getFullList(
+              fields: 'invoiceData', // just the relation ids
+            ),
+      ]);
 
-    debugPrint('✅ Retrieved preset groups: ${presetGroups.length}');
-    debugPrint('✅ Retrieved invoiceStatus rows: ${assignedStatus.length}');
+      final presetGroups = results[0];
+      final assignedStatus = results[1];
 
-    // ------------------------------------------------------------
-    // ✅ 2) Build a SET of assigned invoice IDs (FAST lookup)
-    // ------------------------------------------------------------
-    final Set<String> assignedInvoiceIds = <String>{};
+      debugPrint('✅ Retrieved preset groups: ${presetGroups.length}');
+      debugPrint('✅ Retrieved invoiceStatus rows: ${assignedStatus.length}');
 
-    for (final statusRecord in assignedStatus) {
-      final v = statusRecord.data['invoiceData'];
+      // ------------------------------------------------------------
+      // ✅ 2) Build a SET of assigned invoice IDs (FAST lookup)
+      // ------------------------------------------------------------
+      final Set<String> assignedInvoiceIds = <String>{};
 
-      // invoiceData can be String (single rel) or List (multi rel) depending on schema
-      if (v is String) {
-        final id = v.trim();
-        if (id.isNotEmpty) assignedInvoiceIds.add(id);
-      } else if (v is List) {
-        for (final e in v) {
-          final id = e.toString().trim();
+      for (final statusRecord in assignedStatus) {
+        final v = statusRecord.data['invoiceData'];
+
+        // invoiceData can be String (single rel) or List (multi rel) depending on schema
+        if (v is String) {
+          final id = v.trim();
           if (id.isNotEmpty) assignedInvoiceIds.add(id);
+        } else if (v is List) {
+          for (final e in v) {
+            final id = e.toString().trim();
+            if (id.isNotEmpty) assignedInvoiceIds.add(id);
+          }
         }
       }
-    }
 
-    debugPrint('ℹ️ Assigned invoice IDs count: ${assignedInvoiceIds.length}');
+      debugPrint('ℹ️ Assigned invoice IDs count: ${assignedInvoiceIds.length}');
 
-    // ------------------------------------------------------------
-    // ✅ 3) Filter groups → keep only UNASSIGNED invoices
-    // ------------------------------------------------------------
-    final List<InvoicePresetGroupModel> unassignedPresetGroups = [];
+      // ------------------------------------------------------------
+      // ✅ 3) Filter groups → keep only UNASSIGNED invoices
+      // ------------------------------------------------------------
+      final List<InvoicePresetGroupModel> unassignedPresetGroups = [];
 
-    for (final pg in presetGroups) {
-      final invoices = (pg.expand['invoices'] as List?)?.cast<RecordModel>() ?? const <RecordModel>[];
+      for (final pg in presetGroups) {
+        final invoices =
+            (pg.expand['invoices'] as List?)?.cast<RecordModel>() ??
+            const <RecordModel>[];
 
-      if (invoices.isEmpty) continue;
+        if (invoices.isEmpty) continue;
 
-      // Only keep invoices NOT in assigned set
-      final unassignedInvoices = invoices.where((inv) {
-        final id = inv.id.trim();
-        return id.isNotEmpty && !assignedInvoiceIds.contains(id);
-      }).toList(growable: false);
+        // Only keep invoices NOT in assigned set
+        final unassignedInvoices = invoices
+            .where((inv) {
+              final id = inv.id.trim();
+              return id.isNotEmpty && !assignedInvoiceIds.contains(id);
+            })
+            .toList(growable: false);
 
-      if (unassignedInvoices.isEmpty) continue;
+        if (unassignedInvoices.isEmpty) continue;
 
-      // Build minimal mapped json with filtered expand
-      final mappedData = <String, dynamic>{
-        'id': pg.id,
-        'collectionId': pg.collectionId,
-        'collectionName': pg.collectionName,
-        'refId': pg.data['refID'] ?? '',
-        'name': pg.data['name'] ?? '',
-        'description': pg.data['description'] ?? '',
-        'created': pg.created,
-        'updated': pg.updated,
-        'expand': {
-          'invoices': unassignedInvoices,
-        },
-      };
+        // Build minimal mapped json with filtered expand
+        final mappedData = <String, dynamic>{
+          'id': pg.id,
+          'collectionId': pg.collectionId,
+          'collectionName': pg.collectionName,
+          'refId': pg.data['refID'] ?? '',
+          'name': pg.data['name'] ?? '',
+          'description': pg.data['description'] ?? '',
+          'created': pg.created,
+          'updated': pg.updated,
+          'expand': {'invoices': unassignedInvoices},
+        };
 
-      unassignedPresetGroups.add(InvoicePresetGroupModel.fromJson(mappedData));
+        unassignedPresetGroups.add(
+          InvoicePresetGroupModel.fromJson(mappedData),
+        );
+
+        debugPrint(
+          '✅ PresetGroup ${pg.id}: unassigned invoices=${unassignedInvoices.length}',
+        );
+      }
 
       debugPrint(
-        '✅ PresetGroup ${pg.id}: unassigned invoices=${unassignedInvoices.length}',
+        '✅ Returning ${unassignedPresetGroups.length} unassigned preset groups',
+      );
+      return unassignedPresetGroups;
+    } catch (e) {
+      debugPrint('❌ Failed to fetch unassigned invoice preset groups: $e');
+      throw ServerException(
+        message: 'Failed to load unassigned invoice preset groups: $e',
+        statusCode: '500',
       );
     }
-
-    debugPrint('✅ Returning ${unassignedPresetGroups.length} unassigned preset groups');
-    return unassignedPresetGroups;
-  } catch (e) {
-    debugPrint('❌ Failed to fetch unassigned invoice preset groups: $e');
-    throw ServerException(
-      message: 'Failed to load unassigned invoice preset groups: $e',
-      statusCode: '500',
-    );
   }
-}
 
   @override
   Future<void> addAllInvoicesToDelivery({
@@ -371,70 +385,81 @@ Future<List<InvoicePresetGroupModel>> getAllUnassignedInvoicePresetGroups() asyn
       debugPrint('✅ Deliveries ready');
 
       // -------------------------------------------------------------
-// ✅ NEW STEP: Fetch invoiceItems in bulk and attach to deliveryData
-// -------------------------------------------------------------
-debugPrint('🚀 Fetching invoiceItems in bulk (fast mode)...');
+      // ✅ NEW STEP: Fetch invoiceItems in bulk and attach to deliveryData
+      // -------------------------------------------------------------
+      debugPrint('🚀 Fetching invoiceItems in bulk (fast mode)...');
 
-final invoiceToItemIds = await _fetchInvoiceItemIdsByInvoiceIds(allInvoiceIds);
+      final invoiceToItemIds = await _fetchInvoiceItemIdsByInvoiceIds(
+        allInvoiceIds,
+      );
 
-// Build deliveryId -> invoiceItemIds (dedup)
-final Map<String, Set<String>> deliveryToItemIds = {};
+      // Build deliveryId -> invoiceItemIds (dedup)
+      final Map<String, Set<String>> deliveryToItemIds = {};
 
-for (final invId in allInvoiceIds) {
-  final delId = invoiceToDelivery[invId];
-  if (delId == null || delId.isEmpty) continue;
+      for (final invId in allInvoiceIds) {
+        final delId = invoiceToDelivery[invId];
+        if (delId == null || delId.isEmpty) continue;
 
-  final itemIds = invoiceToItemIds[invId];
-  if (itemIds == null || itemIds.isEmpty) continue;
+        final itemIds = invoiceToItemIds[invId];
+        if (itemIds == null || itemIds.isEmpty) continue;
 
-  deliveryToItemIds.putIfAbsent(delId, () => <String>{}).addAll(itemIds);
-}
+        deliveryToItemIds.putIfAbsent(delId, () => <String>{}).addAll(itemIds);
+      }
 
-debugPrint(
-  '✅ invoiceItems grouped → ${deliveryToItemIds.length} deliveries will be updated',
-);
+      debugPrint(
+        '✅ invoiceItems grouped → ${deliveryToItemIds.length} deliveries will be updated',
+      );
 
-// Update deliveryData invoiceItems in big batches (parallel)
-const deliveryUpdateBatchSize = 80;
+      // Update deliveryData invoiceItems in big batches (parallel)
+      const deliveryUpdateBatchSize = 80;
 
-final deliveryIdsToUpdate = deliveryToItemIds.keys.toList();
+      final deliveryIdsToUpdate = deliveryToItemIds.keys.toList();
 
-for (var i = 0; i < deliveryIdsToUpdate.length; i += deliveryUpdateBatchSize) {
-  final end = (i + deliveryUpdateBatchSize < deliveryIdsToUpdate.length)
-      ? i + deliveryUpdateBatchSize
-      : deliveryIdsToUpdate.length;
+      for (
+        var i = 0;
+        i < deliveryIdsToUpdate.length;
+        i += deliveryUpdateBatchSize
+      ) {
+        final end =
+            (i + deliveryUpdateBatchSize < deliveryIdsToUpdate.length)
+                ? i + deliveryUpdateBatchSize
+                : deliveryIdsToUpdate.length;
 
-  final batch = deliveryIdsToUpdate.sublist(i, end);
+        final batch = deliveryIdsToUpdate.sublist(i, end);
 
-  final futures = batch.map((delId) {
-    final ids = deliveryToItemIds[delId]!.toList();
+        final futures =
+            batch.map((delId) {
+              final ids = deliveryToItemIds[delId]!.toList();
 
-    return _pocketBaseClient
-        .collection('deliveryData')
-        .update(
-          delId,
-          body: {
-            // IMPORTANT:
-            // If you want replace:
-            'invoiceItems': ids,
+              return _pocketBaseClient
+                  .collection('deliveryData')
+                  .update(
+                    delId,
+                    body: {
+                      // IMPORTANT:
+                      // If you want replace:
+                      'invoiceItems': ids,
 
-            // If you want append (PocketBase supports "+"):
-            // 'invoiceItems+': ids,
-            'updated': DateTime.now().toIso8601String(),
-          },
-        )
-        .catchError((e) {
-          debugPrint('⚠️ deliveryData invoiceItems update failed $delId: $e');
-          return null;
-        });
-  }).toList();
+                      // If you want append (PocketBase supports "+"):
+                      // 'invoiceItems+': ids,
+                      'updated': DateTime.now().toIso8601String(),
+                    },
+                  )
+                  .catchError((e) {
+                    debugPrint(
+                      '⚠️ deliveryData invoiceItems update failed $delId: $e',
+                    );
+                    return null;
+                  });
+            }).toList();
 
-  await Future.wait(futures);
-  debugPrint('✅ Updated deliveryData invoiceItems batch ${i ~/ deliveryUpdateBatchSize + 1}');
-}
+        await Future.wait(futures);
+        debugPrint(
+          '✅ Updated deliveryData invoiceItems batch ${i ~/ deliveryUpdateBatchSize + 1}',
+        );
+      }
 
-debugPrint('✨ invoiceItems attached to deliveryData successfully');
-
+      debugPrint('✨ invoiceItems attached to deliveryData successfully');
 
       // Create invoiceStatus in larger batches & parallel
       debugPrint('🚀 Creating invoiceStatus records (big batches)...');
@@ -477,45 +502,50 @@ debugPrint('✨ invoiceItems attached to deliveryData successfully');
           '✅ Created ${results.whereType<RecordModel>().length} statuses for batch ${i ~/ statusBatchSize + 1}',
         );
       }
-// Update invoiceData in large parallel batches
-debugPrint('🚀 Updating invoiceData records (big batches)...');
-const updateBatchSize = 200;
+      // Update invoiceData in large parallel batches
+      debugPrint('🚀 Updating invoiceData records (big batches)...');
+      const updateBatchSize = 200;
 
-for (var i = 0; i < allInvoiceIds.length; i += updateBatchSize) {
-  final end = (i + updateBatchSize < allInvoiceIds.length)
-      ? i + updateBatchSize
-      : allInvoiceIds.length;
+      for (var i = 0; i < allInvoiceIds.length; i += updateBatchSize) {
+        final end =
+            (i + updateBatchSize < allInvoiceIds.length)
+                ? i + updateBatchSize
+                : allInvoiceIds.length;
 
-  final batch = allInvoiceIds.sublist(i, end);
+        final batch = allInvoiceIds.sublist(i, end);
 
-  final futures = batch.map((invId) async {
-    final statusId = invoiceToStatus[invId];
-    final delId = invoiceToDelivery[invId];
-    final custId = invoiceToCustomer[invId];
+        final futures =
+            batch.map((invId) async {
+              final statusId = invoiceToStatus[invId];
+              final delId = invoiceToDelivery[invId];
+              final custId = invoiceToCustomer[invId];
 
-    try {
-      await _pocketBaseClient.collection('invoiceData').update(
-        invId,
-        body: {
-          if (delId != null) 'deliveryData': [delId],
-          if (custId != null) 'customer': custId,
-          if (statusId != null) 'invoiceStatus': [statusId],
-        },
-      );
-      return true; // success marker
-    } catch (e) {
-      debugPrint('⚠️ invoiceData update failed $invId: $e');
-      return false; // failure marker
-    }
-  }).toList();
+              try {
+                await _pocketBaseClient
+                    .collection('invoiceData')
+                    .update(
+                      invId,
+                      body: {
+                        if (delId != null) 'deliveryData': [delId],
+                        if (custId != null) 'customer': custId,
+                        if (statusId != null) 'invoiceStatus': [statusId],
+                      },
+                    );
+                return true; // success marker
+              } catch (e) {
+                debugPrint('⚠️ invoiceData update failed $invId: $e');
+                return false; // failure marker
+              }
+            }).toList();
 
-  final results = await Future.wait(futures);
-  final ok = results.where((x) => x).length;
-  final fail = results.length - ok;
+        final results = await Future.wait(futures);
+        final ok = results.where((x) => x).length;
+        final fail = results.length - ok;
 
-  debugPrint('✅ Updated invoiceData batch ${i ~/ updateBatchSize + 1} | ok=$ok fail=$fail');
-}
-
+        debugPrint(
+          '✅ Updated invoiceData batch ${i ~/ updateBatchSize + 1} | ok=$ok fail=$fail',
+        );
+      }
 
       // NOTE: SKIP invoiceItems fetching/attaching to deliveryData to maximize speed.
       // If required later, re-enable a separate background job to attach invoiceItems.
@@ -568,9 +598,10 @@ for (var i = 0; i < allInvoiceIds.length; i += updateBatchSize) {
     const chunkSize = 200;
 
     for (var i = 0; i < allInvoiceIds.length; i += chunkSize) {
-      final end = (i + chunkSize < allInvoiceIds.length)
-          ? i + chunkSize
-          : allInvoiceIds.length;
+      final end =
+          (i + chunkSize < allInvoiceIds.length)
+              ? i + chunkSize
+              : allInvoiceIds.length;
       final chunk = allInvoiceIds.sublist(i, end);
       final filter = chunk.map((id) => 'id = "$id"').join(' || ');
 
@@ -626,47 +657,52 @@ for (var i = 0; i < allInvoiceIds.length; i += updateBatchSize) {
     return 0.0;
   }
 
-Future<Map<String, List<String>>> _fetchInvoiceItemIdsByInvoiceIds(
-  List<String> invoiceIds,
-) async {
-  final Map<String, List<String>> invoiceToItemIds = {};
+  Future<Map<String, List<String>>> _fetchInvoiceItemIdsByInvoiceIds(
+    List<String> invoiceIds,
+  ) async {
+    final Map<String, List<String>> invoiceToItemIds = {};
 
-  if (invoiceIds.isEmpty) return invoiceToItemIds;
+    if (invoiceIds.isEmpty) return invoiceToItemIds;
 
-  // Chunked to avoid very long filter strings / URL limits
-  const chunkSize = 120;
+    // Chunked to avoid very long filter strings / URL limits
+    const chunkSize = 120;
 
-  for (var i = 0; i < invoiceIds.length; i += chunkSize) {
-    final end = (i + chunkSize < invoiceIds.length) ? i + chunkSize : invoiceIds.length;
-    final chunk = invoiceIds.sublist(i, end);
+    for (var i = 0; i < invoiceIds.length; i += chunkSize) {
+      final end =
+          (i + chunkSize < invoiceIds.length)
+              ? i + chunkSize
+              : invoiceIds.length;
+      final chunk = invoiceIds.sublist(i, end);
 
-    // invoice = "id1" || invoice = "id2" ...
-    final filter = chunk.map((id) => 'invoice = "$id"').join(' || ');
+      // invoice = "id1" || invoice = "id2" ...
+      final filter = chunk.map((id) => 'invoice = "$id"').join(' || ');
 
-    final items = await _pocketBaseClient
-        .collection('invoiceItems')
-        .getFullList(
-          filter: filter,
-          // optional: fields if your PB client supports it
-          // fields: 'id,invoice',
-        )
-        .catchError((e) {
-          debugPrint('⚠️ invoiceItems chunk fetch failed: $e');
-          return <RecordModel>[];
-        });
+      final items = await _pocketBaseClient
+          .collection('invoiceItems')
+          .getFullList(
+            filter: filter,
+            // optional: fields if your PB client supports it
+            // fields: 'id,invoice',
+          )
+          .catchError((e) {
+            debugPrint('⚠️ invoiceItems chunk fetch failed: $e');
+            return <RecordModel>[];
+          });
 
-    for (final it in items) {
-      final invoiceId = it.data['invoice']?.toString().trim() ?? '';
-      if (invoiceId.isEmpty) continue;
+      for (final it in items) {
+        final invoiceId = it.data['invoice']?.toString().trim() ?? '';
+        if (invoiceId.isEmpty) continue;
 
-      invoiceToItemIds.putIfAbsent(invoiceId, () => []).add(it.id);
+        invoiceToItemIds.putIfAbsent(invoiceId, () => []).add(it.id);
+      }
+
+      debugPrint(
+        '✅ invoiceItems fetched chunk ${i ~/ chunkSize + 1} → ${items.length} items',
+      );
     }
 
-    debugPrint('✅ invoiceItems fetched chunk ${i ~/ chunkSize + 1} → ${items.length} items');
+    return invoiceToItemIds;
   }
-
-  return invoiceToItemIds;
-}
 
   String _generateDeliveryNumber() {
     final random = Random();
@@ -754,14 +790,12 @@ Future<Map<String, List<String>>> _fetchInvoiceItemIdsByInvoiceIds(
     try {
       debugPrint('🔄 Searching invoice preset groups with refId: $refId');
 
-      // Check if the collection name is correct - it might be "invoicePresetGroups" (plural) instead of "invoicePresetGroup"
-      // Also, modify the filter syntax to ensure it's correct
+      // Try exact match first since that's most common for refID searches
       final result = await _pocketBaseClient
-          .collection('invoicePresetGroup') // Try with plural form
+          .collection('invoicePresetGroup')
           .getFullList(
             expand: 'invoices',
-            filter:
-                'refID ~ "${refId.trim()}"', // Ensure proper formatting and trim input
+            filter: 'refID = "${refId.trim()}"',
             sort: '-created',
           );
 
@@ -776,7 +810,7 @@ Future<Map<String, List<String>>> _fetchInvoiceItemIdsByInvoiceIds(
           'id': record.id,
           'collectionId': record.collectionId,
           'collectionName': record.collectionName,
-          'refID': record.data['refID'] ?? '',
+          'refId': record.data['refID'] ?? '',
           'name': record.data['name'] ?? '',
           'description': record.data['description'] ?? '',
           'invoiceCount': record.expand['invoices']?.length ?? 0,
@@ -792,21 +826,20 @@ Future<Map<String, List<String>>> _fetchInvoiceItemIdsByInvoiceIds(
     } catch (e) {
       debugPrint('❌ Failed to search invoice preset groups: ${e.toString()}');
 
-      // Try alternative collection name if the first attempt fails
+      // Try contains match as fallback
       try {
-        debugPrint('🔄 Retrying with alternative collection name...');
+        debugPrint('🔄 Retrying with contains match...');
 
         final result = await _pocketBaseClient
-            .collection('invoicePresetGroup') // Try with singular form
+            .collection('invoicePresetGroup')
             .getFullList(
               expand: 'invoices',
-              filter:
-                  'refID = "${refId.trim()}"', // Try exact match instead of contains
+              filter: 'refID ~ "${refId.trim()}"',
               sort: '-created',
             );
 
         debugPrint(
-          '✅ Found ${result.length} invoice preset groups matching refId: $refId',
+          '✅ Found ${result.length} invoice preset groups with contains match',
         );
 
         List<InvoicePresetGroupModel> presetGroups = [];

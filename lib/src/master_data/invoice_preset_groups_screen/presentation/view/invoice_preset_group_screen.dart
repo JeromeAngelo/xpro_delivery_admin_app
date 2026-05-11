@@ -88,8 +88,12 @@ class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
                 setState(() {
                   _searchQuery = value;
                 });
-                // If search query is not empty, search for preset groups
-                if(value.isNotEmpty) {
+                if (value.isNotEmpty) {
+                  // Search for preset groups by refId
+                  context.read<InvoicePresetGroupBloc>().add(
+                    SearchPresetGroupByRefIdEvent(value),
+                  );
+                } else {
                   // If search query is empty, load all preset groups
                   context.read<InvoicePresetGroupBloc>().add(
                     const GetAllInvoicePresetGroupsEvent(),
@@ -173,7 +177,7 @@ class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
                   _searchQuery = value;
                   _currentPage = 1; // Reset to first page when searching
                 });
-                if(value.isNotEmpty) {
+                if (value.isNotEmpty) {
                   // If search query is empty, load all preset groups
                   context.read<InvoicePresetGroupBloc>().add(
                     const GetAllInvoicePresetGroupsEvent(),
@@ -227,7 +231,7 @@ class _InvoicePresetGroupScreenState extends State<InvoicePresetGroupScreen> {
                   _currentPage = 1; // Reset to first page when searching
                 });
                 // If search query is not empty, search for preset groups
-                 if(value.isNotEmpty) {
+                if (value.isNotEmpty) {
                   // If search query is empty, load all preset groups
                   context.read<InvoicePresetGroupBloc>().add(
                     const GetAllInvoicePresetGroupsEvent(),

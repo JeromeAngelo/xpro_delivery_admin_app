@@ -60,7 +60,7 @@ class _TripTicketSpecificTripViewState
   bool _isDeliveryDataLoading = true;
   String? _coordinatesErrorMessage;
   String? _deliveryDataErrorMessage;
-  
+
   // Add timeout timers
   Timer? _coordinatesLoadingTimer;
   Timer? _deliveryDataLoadingTimer;
@@ -69,7 +69,7 @@ class _TripTicketSpecificTripViewState
   // Customer pagination state
   int _customerCurrentPage = 1;
   int _customerTotalPages = 1;
-  final int _customerItemsPerPage = 5; // Smaller number for embedded table
+  final int _customerItemsPerPage = 25; // 25 rows per page
   String _customerSearchQuery = '';
   final TextEditingController _customerSearchController =
       TextEditingController();
@@ -91,12 +91,12 @@ class _TripTicketSpecificTripViewState
 
   void _loadTripCoordinatesForMap() {
     debugPrint('🔄 Loading trip coordinates for map...');
-    
+
     // Cancel any existing timer
     _coordinatesLoadingTimer?.cancel();
-    
+
     if (!mounted) return;
-    
+
     setState(() {
       _isCoordinatesLoading = true;
       _coordinatesErrorMessage = null;
@@ -106,7 +106,7 @@ class _TripTicketSpecificTripViewState
     context.read<TripCoordinatesUpdateBloc>().add(
       GetTripCoordinatesByTripIdEvent(widget.tripId),
     );
-    
+
     // Set timeout - if loading doesn't complete in 10 seconds, force stop loading
     _coordinatesLoadingTimer = Timer(const Duration(seconds: 10), () {
       if (mounted && _isCoordinatesLoading) {
@@ -136,7 +136,7 @@ class _TripTicketSpecificTripViewState
     context.read<EndTripOtpBloc>().add(
       LoadEndTripOtpByTripIdEvent(widget.tripId),
     );
-   
+
     // Load trip updates for map
     _loadTripUpdatesForMap();
     // Load trip coordinates for map
@@ -148,12 +148,12 @@ class _TripTicketSpecificTripViewState
   // Update the _loadTripUpdatesForMap method
   void _loadTripUpdatesForMap() {
     debugPrint('🔄 Loading trip updates for map...');
-    
+
     // Cancel any existing timer
     _mapLoadingTimer?.cancel();
-    
+
     if (!mounted) return;
-    
+
     setState(() {
       _isMapLoading = true;
       _mapErrorMessage = null;
@@ -161,7 +161,7 @@ class _TripTicketSpecificTripViewState
 
     // Load trip updates
     context.read<TripUpdatesBloc>().add(GetTripUpdatesEvent(widget.tripId));
-    
+
     // Set timeout - if loading doesn't complete in 10 seconds, force stop loading
     _mapLoadingTimer = Timer(const Duration(seconds: 10), () {
       if (mounted && _isMapLoading) {
@@ -394,63 +394,45 @@ class _TripTicketSpecificTripViewState
   }
 
   Widget _buildCustomerTable() {
-  return BlocBuilder<DeliveryDataBloc, DeliveryDataState>(
-    builder: (context, state) {
-      if (state is DeliveryDataError) {
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-                const SizedBox(height: 16),
-                Text(
-                  'Error loading customer data: ${state.message}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    context.read<DeliveryDataBloc>().add(
-                      GetDeliveryDataByTripIdEvent(widget.tripId),
-                    );
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
+    return BlocBuilder<DeliveryDataBloc, DeliveryDataState>(
+      builder: (context, state) {
+        List<DeliveryDataEntity> deliveryData = [];
+        bool loading = false;
+        String? errorMessage;
 
-      if (state is DeliveryDataByTripLoaded) {
-        // Get customers from the state
-        List<DeliveryDataEntity> deliveryData = List<DeliveryDataEntity>.from(
-          state.deliveryData,
-        );
+        if (state is DeliveryDataLoading) {
+          loading = true;
+        } else if (state is DeliveryDataByTripLoaded &&
+            state.tripId == widget.tripId) {
+          // Get customers from the state
+          deliveryData = List<DeliveryDataEntity>.from(state.deliveryData);
+          loading = false;
+        } else if (state is DeliveryDataError) {
+          loading = false;
+          errorMessage = state.message;
+        }
 
         // Filter based on search query
         if (_customerSearchQuery.isNotEmpty) {
           final query = _customerSearchQuery.toLowerCase();
-          deliveryData = deliveryData
-              .where(
-                (customer) =>
-                    (customer.customer!.name?.toLowerCase().contains(
-                          query,
-                        ) ??
-                        false) ||
-                    (customer.customer!.province?.toLowerCase().contains(
-                          query,
-                        ) ??
-                        false) ||
-                    (customer.deliveryNumber?.toLowerCase().contains(
-                          query,
-                        ) ??
-                        false),
-              )
-              .toList();
+          deliveryData =
+              deliveryData
+                  .where(
+                    (customer) =>
+                        (customer.customer!.name?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (customer.customer!.province?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false) ||
+                        (customer.deliveryNumber?.toLowerCase().contains(
+                              query,
+                            ) ??
+                            false),
+                  )
+                  .toList();
         }
 
         // Calculate total pages
@@ -458,9 +440,53 @@ class _TripTicketSpecificTripViewState
             (deliveryData.length / _customerItemsPerPage).ceil();
         if (_customerTotalPages == 0) _customerTotalPages = 1;
 
+        // Paginate the data - get only the items for the current page
+        final startIndex = (_customerCurrentPage - 1) * _customerItemsPerPage;
+        final endIndex =
+            startIndex + _customerItemsPerPage > deliveryData.length
+                ? deliveryData.length
+                : startIndex + _customerItemsPerPage;
+
+        final List<DeliveryDataEntity> paginatedData =
+            startIndex < deliveryData.length
+                ? List<DeliveryDataEntity>.from(
+                  deliveryData.sublist(startIndex, endIndex),
+                )
+                : <DeliveryDataEntity>[];
+
+        // Show error UI when there's an error and no data
+        if (errorMessage != null && deliveryData.isEmpty) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading customer data: $errorMessage',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.read<DeliveryDataBloc>().add(
+                        GetDeliveryDataByTripIdEvent(widget.tripId),
+                      );
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         return TripCustomersTable(
           tripId: widget.tripId,
-          isLoading: false,
+          isLoading: loading,
           currentPage: _customerCurrentPage,
           totalPages: _customerTotalPages,
           onPageChanged: (page) {
@@ -473,6 +499,8 @@ class _TripTicketSpecificTripViewState
           onSearchChanged: (value) {
             setState(() {
               _customerSearchQuery = value;
+              // Reset to first page when search query changes
+              _customerCurrentPage = 1;
             });
           },
           onAttachCustomer: () {
@@ -483,40 +511,12 @@ class _TripTicketSpecificTripViewState
               ),
             );
           },
+          deliveries: paginatedData,
+          errorMessage: errorMessage,
         );
-      }
-
-      // Default case - show loading or empty state
-      return TripCustomersTable(
-        tripId: widget.tripId,
-        isLoading: state is DeliveryDataLoading,
-        currentPage: _customerCurrentPage,
-        totalPages: _customerTotalPages,
-        onPageChanged: (page) {
-          setState(() {
-            _customerCurrentPage = page;
-          });
-        },
-        searchController: _customerSearchController,
-        searchQuery: _customerSearchQuery,
-        onSearchChanged: (value) {
-          setState(() {
-            _customerSearchQuery = value;
-          });
-        },
-        onAttachCustomer: () {
-          // Navigate to attach customer screen
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Attach customer feature coming soon'),
-            ),
-          );
-        },
-      );
-    },
-  );
-}
-
+      },
+    );
+  }
 
   // Add this method to your class
   Widget _buildTripMapWidget(TripEntity trip) {
@@ -524,16 +524,19 @@ class _TripTicketSpecificTripViewState
       listener: (context, deliveryState) {
         // Cancel timeout timer when we get a response
         _deliveryDataLoadingTimer?.cancel();
-        
+
         if (!mounted) return;
-        
-        if (deliveryState is DeliveryDataByTripLoaded && deliveryState.tripId == widget.tripId) {
+
+        if (deliveryState is DeliveryDataByTripLoaded &&
+            deliveryState.tripId == widget.tripId) {
           setState(() {
             _deliveryData = deliveryState.deliveryData;
             _isDeliveryDataLoading = false;
             _deliveryDataErrorMessage = null;
           });
-          debugPrint('✅ Loaded ${deliveryState.deliveryData.length} delivery data for map');
+          debugPrint(
+            '✅ Loaded ${deliveryState.deliveryData.length} delivery data for map',
+          );
         } else if (deliveryState is DeliveryDataError) {
           setState(() {
             _deliveryDataErrorMessage = deliveryState.message;
@@ -545,14 +548,17 @@ class _TripTicketSpecificTripViewState
             _isDeliveryDataLoading = true;
             _deliveryDataErrorMessage = null;
           });
-          
+
           // Set timeout for delivery data loading
           _deliveryDataLoadingTimer = Timer(const Duration(seconds: 10), () {
             if (mounted && _isDeliveryDataLoading) {
-              debugPrint('⏱️ Delivery data loading timeout - forcing completion');
+              debugPrint(
+                '⏱️ Delivery data loading timeout - forcing completion',
+              );
               setState(() {
                 _isDeliveryDataLoading = false;
-                _deliveryDataErrorMessage = 'Loading timeout - using cached data';
+                _deliveryDataErrorMessage =
+                    'Loading timeout - using cached data';
               });
             }
           });
@@ -563,9 +569,9 @@ class _TripTicketSpecificTripViewState
           listener: (context, state) {
             // Cancel timeout timer when we get a response
             _mapLoadingTimer?.cancel();
-            
+
             if (!mounted) return;
-            
+
             if (state is TripUpdatesError) {
               setState(() {
                 _mapErrorMessage = state.message;
@@ -595,15 +601,17 @@ class _TripTicketSpecificTripViewState
               listener: (context, state) {
                 // Cancel timeout timer when we get a response
                 _coordinatesLoadingTimer?.cancel();
-                
+
                 if (!mounted) return;
-                
+
                 if (state is TripCoordinatesUpdateError) {
                   setState(() {
                     _coordinatesErrorMessage = state.message;
                     _isCoordinatesLoading = false;
                   });
-                  debugPrint('❌ Error loading trip coordinates: ${state.message}');
+                  debugPrint(
+                    '❌ Error loading trip coordinates: ${state.message}',
+                  );
                 } else if (state is TripCoordinatesUpdateLoaded) {
                   setState(() {
                     _tripCoordinates = state.coordinates;
@@ -642,7 +650,10 @@ class _TripTicketSpecificTripViewState
                       coordinatesState is TripCoordinatesUpdateLoading ||
                       _isCoordinatesLoading ||
                       _isDeliveryDataLoading,
-                  errorMessage: _mapErrorMessage ?? _coordinatesErrorMessage ?? _deliveryDataErrorMessage,
+                  errorMessage:
+                      _mapErrorMessage ??
+                      _coordinatesErrorMessage ??
+                      _deliveryDataErrorMessage,
                   onRefresh: () {
                     _loadTripUpdatesForMap();
                     _loadTripCoordinatesForMap();
@@ -735,9 +746,7 @@ class _TripTicketSpecificTripViewState
 
           final List<OtpEntity> paginatedOtps =
               startIndex < tripOtps.length
-                  ? List<OtpEntity>.from(
-                    tripOtps.sublist(startIndex, endIndex),
-                  )
+                  ? List<OtpEntity>.from(tripOtps.sublist(startIndex, endIndex))
                   : <OtpEntity>[];
 
           return TripOtpTable(
