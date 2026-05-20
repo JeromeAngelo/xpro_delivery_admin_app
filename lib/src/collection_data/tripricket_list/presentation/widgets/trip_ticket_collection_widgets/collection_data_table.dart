@@ -1,4 +1,5 @@
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/domain/entity/trip_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/collection/domain/entity/collection_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/presentation/bloc/trip_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/presentation/bloc/trip_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
@@ -17,6 +18,7 @@ class CollectionDataTable extends StatelessWidget {
   final TextEditingController searchController;
   final String searchQuery;
   final Function(String) onSearchChanged;
+  final Map<String, List<CollectionEntity>> collectionsByTripId;
 
   const CollectionDataTable({
     super.key,
@@ -28,6 +30,7 @@ class CollectionDataTable extends StatelessWidget {
     required this.searchController,
     required this.searchQuery,
     required this.onSearchChanged,
+    this.collectionsByTripId = const {},
   });
 
   @override
@@ -45,6 +48,7 @@ class CollectionDataTable extends StatelessWidget {
         DataColumn(label: Text('Trip Name')),
         DataColumn(label: Text('Start Date')),
         DataColumn(label: Text('End Date')),
+        DataColumn(label: Text('Total Amount Collected')),
         //   DataColumn(label: Text('Payment Modes')),
         DataColumn(label: Text('Status')),
         DataColumn(label: Text('Actions')),
@@ -67,6 +71,10 @@ class CollectionDataTable extends StatelessWidget {
                 ),
                 DataCell(
                   Text(_formatDate(trip.timeEndTrip)),
+                  onTap: () => _navigateToTripData(context, trip),
+                ),
+                DataCell(
+                  Text(_formatTotalAmount(trip)),
                   onTap: () => _navigateToTripData(context, trip),
                 ),
                 // DataCell(
@@ -110,6 +118,33 @@ class CollectionDataTable extends StatelessWidget {
   String _formatDate(DateTime? date) {
     if (date == null) return 'N/A';
     return DateFormat('MMM dd, yyyy').format(date);
+  }
+
+  String _formatTotalAmount(TripEntity trip) {
+    double totalAmount = 0;
+
+    // Prefer collections from the bloc (fetched separately with full expand)
+    final blocCollections = collectionsByTripId[trip.id];
+    if (blocCollections != null && blocCollections.isNotEmpty) {
+      for (var collection in blocCollections) {
+        totalAmount += collection.totalAmount ?? 0;
+      }
+    } else {
+      // Fallback to trip's embedded deliveryCollection
+      totalAmount =
+          trip.deliveryCollection?.fold<double>(
+            0,
+            (sum, collection) => sum + (collection.totalAmount ?? 0),
+          ) ??
+          0;
+    }
+
+    if (totalAmount == 0) return 'N/A';
+    final currencyFormatter = NumberFormat.currency(
+      symbol: '₱',
+      decimalDigits: 2,
+    );
+    return currencyFormatter.format(totalAmount);
   }
 
   Widget _buildStatusChip(TripEntity trip) {

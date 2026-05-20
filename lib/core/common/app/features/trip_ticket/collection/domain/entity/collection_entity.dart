@@ -18,7 +18,7 @@ class CollectionEntity extends Equatable {
   final InvoiceDataEntity? invoice;
 
   final List<InvoiceDataEntity>? invoices;
-
+  final String? mop; // Method of Payment
   final String? status;
 
   final double? totalAmount;
@@ -33,6 +33,7 @@ class CollectionEntity extends Equatable {
     this.collectionName,
     this.deliveryData,
     this.trip,
+    this.mop,
     this.status,
     this.customer,
     this.invoices,
@@ -52,6 +53,7 @@ class CollectionEntity extends Equatable {
     customer?.id,
     invoice?.id,
     totalAmount,
+    mop,
     status,
     created,
     updated,
@@ -66,6 +68,7 @@ class CollectionEntity extends Equatable {
       deliveryData: null,
       trip: null,
       customer: null,
+      mop: '',
       status: '',
       invoice: null,
       invoices: [],
@@ -117,6 +120,7 @@ class CollectionEntity extends Equatable {
         'customer: ${customer?.id}, '
         'invoice: ${invoice?.id}, '
         'totalAmount: $totalAmount, '
+        'mop: $mop, '
         'created: $created, '
         'status: $status, '
         'updated: $updated'

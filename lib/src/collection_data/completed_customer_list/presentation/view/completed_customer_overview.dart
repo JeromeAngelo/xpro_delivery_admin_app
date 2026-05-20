@@ -3,7 +3,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/col
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/collection/presentation/bloc/collections_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
-import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_list/presentation/widgets/completed_customer_overview_widgets/cc_overview_quick_access_tools.dart';
+
 import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_list/presentation/widgets/completed_customer_overview_widgets/cc_recent_customers.dart';
 import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_list/presentation/widgets/completed_customer_overview_widgets/completed_customer_ov_dashboard.dart';
 import 'package:flutter/material.dart';
@@ -29,14 +29,31 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
   @override
   void initState() {
     super.initState();
-    // Load all collections when the screen initializes
-    _loadAllCollections();
+    // Default to current month on init
+    _loadCurrentMonth();
+  }
+
+  void _loadCurrentMonth() {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59, 999);
+
+    setState(() {
+      _selectedStartDate = startOfMonth;
+      _selectedEndDate = endOfMonth;
+      _isDateFiltered = true;
+    });
+
+    context.read<CollectionsBloc>().add(
+      FilterCollectionsByDateEvent(
+        startDate: startOfMonth,
+        endDate: endOfMonth,
+      ),
+    );
   }
 
   void _loadAllCollections() {
-    context.read<CollectionsBloc>().add(
-      const GetAllCollectionsEvent(),
-    );
+    context.read<CollectionsBloc>().add(const GetAllCollectionsEvent());
     setState(() {
       _isDateFiltered = false;
       _selectedStartDate = null;
@@ -96,7 +113,8 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                                 setDialogState(() {
                                   tempStartDate = date;
                                   // Reset end date if it's before start date
-                                  if (tempEndDate != null && tempEndDate!.isBefore(date)) {
+                                  if (tempEndDate != null &&
+                                      tempEndDate!.isBefore(date)) {
                                     tempEndDate = null;
                                   }
                                 });
@@ -112,16 +130,20 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     tempStartDate != null
-                                        ? DateFormat('MMM dd, yyyy').format(tempStartDate!)
+                                        ? DateFormat(
+                                          'MMM dd, yyyy',
+                                        ).format(tempStartDate!)
                                         : 'Select start date',
                                     style: TextStyle(
-                                      color: tempStartDate != null
-                                          ? Colors.black
-                                          : Colors.grey,
+                                      color:
+                                          tempStartDate != null
+                                              ? Colors.black
+                                              : Colors.grey,
                                     ),
                                   ),
                                   const Icon(Icons.calendar_today, size: 16),
@@ -147,21 +169,23 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                         ),
                         Expanded(
                           child: InkWell(
-                            onTap: tempStartDate == null
-                                ? null
-                                : () async {
-                                    final date = await showDatePicker(
-                                      context: context,
-                                      initialDate: tempEndDate ?? tempStartDate!,
-                                      firstDate: tempStartDate!,
-                                      lastDate: DateTime.now(),
-                                    );
-                                    if (date != null) {
-                                      setDialogState(() {
-                                        tempEndDate = date;
-                                      });
-                                    }
-                                  },
+                            onTap:
+                                tempStartDate == null
+                                    ? null
+                                    : () async {
+                                      final date = await showDatePicker(
+                                        context: context,
+                                        initialDate:
+                                            tempEndDate ?? tempStartDate!,
+                                        firstDate: tempStartDate!,
+                                        lastDate: DateTime.now(),
+                                      );
+                                      if (date != null) {
+                                        setDialogState(() {
+                                          tempEndDate = date;
+                                        });
+                                      }
+                                    },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -169,26 +193,32 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                               ),
                               decoration: BoxDecoration(
                                 border: Border.all(
-                                  color: tempStartDate == null
-                                      ? Colors.grey.shade200
-                                      : Colors.grey.shade300,
+                                  color:
+                                      tempStartDate == null
+                                          ? Colors.grey.shade200
+                                          : Colors.grey.shade300,
                                 ),
                                 borderRadius: BorderRadius.circular(4),
-                                color: tempStartDate == null
-                                    ? Colors.grey.shade50
-                                    : Colors.white,
+                                color:
+                                    tempStartDate == null
+                                        ? Colors.grey.shade50
+                                        : Colors.white,
                               ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     tempEndDate != null
-                                        ? DateFormat('MMM dd, yyyy').format(tempEndDate!)
+                                        ? DateFormat(
+                                          'MMM dd, yyyy',
+                                        ).format(tempEndDate!)
                                         : 'Select end date',
                                     style: TextStyle(
-                                      color: tempStartDate == null
-                                          ? Colors.grey.shade400
-                                          : tempEndDate != null
+                                      color:
+                                          tempStartDate == null
+                                              ? Colors.grey.shade400
+                                              : tempEndDate != null
                                               ? Colors.black
                                               : Colors.grey,
                                     ),
@@ -196,9 +226,10 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                                   Icon(
                                     Icons.calendar_today,
                                     size: 16,
-                                    color: tempStartDate == null
-                                        ? Colors.grey.shade400
-                                        : Colors.grey,
+                                    color:
+                                        tempStartDate == null
+                                            ? Colors.grey.shade400
+                                            : Colors.grey,
                                   ),
                                 ],
                               ),
@@ -220,8 +251,11 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.info_outline, 
-                                color: Colors.blue.shade700, size: 16),
+                              Icon(
+                                Icons.info_outline,
+                                color: Colors.blue.shade700,
+                                size: 16,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -253,12 +287,13 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                     child: const Text('View All'),
                   ),
                 ElevatedButton(
-                  onPressed: tempStartDate == null || tempEndDate == null
-                      ? null
-                      : () {
-                          Navigator.of(context).pop();
-                          _filterByDateRange(tempStartDate!, tempEndDate!);
-                        },
+                  onPressed:
+                      tempStartDate == null || tempEndDate == null
+                          ? null
+                          : () {
+                            Navigator.of(context).pop();
+                            _filterByDateRange(tempStartDate!, tempEndDate!);
+                          },
                   child: const Text('Apply Filter'),
                 ),
               ],
@@ -289,10 +324,7 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
 
     // Dispatch filter event
     context.read<CollectionsBloc>().add(
-      FilterCollectionsByDateEvent(
-        startDate: startDate,
-        endDate: endOfDay,
-      ),
+      FilterCollectionsByDateEvent(startDate: startDate, endDate: endOfDay),
     );
   }
 
@@ -322,16 +354,15 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
           // Handle different states
           if (state is CollectionsInitial) {
             // Initial state, trigger loading
-            context.read<CollectionsBloc>().add(
-              const GetAllCollectionsEvent(),
-            );
+            context.read<CollectionsBloc>().add(const GetAllCollectionsEvent());
             return const Center(child: CircularProgressIndicator());
           }
 
           final bool isLoading = state is CollectionsLoading;
           List<CollectionEntity> customers = [];
           String pageTitle = 'Completed Customers Overview';
-          String pageSubtitle = 'View and manage all completed customer transactions';
+          String pageSubtitle =
+              'View and manage all completed customer transactions';
 
           // Handle different state types
           if (state is AllCollectionsLoaded) {
@@ -339,7 +370,8 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
           } else if (state is CollectionsFilteredByDate) {
             customers = state.collections;
             pageTitle = 'Filtered Collections';
-            pageSubtitle = 'Collections from ${DateFormat('MMM dd').format(state.startDate)} to ${DateFormat('MMM dd, yyyy').format(state.endDate)}';
+            pageSubtitle =
+                'Collections from ${DateFormat('MMM dd').format(state.startDate)} to ${DateFormat('MMM dd, yyyy').format(state.endDate)}';
           }
 
           return SingleChildScrollView(
@@ -356,26 +388,30 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                         children: [
                           Text(
                             pageTitle,
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            style: Theme.of(
+                              context,
+                            ).textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             pageSubtitle,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(color: Colors.grey[600]),
                           ),
                         ],
                       ),
                     ),
-                    
+
                     // Filter Status and Actions
                     if (_isDateFiltered)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(20),
@@ -384,7 +420,11 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.filter_alt, size: 16, color: Colors.blue.shade700),
+                            Icon(
+                              Icons.filter_alt,
+                              size: 16,
+                              color: Colors.blue.shade700,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Date Filtered',
@@ -414,30 +454,13 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                 CompletedCustomerDashboard(
                   collections: customers,
                   isLoading: isLoading,
+                  selectedStartDate: _selectedStartDate,
+                  selectedEndDate: _selectedEndDate,
+                  isDateFiltered: _isDateFiltered,
+                  onDateFilterTap: _showDateRangePickerDialog,
+                  onClearFilter: _loadAllCollections,
                 ),
                 const SizedBox(height: 24),
-
-                // Quick Access Tools
-                QuickAccessTools(
-                  onExportData: () {
-                    // Handle export data
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Exporting data...')),
-                    );
-                  },
-                  onGenerateReport: () {
-                    // Handle generate report
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Generating report...')),
-                    );
-                  },
-                  onFilterData: _showDateRangePickerDialog, // Updated to use date picker
-                  onSearchCustomers: () {
-                    // Handle search customers
-                    _showSearchDialog(context);
-                  },
-                ),
-                                const SizedBox(height: 24),
 
                 // Recent Customers List
                 RecentCompletedCustomers(
@@ -464,8 +487,8 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          _isDateFiltered 
-                              ? 'Filtering collections by date...' 
+                          _isDateFiltered
+                              ? 'Filtering collections by date...'
                               : 'Loading collections...',
                           style: TextStyle(
                             color: Colors.blue.shade700,
@@ -491,7 +514,10 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.error_outline, color: Colors.red.shade700),
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.red.shade700,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'Error Loading Collections',
@@ -533,7 +559,9 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                   ),
 
                 // Empty state
-                if (!isLoading && customers.isEmpty && state is! CollectionsError)
+                if (!isLoading &&
+                    customers.isEmpty &&
+                    state is! CollectionsError)
                   Container(
                     margin: const EdgeInsets.only(top: 32),
                     padding: const EdgeInsets.all(32),
@@ -546,27 +574,27 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                       child: Column(
                         children: [
                           Icon(
-                            _isDateFiltered ? Icons.date_range : Icons.inbox_outlined,
+                            _isDateFiltered
+                                ? Icons.date_range
+                                : Icons.inbox_outlined,
                             size: 64,
                             color: Colors.grey.shade400,
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _isDateFiltered 
+                            _isDateFiltered
                                 ? 'No collections found for selected date range'
                                 : 'No collections available',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(color: Colors.grey.shade600),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             _isDateFiltered
                                 ? 'Try selecting a different date range or view all collections'
                                 : 'Collections will appear here once they are created',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey.shade500,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.grey.shade500),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
@@ -588,67 +616,66 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
     );
   }
 
-  void _showSearchDialog(BuildContext context) {
-    final searchController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.search, color: Colors.blue),
-              SizedBox(width: 8),
-              Text('Search Collections'),
-            ],
-          ),
-          content: SizedBox(
-            width: 300,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Search by customer name, invoice number...',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
-                  ),
-                  autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Search functionality will be implemented in future updates.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // TODO: Implement search functionality
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Search functionality coming soon!'),
-                  ),
-                );
-              },
-              child: const Text('Search'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
+  // void _showSearchDialog(BuildContext context) {
+  //   final searchController = TextEditingController();
 
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         title: const Row(
+  //           children: [
+  //             Icon(Icons.search, color: Colors.blue),
+  //             SizedBox(width: 8),
+  //             Text('Search Collections'),
+  //           ],
+  //         ),
+  //         content: SizedBox(
+  //           width: 300,
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               TextField(
+  //                 controller: searchController,
+  //                 decoration: const InputDecoration(
+  //                   hintText: 'Search by customer name, invoice number...',
+  //                   prefixIcon: Icon(Icons.search),
+  //                   border: OutlineInputBorder(),
+  //                 ),
+  //                 autofocus: true,
+  //               ),
+  //               const SizedBox(height: 16),
+  //               const Text(
+  //                 'Search functionality will be implemented in future updates.',
+  //                 style: TextStyle(
+  //                   fontSize: 12,
+  //                   color: Colors.grey,
+  //                   fontStyle: FontStyle.italic,
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.of(context).pop(),
+  //             child: const Text('Cancel'),
+  //           ),
+  //           ElevatedButton(
+  //             onPressed: () {
+  //               Navigator.of(context).pop();
+  //               // TODO: Implement search functionality
+  //               ScaffoldMessenger.of(context).showSnackBar(
+  //                 const SnackBar(
+  //                   content: Text('Search functionality coming soon!'),
+  //                 ),
+  //               );
+  //             },
+  //             child: const Text('Search'),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+}

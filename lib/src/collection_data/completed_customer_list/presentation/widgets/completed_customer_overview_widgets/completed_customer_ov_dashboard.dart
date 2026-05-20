@@ -7,11 +7,21 @@ import 'package:shimmer/shimmer.dart';
 class CompletedCustomerDashboard extends StatelessWidget {
   final List<CollectionEntity> collections;
   final bool isLoading;
+  final DateTime? selectedStartDate;
+  final DateTime? selectedEndDate;
+  final bool isDateFiltered;
+  final VoidCallback? onDateFilterTap;
+  final VoidCallback? onClearFilter;
 
   const CompletedCustomerDashboard({
     super.key,
     required this.collections,
     this.isLoading = false,
+    this.selectedStartDate,
+    this.selectedEndDate,
+    this.isDateFiltered = false,
+    this.onDateFilterTap,
+    this.onClearFilter,
   });
 
   @override
@@ -21,28 +31,23 @@ class CompletedCustomerDashboard extends StatelessWidget {
     }
 
     // Calculate dashboard metrics
-// Calculate dashboard metrics
-final totalCollections = collections.length;
+    final totalCollections = collections.length;
 
-final totalAmount = collections.fold<double>(
-  0,
-  (sum, collection) => sum + (collection.totalAmount ?? 0),
-);
+    final totalAmount = collections.fold<double>(
+      0,
+      (sum, collection) => sum + (collection.totalAmount ?? 0),
+    );
 
-
-
-    
-
-    final uniqueTrips = collections
-        .where((collection) => collection.trip?.id != null)
-        .map((collection) => collection.trip!.id!)
-        .toSet()
-        .length;
+    final uniqueTrips =
+        collections
+            .where((collection) => collection.trip?.id != null)
+            .map((collection) => collection.trip!.id!)
+            .toSet()
+            .length;
 
     // Calculate average collection amount
-    final averageAmount = totalCollections > 0 ? totalAmount / totalCollections : 0.0;
-
-   
+    final averageAmount =
+        totalCollections > 0 ? totalAmount / totalCollections : 0.0;
 
     // Format currency
     final currencyFormatter = NumberFormat.currency(
@@ -50,9 +55,16 @@ final totalAmount = collections.fold<double>(
       decimalDigits: 2,
     );
 
+    // Build date range label
+    String dateRangeLabel = 'All Time';
+    if (selectedStartDate != null && selectedEndDate != null) {
+      dateRangeLabel =
+          '${DateFormat('MMM dd, yyyy').format(selectedStartDate!)} - ${DateFormat('MMM dd, yyyy').format(selectedEndDate!)}';
+    }
+
     return DashboardSummary(
-      title: 'Collections Overview',
       isLoading: isLoading,
+      headerContent: _buildDateFilterHeader(context, dateRangeLabel),
       items: [
         // Total Collections
         DashboardInfoItem(
@@ -70,8 +82,6 @@ final totalAmount = collections.fold<double>(
           iconColor: Colors.green,
         ),
 
-       
-
         // Unique Trips
         DashboardInfoItem(
           icon: Icons.local_shipping,
@@ -87,11 +97,108 @@ final totalAmount = collections.fold<double>(
           label: 'Average Collection',
           iconColor: Colors.indigo,
         ),
-
-       
       ],
       crossAxisCount: 3,
       childAspectRatio: 3.0,
+    );
+  }
+
+  Widget _buildDateFilterHeader(BuildContext context, String dateRangeLabel) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+      child: Row(
+        children: [
+          // Date filter button with calendar icon
+          InkWell(
+            onTap: onDateFilterTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color:
+                    isDateFiltered
+                        ? Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.08)
+                        : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color:
+                      isDateFiltered
+                          ? Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.3)
+                          : Colors.grey.shade300,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 18,
+                    color:
+                        isDateFiltered
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        isDateFiltered
+                            ? 'Filtered Period'
+                            : 'Select Date Range',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color:
+                              isDateFiltered
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.grey.shade500,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        dateRangeLabel,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color:
+                              isDateFiltered
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.grey.shade800,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (isDateFiltered) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.filter_alt,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const Spacer(),
+          // Clear filter button
+          if (isDateFiltered && onClearFilter != null)
+            TextButton.icon(
+              onPressed: onClearFilter,
+              icon: const Icon(Icons.clear_all, size: 16),
+              label: const Text('Show All'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey.shade600,
+              ),
+            ),
+        ],
+      ),
     );
   }
 

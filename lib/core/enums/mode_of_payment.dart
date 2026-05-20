@@ -1,3 +1,3 @@
 enum ModeOfPayment {
-  bankTransfer, cashOnDelivery, cheque, eWallet
+  bankTransfer, cashOnDelivery, dtcCheque, eWallet, stcCash, stcCheque
 }

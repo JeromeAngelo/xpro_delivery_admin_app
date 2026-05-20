@@ -2,6 +2,10 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/tri
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/presentation/bloc/trip_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/presentation/bloc/trip_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/presentation/bloc/trip_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/collection/domain/entity/collection_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/collection/presentation/bloc/collections_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/collection/presentation/bloc/collections_state.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/collection/presentation/bloc/collections_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
 import 'package:xpro_delivery_admin_app/src/collection_data/tripricket_list/presentation/widgets/trip_ticket_collection_widgets/collection_data_table.dart';
@@ -14,10 +18,12 @@ class TripTicketListForCollection extends StatefulWidget {
   const TripTicketListForCollection({super.key});
 
   @override
-  State<TripTicketListForCollection> createState() => _TripTicketListForCollectionState();
+  State<TripTicketListForCollection> createState() =>
+      _TripTicketListForCollectionState();
 }
 
-class _TripTicketListForCollectionState extends State<TripTicketListForCollection> {
+class _TripTicketListForCollectionState
+    extends State<TripTicketListForCollection> {
   int _currentPage = 1;
   int _totalPages = 1;
   final int _itemsPerPage = 25;
@@ -29,6 +35,8 @@ class _TripTicketListForCollectionState extends State<TripTicketListForCollectio
     super.initState();
     // Load trip tickets when the screen initializes
     context.read<TripBloc>().add(const GetAllTripTicketsEvent());
+    // Load all collections for total amount calculation
+    context.read<CollectionsBloc>().add(const GetAllCollectionsEvent());
   }
 
   @override
@@ -58,101 +66,135 @@ class _TripTicketListForCollectionState extends State<TripTicketListForCollectio
       onProfileTap: () {
         // Handle profile tap
       },
-      child: BlocBuilder<TripBloc, TripState>(
-        builder: (context, state) {
-          // Handle different states
-          if (state is TripInitial) {
-            // Initial state, trigger loading
-            context.read<TripBloc>().add(const GetAllTripTicketsEvent());
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state is TripLoading) {
-            return CollectionDataTable(
-              trips: [],
-              isLoading: true,
-              currentPage: _currentPage,
-              totalPages: _totalPages,
-              onPageChanged: (page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              searchController: _searchController,
-              searchQuery: _searchQuery,
-              onSearchChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-            );
-          }
-
-          if (state is TripError) {
-            return CollectionErrorWidget(errorMessage: state.message);
-          }
-
-          if (state is AllTripTicketsLoaded || state is TripTicketsSearchResults) {
-            List<TripEntity> trips = [];
-
-            if (state is AllTripTicketsLoaded) {
-              trips = state.trips;
-            } else if (state is TripTicketsSearchResults) {
-              trips = state.trips;
+      child: BlocBuilder<CollectionsBloc, CollectionsState>(
+        builder: (context, collectionsState) {
+          // Build a map of trip ID -> collections for total amount calculation
+          Map<String, List<CollectionEntity>> collectionsByTripId = {};
+          if (collectionsState is AllCollectionsLoaded) {
+            for (var collection in collectionsState.collections) {
+              final tripId = collection.trip?.id;
+              if (tripId != null) {
+                collectionsByTripId.putIfAbsent(tripId, () => []);
+                collectionsByTripId[tripId]!.add(collection);
+              }
             }
-
-            // Filter trips based on search query
-            if (_searchQuery.isNotEmpty) {
-              trips = trips.where((trip) {
-                final query = _searchQuery.toLowerCase();
-                return (trip.id?.toLowerCase().contains(query) ?? false) ||
-                       (trip.tripNumberId?.toLowerCase().contains(query) ?? false);
-              }).toList();
+          } else if (collectionsState is CollectionsFilteredByDate) {
+            for (var collection in collectionsState.collections) {
+              final tripId = collection.trip?.id;
+              if (tripId != null) {
+                collectionsByTripId.putIfAbsent(tripId, () => []);
+                collectionsByTripId[tripId]!.add(collection);
+              }
             }
+          }
 
-            // Filter trips to only show completed trips (for collections)
-            trips = trips.where((trip) => trip.isEndTrip == true).toList();
+          return BlocBuilder<TripBloc, TripState>(
+            builder: (context, state) {
+              // Handle different states
+              if (state is TripInitial) {
+                // Initial state, trigger loading
+                context.read<TripBloc>().add(const GetAllTripTicketsEvent());
+                return const Center(child: CircularProgressIndicator());
+              }
 
-            // Calculate total pages
-            _totalPages = (trips.length / _itemsPerPage).ceil();
-            if (_totalPages == 0) _totalPages = 1;
+              if (state is TripLoading) {
+                return CollectionDataTable(
+                  trips: [],
+                  isLoading: true,
+                  currentPage: _currentPage,
+                  totalPages: _totalPages,
+                  onPageChanged: (page) {
+                    setState(() {
+                      _currentPage = page;
+                    });
+                  },
+                  searchController: _searchController,
+                  searchQuery: _searchQuery,
+                  onSearchChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  collectionsByTripId: collectionsByTripId,
+                );
+              }
 
-            // Paginate trips
-            final startIndex = (_currentPage - 1) * _itemsPerPage;
-            final endIndex = startIndex + _itemsPerPage > trips.length 
-                ? trips.length 
-                : startIndex + _itemsPerPage;
-            
-            final List<TripEntity> paginatedTrips = startIndex < trips.length 
-                ? trips.sublist(startIndex, endIndex) 
-                : <TripEntity>[];
+              if (state is TripError) {
+                return CollectionErrorWidget(errorMessage: state.message);
+              }
 
-            return CollectionDataTable(
-              trips: paginatedTrips,
-              isLoading: false,
-              currentPage: _currentPage,
-              totalPages: _totalPages,
-              onPageChanged: (page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              searchController: _searchController,
-              searchQuery: _searchQuery,
-              onSearchChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-                // If search query is empty, refresh the trips list
-                if (value.isEmpty) {
-                  context.read<TripBloc>().add(const GetAllTripTicketsEvent());
+              if (state is AllTripTicketsLoaded ||
+                  state is TripTicketsSearchResults) {
+                List<TripEntity> trips = [];
+
+                if (state is AllTripTicketsLoaded) {
+                  trips = state.trips;
+                } else if (state is TripTicketsSearchResults) {
+                  trips = state.trips;
                 }
-              },
-            );
-          }
 
-          // Default fallback
-          return const Center(child: Text('Unknown state'));
+                // Filter trips based on search query
+                if (_searchQuery.isNotEmpty) {
+                  trips =
+                      trips.where((trip) {
+                        final query = _searchQuery.toLowerCase();
+                        return (trip.id?.toLowerCase().contains(query) ??
+                                false) ||
+                            (trip.tripNumberId?.toLowerCase().contains(query) ??
+                                false);
+                      }).toList();
+                }
+
+                // Filter trips to only show completed trips (for collections)
+                trips = trips.where((trip) => trip.isEndTrip == true).toList();
+
+                // Calculate total pages
+                _totalPages = (trips.length / _itemsPerPage).ceil();
+                if (_totalPages == 0) _totalPages = 1;
+
+                // Paginate trips
+                final startIndex = (_currentPage - 1) * _itemsPerPage;
+                final endIndex =
+                    startIndex + _itemsPerPage > trips.length
+                        ? trips.length
+                        : startIndex + _itemsPerPage;
+
+                final List<TripEntity> paginatedTrips =
+                    startIndex < trips.length
+                        ? trips.sublist(startIndex, endIndex)
+                        : <TripEntity>[];
+
+                return CollectionDataTable(
+                  trips: paginatedTrips,
+                  isLoading: false,
+                  currentPage: _currentPage,
+                  totalPages: _totalPages,
+                  onPageChanged: (page) {
+                    setState(() {
+                      _currentPage = page;
+                    });
+                  },
+                  searchController: _searchController,
+                  searchQuery: _searchQuery,
+                  onSearchChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                    // If search query is empty, refresh the trips list
+                    if (value.isEmpty) {
+                      context.read<TripBloc>().add(
+                        const GetAllTripTicketsEvent(),
+                      );
+                    }
+                  },
+                  collectionsByTripId: collectionsByTripId,
+                );
+              }
+
+              // Default fallback
+              return const Center(child: Text('Unknown state'));
+            },
+          );
         },
       ),
     );

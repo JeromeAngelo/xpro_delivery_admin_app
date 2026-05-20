@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../../../../../core/enums/mode_of_payment.dart';
+
 class CompletedCustomerDashboardWidget extends StatelessWidget {
   final CollectionEntity collection;
   final bool isLoading;
@@ -45,12 +47,6 @@ class CompletedCustomerDashboardWidget extends StatelessWidget {
       crossAxisCount: 3,
       items: [
         DashboardInfoItem(
-          icon: Icons.collections_bookmark,
-          value: collection.collectionName ?? 'N/A',
-          label: 'Collection Name',
-          iconColor: Colors.blue,
-        ),
-        DashboardInfoItem(
           icon: Icons.receipt_long,
           value: collection.deliveryData?.deliveryNumber ?? 'N/A',
           label: 'Delivery Number',
@@ -77,6 +73,12 @@ class CompletedCustomerDashboardWidget extends StatelessWidget {
           label: 'Collection Amount',
           iconColor: Colors.purple,
         ),
+        DashboardInfoItem(
+          icon: Icons.payment,
+          value: _formatModeOfPayment(collection.mop),
+          label: 'Mode of Payment',
+          iconColor: Colors.teal,
+        ),
 
         DashboardInfoItem(
           icon: Icons.local_shipping,
@@ -93,15 +95,7 @@ class CompletedCustomerDashboardWidget extends StatelessWidget {
           label: 'Created At',
           iconColor: Colors.amber,
         ),
-        DashboardInfoItem(
-          icon: Icons.update,
-          value:
-              collection.updated != null
-                  ? dateFormatter.format(collection.updated!)
-                  : 'N/A',
-          label: 'Updated At',
-          iconColor: Colors.grey,
-        ),
+
         DashboardInfoItem(
           icon: Icons.location_on,
           value: _buildAddressString(collection),
@@ -110,6 +104,64 @@ class CompletedCustomerDashboardWidget extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _formatModeOfPayment(String? modeOfPaymentStr) {
+    if (modeOfPaymentStr == null) return 'N/A';
+
+    try {
+      // Try to parse the string to the enum
+      ModeOfPayment? modeOfPayment;
+
+      // Handle both enum name and raw string cases
+      if (modeOfPaymentStr == 'cashOnDelivery' ||
+          modeOfPaymentStr == 'Cash On Delivery') {
+        modeOfPayment = ModeOfPayment.cashOnDelivery;
+      } else if (modeOfPaymentStr == 'bankTransfer' ||
+          modeOfPaymentStr == 'Bank Transfer') {
+        modeOfPayment = ModeOfPayment.bankTransfer;
+      } else if (modeOfPaymentStr == 'dtcCheque' ||
+          modeOfPaymentStr == 'DTC Cheque') {
+        modeOfPayment = ModeOfPayment.dtcCheque;
+      } else if (modeOfPaymentStr == 'stcCash' ||
+          modeOfPaymentStr == 'STC Cash') {
+        modeOfPayment = ModeOfPayment.stcCash;
+      } else if (modeOfPaymentStr == 'stcCheque' ||
+          modeOfPaymentStr == 'STC Cheque') {
+        modeOfPayment = ModeOfPayment.stcCheque;
+      } else if (modeOfPaymentStr == 'eWallet' ||
+          modeOfPaymentStr == 'E-Wallet') {
+        modeOfPayment = ModeOfPayment.eWallet;
+      }
+
+      if (modeOfPayment != null) {
+        switch (modeOfPayment) {
+          case ModeOfPayment.cashOnDelivery:
+            return 'Cash On Delivery';
+          case ModeOfPayment.bankTransfer:
+            return 'Bank Transfer';
+          case ModeOfPayment.dtcCheque:
+            return 'DTC Cheque';
+          case ModeOfPayment.eWallet:
+            return 'E-Wallet';
+          case ModeOfPayment.stcCash:
+            return 'STC Cash';
+          case ModeOfPayment.stcCheque:
+            return 'STC Cheque';
+        }
+      }
+
+      // If we couldn't parse it as an enum, format the string directly
+      return modeOfPaymentStr
+          .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
+          .replaceAllMapped(
+            RegExp(r'^([a-z])'),
+            (match) => match.group(0)!.toUpperCase(),
+          );
+    } catch (e) {
+      // If any error occurs, return the original string
+      return modeOfPaymentStr;
+    }
   }
 
   String _buildAddressString(CollectionEntity collection) {

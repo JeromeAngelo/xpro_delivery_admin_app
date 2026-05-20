@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/domain/entity/delivery_data_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/presentation/bloc/delivery_data_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/presentation/bloc/delivery_data_event.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/presentation/bloc/delivery_data_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/status_icons.dart';
 

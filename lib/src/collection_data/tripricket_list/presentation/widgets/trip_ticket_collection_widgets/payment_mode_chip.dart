@@ -29,9 +29,17 @@ class PaymentModeChip extends StatelessWidget {
         color = Colors.purple;
         label = 'Bank';
         break;
-      case ModeOfPayment.cheque:
+      case ModeOfPayment.dtcCheque:
         color = Colors.indigo;
-        label = 'Cheque';
+        label = 'DTC Cheque';
+        break;
+      case ModeOfPayment.stcCash:
+        color = Colors.green;
+        label = 'STC Cash';
+        break;
+      case ModeOfPayment.stcCheque:
+        color = Colors.blue;
+        label = 'STC Cheque';
         break;
       case ModeOfPayment.eWallet:
         color = Colors.teal;

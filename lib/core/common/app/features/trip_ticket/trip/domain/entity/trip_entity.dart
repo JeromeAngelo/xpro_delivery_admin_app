@@ -44,6 +44,7 @@ class TripEntity extends Equatable {
   double? longitude;
   double? volumeRate;
   double? weightRate;
+  
   double? averageFillRate;
   String? totalTripDistance;
   String? changeStatusCode;

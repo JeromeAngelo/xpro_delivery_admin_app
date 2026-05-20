@@ -330,18 +330,7 @@ class CollectionRemoteDataSourceImpl implements CollectionRemoteDataSource {
       }
     }
 
-    // Fallback to invoices totalAmount if collection amount is null/0
-    if ((totalAmount == null || totalAmount == 0) && invoicesList.isNotEmpty) {
-      final invoicesTotal = invoicesList.fold<double>(
-        0,
-        (sum, invoice) => sum + (invoice.totalAmount ?? 0),
-      );
-
-      if (invoicesTotal > 0) {
-        totalAmount = invoicesTotal;
-        debugPrint('🔄 Using invoices totalAmount as fallback: $totalAmount');
-      }
-    }
+  
 
     debugPrint(
       '💰 Final totalAmount for collection ${record.id}: $totalAmount',
@@ -367,7 +356,7 @@ class CollectionRemoteDataSourceImpl implements CollectionRemoteDataSource {
       trip: tripModel,
       customer: customerModel,
       invoices: invoicesList,
-
+      mop: record.data['mop'],
       invoice: invoiceModel,
       status: record.data['status'],
       created: parseDate(record.created),

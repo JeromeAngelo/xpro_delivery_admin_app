@@ -64,13 +64,7 @@ class _CompletedCustomerListScreenState
 
       child: BlocBuilder<CollectionsBloc, CollectionsState>(
         builder: (context, state) {
-          // Handle different states
-          if (state is CollectionsInitial) {
-            // Initial state, trigger loading
-            context.read<CollectionsBloc>().add(const GetAllCollectionsEvent());
-            return const Center(child: CircularProgressIndicator());
-          }
-
+          // Handle loading state
           if (state is CollectionsLoading) {
             return CompletedCustomerDataTable(
               collections: [],
@@ -92,19 +86,55 @@ class _CompletedCustomerListScreenState
             );
           }
 
+          // Handle error state
           if (state is CollectionsError) {
             return CompletedCustomerErrorWidget(errorMessage: state.message);
           }
 
-          if (state is AllCollectionsLoaded) {
-            List<CollectionEntity> completedCustomers = state.collections;
+          // Handle all loaded states that contain collections
+          List<CollectionEntity> completedCustomers = [];
 
+          if (state is AllCollectionsLoaded) {
+            completedCustomers = state.collections;
+          } else if (state is CollectionsFilteredByDate) {
+            completedCustomers = state.collections;
+          } else if (state is CollectionLoaded) {
+            completedCustomers = [state.collection];
+          } else if (state is CollectionLoadedByTrip) {
+            completedCustomers = state.collections;
+          } else if (state is CollectionsOffline) {
+            completedCustomers = state.collections;
+          } else if (state is CollectionDeleted) {
+            // After deletion, reload all collections
+            context.read<CollectionsBloc>().add(const GetAllCollectionsEvent());
+            return CompletedCustomerDataTable(
+              collections: [],
+              isLoading: true,
+              currentPage: _currentPage,
+              totalPages: _totalPages,
+              onPageChanged: (page) {
+                setState(() {
+                  _currentPage = page;
+                });
+              },
+              searchController: _searchController,
+              searchQuery: _searchQuery,
+              onSearchChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            );
+          }
+
+          // If we have collections to display, show the table
+          if (completedCustomers.isNotEmpty) {
             // Filter completed customers based on search query
             if (_searchQuery.isNotEmpty) {
               completedCustomers =
                   completedCustomers.where((customer) {
                     final query = _searchQuery.toLowerCase();
-                    return (customer.customer!.name?.toLowerCase().contains(
+                    return (customer.customer?.name?.toLowerCase().contains(
                               query,
                             ) ??
                             false) ||
@@ -112,7 +142,7 @@ class _CompletedCustomerListScreenState
                               query,
                             ) ??
                             false) ||
-                        (customer.customer!.ownerName?.toLowerCase().contains(
+                        (customer.customer?.ownerName?.toLowerCase().contains(
                               query,
                             ) ??
                             false);
@@ -136,8 +166,7 @@ class _CompletedCustomerListScreenState
                     : [];
 
             return CompletedCustomerDataTable(
-              collections:
-                  paginatedCustomers ,
+              collections: paginatedCustomers,
               isLoading: false,
               currentPage: _currentPage,
               totalPages: _totalPages,
@@ -155,11 +184,10 @@ class _CompletedCustomerListScreenState
 
                 if (value.isEmpty) {
                   // If search query is cleared, load all completed customers
-                   context.read<CollectionsBloc>().add(
-                  const GetAllCollectionsEvent(),
-                );
+                  context.read<CollectionsBloc>().add(
+                    const GetAllCollectionsEvent(),
+                  );
                 }
-                // Search functionality can be implemented later if needed
               },
               errorMessage: null,
               onRetry: () {
@@ -170,11 +198,24 @@ class _CompletedCustomerListScreenState
             );
           }
 
-          // Default fallback
-          return const Center(
-            child: Text(
-              'Unknown state - Please check your CompletedCustomerBloc implementation',
-            ),
+          // Default fallback - show loading and trigger data fetch
+          return CompletedCustomerDataTable(
+            collections: [],
+            isLoading: true,
+            currentPage: _currentPage,
+            totalPages: _totalPages,
+            onPageChanged: (page) {
+              setState(() {
+                _currentPage = page;
+              });
+            },
+            searchController: _searchController,
+            searchQuery: _searchQuery,
+            onSearchChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
           );
         },
       ),

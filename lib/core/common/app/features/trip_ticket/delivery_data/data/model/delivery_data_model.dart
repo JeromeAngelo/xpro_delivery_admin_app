@@ -27,7 +27,7 @@ class DeliveryDataModel extends DeliveryDataEntity {
     super.deliveryNumber,
     super.hasTrip,
     super.created,
-
+    super.totalAmount,
     super.updated,
     this.objectBoxId = 0,
   }) : pocketbaseId = id ?? '',
@@ -222,6 +222,7 @@ class DeliveryDataModel extends DeliveryDataEntity {
       deliveryNumber: json['deliveryNumber']?.toString(),
       pinLang: json['pinLang'] != null ? double.tryParse(json['pinLang'].toString()) : null,
       pinLong: json['pinLong'] != null ? double.tryParse(json['pinLong'].toString()) : null,     
+       totalAmount: json['totalAmount'] != null ? double.tryParse(json['totalAmount'].toString()) : null,
        customer: customerModel,
       invoice: invoiceModel,
       invoices: invoicesList,
@@ -245,6 +246,7 @@ class DeliveryDataModel extends DeliveryDataEntity {
       'pinLang': pinLang,
       'pinLong': pinLong,
       'refID': refID,
+      'totalAmount': totalAmount,
       'invoices': invoices?.map((invoice) => invoice.id).toList(),
       'invoiceItems':
           invoiceItems?.map((item) => item.id).toList(), // Add this line
@@ -272,6 +274,7 @@ class DeliveryDataModel extends DeliveryDataEntity {
     bool? hasTrip,
     DateTime? created,
     DateTime? updated,
+    double? totalAmount,
   }) {
     return DeliveryDataModel(
       id: id ?? this.id,
@@ -356,6 +359,7 @@ class DeliveryDataModel extends DeliveryDataEntity {
       pinLang: pinLang ?? this.pinLang,
       refID: refID ?? this.refID,
       pinLong: pinLong ?? this.pinLong,
+      totalAmount: totalAmount ?? this.totalAmount,
       objectBoxId: objectBoxId,
     );
   }

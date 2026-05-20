@@ -103,7 +103,7 @@ class _CollectionCompletedCustomersTableState
             DataColumn(label: Text('Store Name')),
             DataColumn(label: Text('Ref ID')),
             DataColumn(label: Text('Invoices')), // ✅ added
-            //   DataColumn(label: Text('Mode of Payment')),
+            DataColumn(label: Text('Mode of Payment')),
             DataColumn(label: Text('Amount')),
             DataColumn(label: Text('Completed At')),
             DataColumn(label: Text('Actions')),
@@ -132,7 +132,7 @@ class _CollectionCompletedCustomersTableState
                       onTap: () => _navigateToCustomerData(context, customer),
                     ),
 
-                    //DataCell(_buildModeOfPaymentChip(customer. ?? 'N/A')),
+                    DataCell(Text(_formatModeOfPayment(customer.mop))),
                     DataCell(
                       Text(
                         customer.totalAmount != null
@@ -226,8 +226,12 @@ class _CollectionCompletedCustomersTableState
       } else if (modeOfPaymentStr == 'bankTransfer' ||
           modeOfPaymentStr == 'Bank Transfer') {
         modeOfPayment = ModeOfPayment.bankTransfer;
-      } else if (modeOfPaymentStr == 'cheque' || modeOfPaymentStr == 'Cheque') {
-        modeOfPayment = ModeOfPayment.cheque;
+      } else if (modeOfPaymentStr == 'dtcCheque' || modeOfPaymentStr == 'DTC Cheque') {
+        modeOfPayment = ModeOfPayment.dtcCheque;
+      } else if (modeOfPaymentStr == 'stcCash' || modeOfPaymentStr == 'STC Cash') {
+        modeOfPayment = ModeOfPayment.stcCash;
+      } else if (modeOfPaymentStr == 'stcCheque' || modeOfPaymentStr == 'STC Cheque') {
+        modeOfPayment = ModeOfPayment.stcCheque;
       } else if (modeOfPaymentStr == 'eWallet' ||
           modeOfPaymentStr == 'E-Wallet') {
         modeOfPayment = ModeOfPayment.eWallet;
@@ -239,10 +243,14 @@ class _CollectionCompletedCustomersTableState
             return 'Cash On Delivery';
           case ModeOfPayment.bankTransfer:
             return 'Bank Transfer';
-          case ModeOfPayment.cheque:
-            return 'Cheque';
+          case ModeOfPayment.dtcCheque:
+            return 'DTC Cheque';
           case ModeOfPayment.eWallet:
             return 'E-Wallet';
+          case ModeOfPayment.stcCash:
+            return 'STC Cash';
+          case ModeOfPayment.stcCheque:
+            return 'STC Cheque';
         }
       }
 
@@ -305,7 +313,7 @@ class _CollectionCompletedCustomersTableState
                   ),
                   _buildDetailRow(
                     'Mode of Payment',
-                    _formatModeOfPayment(customer.customer!.paymentMode),
+                    _formatModeOfPayment(customer.mop),
                   ),
                   _buildDetailRow(
                     'Completed At',

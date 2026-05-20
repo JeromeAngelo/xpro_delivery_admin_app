@@ -31,6 +31,14 @@ class CollectionTripDashboardWidget extends StatelessWidget {
       }
     }
 
+    // Calculate expected total amount from delivery data
+    double expectedTotalAmount = 0;
+    for (var delivery in trip.deliveryData) {
+      if (delivery.totalAmount != null) {
+        expectedTotalAmount += delivery.totalAmount!;
+      }
+    }
+
     // Format currency
     final currencyFormatter = NumberFormat.currency(
       symbol: '₱',
@@ -59,6 +67,15 @@ class CollectionTripDashboardWidget extends StatelessWidget {
           value: currencyFormatter.format(totalAmountCollected),
           label: 'Total Amount Collected',
           iconColor: Colors.purple,
+        ),
+        DashboardInfoItem(
+          icon: Icons.account_balance_wallet,
+          value:
+              expectedTotalAmount > 0
+                  ? currencyFormatter.format(expectedTotalAmount)
+                  : 'N/A',
+          label: 'Expected Total Amount',
+          iconColor: Colors.deepOrange,
         ),
         DashboardInfoItem(
           icon: Icons.calendar_today,

@@ -67,7 +67,7 @@ class CompletedCustomerDataTable extends StatelessWidget {
         DataColumn(label: Text('Delivery #')),
         DataColumn(label: Text('Store Name')),
         DataColumn(label: Text('Trip Name')),
-        DataColumn(label: Text('Total Amount')),
+        DataColumn(label: Text('Total Amount Collected')),
         DataColumn(label: Text('Completed At')),
         DataColumn(label: Text('Actions')),
       ],
@@ -153,7 +153,7 @@ class CompletedCustomerDataTable extends StatelessWidget {
       isLoading: isLoading,
       errorMessage: errorMessage,
       onRetry: onRetry,
-     
+
       dataLength: '${collections.length}',
       onDeleted: () {},
     );

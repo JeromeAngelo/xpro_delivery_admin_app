@@ -129,7 +129,7 @@ class _SpecificCompletedCustomerDataState
                       IconButton(
                         icon: const Icon(Icons.arrow_back),
                         onPressed: () {
-                          context.go('/completed-collections');
+                          context.go('/completed-customers');
                         },
                       ),
                     ],

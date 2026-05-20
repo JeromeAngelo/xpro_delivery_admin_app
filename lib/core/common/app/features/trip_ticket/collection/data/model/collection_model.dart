@@ -27,6 +27,7 @@ class CollectionModel extends CollectionEntity {
     super.totalAmount,
     super.status,
     super.created,
+    super.mop,
     super.updated,
   })  : pocketbaseId = id ?? '',
         super(
@@ -187,6 +188,7 @@ class CollectionModel extends CollectionEntity {
       collectionId: json['collectionId']?.toString(),
       collectionName: json['collectionName']?.toString(),
       status: json['status']?.toString(),
+      mop: json['mop']?.toString(),
       totalAmount: totalAmount,
       deliveryData: deliveryDataModel,
       trip: tripModel,
@@ -207,6 +209,7 @@ class CollectionModel extends CollectionEntity {
       'deliveryData': deliveryData?.id,
       'trip': trip?.id,
       'status': status,
+      'mop': mop,
       'customer': customer?.id,
       'invoices': invoices?.map((inv) => inv.id).toList(), // ✅ uses entity field
       'invoice': invoice?.id,
@@ -223,6 +226,7 @@ class CollectionModel extends CollectionEntity {
     DeliveryDataEntity? deliveryData,
     TripEntity? trip,
     String? status,
+    String? mop,
     CustomerDataEntity? customer,
 
     // ✅ FIX: CollectionModel stores List<InvoiceDataModel>, so copyWith must accept either:
