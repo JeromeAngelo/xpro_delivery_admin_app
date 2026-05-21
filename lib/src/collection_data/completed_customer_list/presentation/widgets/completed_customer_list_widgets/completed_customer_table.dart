@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../../../core/enums/mode_of_payment.dart';
+
 class CompletedCustomerDataTable extends StatelessWidget {
   final List<CollectionEntity> collections;
   final bool isLoading;
@@ -68,6 +70,7 @@ class CompletedCustomerDataTable extends StatelessWidget {
         DataColumn(label: Text('Store Name')),
         DataColumn(label: Text('Trip Name')),
         DataColumn(label: Text('Total Amount Collected')),
+        DataColumn(label: Text('Mode of Payment')),
         DataColumn(label: Text('Completed At')),
         DataColumn(label: Text('Actions')),
       ],
@@ -105,6 +108,12 @@ class CompletedCustomerDataTable extends StatelessWidget {
                     collection.totalAmount != null
                         ? currencyFormatter.format(collection.totalAmount)
                         : 'N/A',
+                  ),
+                  onTap: () => _navigateToCollectionData(context, collection),
+                ),
+                DataCell(
+                  Text(
+                    _formatModeOfPayment(collection.mop),
                   ),
                   onTap: () => _navigateToCollectionData(context, collection),
                 ),
@@ -157,6 +166,64 @@ class CompletedCustomerDataTable extends StatelessWidget {
       dataLength: '${collections.length}',
       onDeleted: () {},
     );
+  }
+
+  String _formatModeOfPayment(String? modeOfPaymentStr) {
+    if (modeOfPaymentStr == null) return 'N/A';
+
+    try {
+      // Try to parse the string to the enum
+      ModeOfPayment? modeOfPayment;
+
+      // Handle both enum name and raw string cases
+      if (modeOfPaymentStr == 'cashOnDelivery' ||
+          modeOfPaymentStr == 'Cash On Delivery') {
+        modeOfPayment = ModeOfPayment.cashOnDelivery;
+      } else if (modeOfPaymentStr == 'bankTransfer' ||
+          modeOfPaymentStr == 'Bank Transfer') {
+        modeOfPayment = ModeOfPayment.bankTransfer;
+      } else if (modeOfPaymentStr == 'dtcCheque' ||
+          modeOfPaymentStr == 'DTC Cheque') {
+        modeOfPayment = ModeOfPayment.dtcCheque;
+      } else if (modeOfPaymentStr == 'stcCash' ||
+          modeOfPaymentStr == 'STC Cash') {
+        modeOfPayment = ModeOfPayment.stcCash;
+      } else if (modeOfPaymentStr == 'stcCheque' ||
+          modeOfPaymentStr == 'STC Cheque') {
+        modeOfPayment = ModeOfPayment.stcCheque;
+      } else if (modeOfPaymentStr == 'eWallet' ||
+          modeOfPaymentStr == 'E-Wallet') {
+        modeOfPayment = ModeOfPayment.eWallet;
+      }
+
+      if (modeOfPayment != null) {
+        switch (modeOfPayment) {
+          case ModeOfPayment.cashOnDelivery:
+            return 'Cash On Delivery';
+          case ModeOfPayment.bankTransfer:
+            return 'Bank Transfer';
+          case ModeOfPayment.dtcCheque:
+            return 'DTC Cheque';
+          case ModeOfPayment.eWallet:
+            return 'E-Wallet';
+          case ModeOfPayment.stcCash:
+            return 'STC Cash';
+          case ModeOfPayment.stcCheque:
+            return 'STC Cheque';
+        }
+      }
+
+      // If we couldn't parse it as an enum, format the string directly
+      return modeOfPaymentStr
+          .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
+          .replaceAllMapped(
+            RegExp(r'^([a-z])'),
+            (match) => match.group(0)!.toUpperCase(),
+          );
+    } catch (e) {
+      // If any error occurs, return the original string
+      return modeOfPaymentStr;
+    }
   }
 
   void _showCollectionDetailsDialog(
