@@ -1,4 +1,3 @@
-
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/domain/usecase/create_tripticket.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/domain/usecase/delete_all_tripticket.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/domain/usecase/delete_trip_ticket.dart';
@@ -14,6 +13,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/usecase/filter_trips_by_user.dart';
 import '../../domain/usecase/fiter_trips_by_data_range.dart';
 import '../../domain/usecase/get_all_active_trips.dart';
+import '../../domain/usecase/unassign_trip.dart';
 
 class TripBloc extends Bloc<TripEvent, TripState> {
   final GetAllTripTickets _getAllTripTickets;
@@ -26,6 +26,7 @@ class TripBloc extends Bloc<TripEvent, TripState> {
   final FilterTripsByDateRange _filterTripsByDateRange; // NEW
   final FilterTripsByUser _filterTripsByUser; // NEW
   final GetAllActiveTripTickets _getAllActiveTripTickets; // NEW
+  final UnassignTrip _unassignTrip;
 
   TripBloc({
     required GetAllTripTickets getAllTripTickets,
@@ -38,17 +39,19 @@ class TripBloc extends Bloc<TripEvent, TripState> {
     required FilterTripsByDateRange filterTripsByDateRange, // NEW
     required FilterTripsByUser filterTripsByUser, // NEW
     required GetAllActiveTripTickets getAllActiveTripTickets, // NEW
-  })  : _getAllTripTickets = getAllTripTickets,
-        _createTripTicket = createTripTicket,
-        _searchTripTickets = searchTripTickets,
-        _getTripTicketById = getTripTicketById,
-        _updateTripTicket = updateTripTicket,
-        _deleteTripTicket = deleteTripTicket,
-        _deleteAllTripTickets = deleteAllTripTickets,
-        _filterTripsByDateRange = filterTripsByDateRange, // NEW
-        _filterTripsByUser = filterTripsByUser, // NEW
-        _getAllActiveTripTickets = getAllActiveTripTickets, // NEW
-        super(TripInitial()) {
+    required UnassignTrip unassignTrip,
+  }) : _getAllTripTickets = getAllTripTickets,
+       _createTripTicket = createTripTicket,
+       _searchTripTickets = searchTripTickets,
+       _getTripTicketById = getTripTicketById,
+       _updateTripTicket = updateTripTicket,
+       _deleteTripTicket = deleteTripTicket,
+       _deleteAllTripTickets = deleteAllTripTickets,
+       _filterTripsByDateRange = filterTripsByDateRange, // NEW
+       _filterTripsByUser = filterTripsByUser, // NEW
+       _getAllActiveTripTickets = getAllActiveTripTickets, // NEW
+       _unassignTrip = unassignTrip,
+       super(TripInitial()) {
     on<GetAllTripTicketsEvent>(_onGetAllTripTickets);
     on<CreateTripTicketEvent>(_onCreateTripTicket);
     on<SearchTripTicketsEvent>(_onSearchTripTickets);
@@ -59,8 +62,8 @@ class TripBloc extends Bloc<TripEvent, TripState> {
     on<FilterTripsByDateRangeEvent>(_onFilterTripsByDateRange); // NEW
     on<FilterTripsByUserEvent>(_onFilterTripsByUser); // NEW
     on<GetAllActiveTripTicketsEvent>(_onGetAllActiveTripTickets); // NEW
+    on<UnassignTripEvent>(_onUnassignTrip);
   }
-
 
   // Add these event handler methods
   Future<void> _onFilterTripsByDateRange(
@@ -81,16 +84,22 @@ class TripBloc extends Bloc<TripEvent, TripState> {
 
     result.fold(
       (failure) {
-        debugPrint('❌ BLOC: Failed to filter trips by date range: ${failure.message}');
+        debugPrint(
+          '❌ BLOC: Failed to filter trips by date range: ${failure.message}',
+        );
         emit(TripError(failure.message));
       },
       (trips) {
-        debugPrint('✅ BLOC: Successfully filtered ${trips.length} trips by date range');
-        emit(TripsFilteredByDateRange(
-          trips: trips,
-          startDate: event.startDate,
-          endDate: event.endDate,
-        ));
+        debugPrint(
+          '✅ BLOC: Successfully filtered ${trips.length} trips by date range',
+        );
+        emit(
+          TripsFilteredByDateRange(
+            trips: trips,
+            startDate: event.startDate,
+            endDate: event.endDate,
+          ),
+        );
       },
     );
   }
@@ -103,22 +112,21 @@ class TripBloc extends Bloc<TripEvent, TripState> {
     emit(TripLoading());
 
     final result = await _filterTripsByUser(
-      FilterTripsByUserParams(
-        userId: event.userId,
-      ),
+      FilterTripsByUserParams(userId: event.userId),
     );
 
     result.fold(
       (failure) {
-        debugPrint('❌ BLOC: Failed to filter trips by user: ${failure.message}');
+        debugPrint(
+          '❌ BLOC: Failed to filter trips by user: ${failure.message}',
+        );
         emit(TripError(failure.message));
       },
       (trips) {
-        debugPrint('✅ BLOC: Successfully filtered ${trips.length} trips for user: ${event.userId}');
-        emit(TripsFilteredByUser(
-          trips: trips,
-          userId: event.userId,
-        ));
+        debugPrint(
+          '✅ BLOC: Successfully filtered ${trips.length} trips for user: ${event.userId}',
+        );
+        emit(TripsFilteredByUser(trips: trips, userId: event.userId));
       },
     );
   }
@@ -133,17 +141,21 @@ class TripBloc extends Bloc<TripEvent, TripState> {
     final result = await _getAllTripTickets();
     result.fold(
       (failure) {
-        debugPrint('❌ BLOC: Failed to get all trip tickets: ${failure.message}');
+        debugPrint(
+          '❌ BLOC: Failed to get all trip tickets: ${failure.message}',
+        );
         emit(TripError(failure.message));
       },
       (trips) {
-        debugPrint('✅ BLOC: Successfully retrieved ${trips.length} trip tickets');
+        debugPrint(
+          '✅ BLOC: Successfully retrieved ${trips.length} trip tickets',
+        );
         emit(AllTripTicketsLoaded(trips));
       },
     );
   }
 
-    Future<void> _onGetAllActiveTripTickets(
+  Future<void> _onGetAllActiveTripTickets(
     GetAllActiveTripTicketsEvent event,
     Emitter<TripState> emit,
   ) async {
@@ -153,11 +165,15 @@ class TripBloc extends Bloc<TripEvent, TripState> {
     final result = await _getAllActiveTripTickets();
     result.fold(
       (failure) {
-        debugPrint('❌ BLOC: Failed to get all active trip tickets: ${failure.message}');
+        debugPrint(
+          '❌ BLOC: Failed to get all active trip tickets: ${failure.message}',
+        );
         emit(TripError(failure.message));
       },
       (trips) {
-        debugPrint('✅ BLOC: Successfully retrieved active ${trips.length} trip tickets');
+        debugPrint(
+          '✅ BLOC: Successfully retrieved active ${trips.length} trip tickets',
+        );
         emit(AllActiveTripTicketsLoaded(trips));
       },
     );
@@ -205,7 +221,7 @@ class TripBloc extends Bloc<TripEvent, TripState> {
         personnelId: event.personnelId,
       ),
     );
-    
+
     result.fold(
       (failure) {
         debugPrint('❌ BLOC: Search failed: ${failure.message}');
@@ -294,7 +310,9 @@ class TripBloc extends Bloc<TripEvent, TripState> {
     final result = await _deleteAllTripTickets();
     result.fold(
       (failure) {
-        debugPrint('❌ BLOC: Failed to delete all trip tickets: ${failure.message}');
+        debugPrint(
+          '❌ BLOC: Failed to delete all trip tickets: ${failure.message}',
+        );
         emit(TripError(failure.message));
       },
       (_) {
@@ -302,6 +320,29 @@ class TripBloc extends Bloc<TripEvent, TripState> {
         emit(AllTripTicketsDeleted());
         // Refresh to show empty list
         add(const GetAllTripTicketsEvent());
+      },
+    );
+  }
+
+  Future<void> _onUnassignTrip(
+    UnassignTripEvent event,
+    Emitter<TripState> emit,
+  ) async {
+    debugPrint('🔄 BLOC: Unassigning trip: ${event.tripId}');
+    emit(TripLoading());
+
+    final result = await _unassignTrip(
+      UnassignTripParams(tripId: event.tripId, remarks: event.remarks),
+    );
+
+    result.fold(
+      (failure) {
+        debugPrint('❌ BLOC: Failed to unassign trip: ${failure.message}');
+        emit(TripError(failure.message));
+      },
+      (trip) {
+        debugPrint('✅ BLOC: Trip unassigned successfully: ${trip.id}');
+        emit(TripUnassigned(trip));
       },
     );
   }

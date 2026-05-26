@@ -59,6 +59,16 @@ abstract class TripRemoteDatasurce {
 
   // NEW: Filter by user
   Future<List<TripModel>> filterTripsByUser({required String userId});
+
+  /// Unassign a trip from its assigned user.
+  /// Performs the following steps on PocketBase:
+  /// 1. Update tripticket: remove "user" relation, set "isAccepted" = false, set "remarks"
+  /// 2. Update users: clear "trip", set "hasTrip" = false, set "tripNumberId" = null
+  /// 3. Delete deliveryTeam record where "tripTicket" matches the trip ID
+  Future<TripModel> unassignTrip({
+    required String tripId,
+    required String remarks,
+  });
 }
 
 class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
@@ -190,6 +200,123 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
       debugPrint('❌ Failed to filter trips by user: ${e.toString()}');
       throw ServerException(
         message: 'Failed to filter trips by user: ${e.toString()}',
+        statusCode: '500',
+      );
+    }
+  }
+
+  @override
+  Future<TripModel> unassignTrip({
+    required String tripId,
+    required String remarks,
+  }) async {
+    try {
+      debugPrint('🔄 Unassigning trip: $tripId');
+
+      // Ensure PocketBase client is authenticated
+      await _ensureAuthenticated();
+
+      // Step 1: Get the current trip to find the assigned user
+      debugPrint('🔄 Step 1: Fetching trip by ID: $tripId');
+      final tripRecord = await _pocketBaseClient
+          .collection('tripticket')
+          .getOne(tripId, expand: 'user');
+
+      final userId = tripRecord.data['user']?.toString();
+      debugPrint('📄 Trip found. Assigned user ID: $userId');
+
+      // Step 2: Update the tripticket — remove "user" relation, set "isAccepted" = false, set "remarks"
+      debugPrint(
+        '🔄 Step 2: Updating tripticket — removing user, setting isAccepted=false, setting remarks',
+      );
+      await _pocketBaseClient
+          .collection('tripticket')
+          .update(
+            tripId,
+            body: {'user': null, 'isAccepted': false, 'remarks': remarks},
+          );
+      debugPrint('✅ Step 2: Tripticket updated successfully');
+
+      // Step 3: Update the users collection — clear "trip", set "hasTrip" = false, set "tripNumberId" = null
+      if (userId != null && userId.isNotEmpty) {
+        try {
+          debugPrint(
+            '🔄 Step 3: Updating user record — clearing trip, hasTrip=false, tripNumberId=null',
+          );
+
+          // Find the user with the matching trip ID
+          final userRecords = await _pocketBaseClient
+              .collection('users')
+              .getFullList(filter: 'trip = "$tripId"');
+
+          for (final userRecord in userRecords) {
+            debugPrint('📄 Found user record: ${userRecord.id}');
+            await _pocketBaseClient
+                .collection('users')
+                .update(
+                  userRecord.id,
+                  body: {'trip': null, 'hasTrip': false, 'tripNumberId': null},
+                );
+            debugPrint('✅ User record updated: ${userRecord.id}');
+          }
+
+          if (userRecords.isEmpty) {
+            debugPrint(
+              '⚠️ No user found with trip = "$tripId". Skipping user update.',
+            );
+          }
+        } catch (e) {
+          debugPrint('⚠️ Failed to update user record: ${e.toString()}');
+          // Don't throw — the trip is already unassigned, user update is best-effort
+        }
+      } else {
+        debugPrint('⚠️ No user assigned to this trip. Skipping user update.');
+      }
+
+      // Step 4: Delete the deliveryTeam record where "tripTicket" matches the trip ID
+      try {
+        debugPrint(
+          '🔄 Step 4: Finding and deleting deliveryTeam records with tripTicket = "$tripId"',
+        );
+
+        final deliveryTeamRecords = await _pocketBaseClient
+            .collection('deliveryTeam')
+            .getFullList(filter: 'tripTicket = "$tripId"');
+
+        for (final dtRecord in deliveryTeamRecords) {
+          debugPrint('📄 Found deliveryTeam record: ${dtRecord.id}');
+          await _pocketBaseClient
+              .collection('deliveryTeam')
+              .delete(dtRecord.id);
+          debugPrint('✅ DeliveryTeam record deleted: ${dtRecord.id}');
+        }
+
+        if (deliveryTeamRecords.isEmpty) {
+          debugPrint(
+            'ℹ️ No deliveryTeam record found with tripTicket = "$tripId". Skipping deletion.',
+          );
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to delete deliveryTeam record: ${e.toString()}');
+        // Don't throw — deliveryTeam deletion is best-effort
+      }
+
+      debugPrint('✅ Trip unassigned successfully: $tripId');
+
+      // Fetch the full updated trip with expansions to return a complete TripModel
+      final fullUpdatedRecord = await _pocketBaseClient
+          .collection('tripticket')
+          .getOne(
+            tripId,
+            expand:
+                'customers,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
+          );
+
+      return _mapRecordToTripModel(fullUpdatedRecord);
+    } catch (e) {
+      debugPrint('❌ Failed to unassign trip: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to unassign trip: ${e.toString()}',
         statusCode: '500',
       );
     }

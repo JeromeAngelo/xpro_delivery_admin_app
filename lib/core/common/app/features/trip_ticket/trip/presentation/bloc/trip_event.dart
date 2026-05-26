@@ -7,23 +7,23 @@ abstract class TripEvent extends Equatable {
 
 class GetAllTripTicketsEvent extends TripEvent {
   const GetAllTripTicketsEvent();
-  
+
   @override
   List<Object?> get props => [];
 }
 
 class GetAllActiveTripTicketsEvent extends TripEvent {
   const GetAllActiveTripTicketsEvent();
-  
+
   @override
   List<Object?> get props => [];
 }
 
 class CreateTripTicketEvent extends TripEvent {
   final TripEntity trip;
-  
+
   const CreateTripTicketEvent(this.trip);
-  
+
   @override
   List<Object?> get props => [trip];
 }
@@ -32,7 +32,7 @@ class SearchTripTicketsEvent extends TripEvent {
   final String? tripNumberId;
   final DateTime? startDate;
   final DateTime? endDate;
-    final String? name;
+  final String? name;
 
   final bool? isAccepted;
   final bool? isEndTrip;
@@ -68,34 +68,34 @@ class SearchTripTicketsEvent extends TripEvent {
 
 class GetTripTicketByIdEvent extends TripEvent {
   final String tripId;
-  
+
   const GetTripTicketByIdEvent(this.tripId);
-  
+
   @override
   List<Object?> get props => [tripId];
 }
 
 class UpdateTripTicketEvent extends TripEvent {
   final TripEntity trip;
-  
+
   const UpdateTripTicketEvent(this.trip);
-  
+
   @override
   List<Object?> get props => [trip];
 }
 
 class DeleteTripTicketEvent extends TripEvent {
   final String tripId;
-  
+
   const DeleteTripTicketEvent(this.tripId);
-  
+
   @override
   List<Object?> get props => [tripId];
 }
 
 class DeleteAllTripTicketsEvent extends TripEvent {
   const DeleteAllTripTicketsEvent();
-  
+
   @override
   List<Object?> get props => [];
 }
@@ -103,24 +103,31 @@ class DeleteAllTripTicketsEvent extends TripEvent {
 class FilterTripsByDateRangeEvent extends TripEvent {
   final DateTime startDate;
   final DateTime endDate;
-  
+
   const FilterTripsByDateRangeEvent({
     required this.startDate,
     required this.endDate,
   });
-  
+
   @override
   List<Object?> get props => [startDate, endDate];
 }
 
 class FilterTripsByUserEvent extends TripEvent {
   final String userId;
-  
+
   const FilterTripsByUserEvent(this.userId);
-  
+
   @override
   List<Object?> get props => [userId];
 }
 
+class UnassignTripEvent extends TripEvent {
+  final String tripId;
+  final String remarks;
 
+  const UnassignTripEvent({required this.tripId, required this.remarks});
 
+  @override
+  List<Object?> get props => [tripId, remarks];
+}

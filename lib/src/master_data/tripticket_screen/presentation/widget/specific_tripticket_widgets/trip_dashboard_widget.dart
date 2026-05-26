@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import 'show_print_qr_dialog.dart';
+import 'other_setting_dialog.dart';
 
 class TripDashboardWidget extends StatefulWidget {
   final TripEntity? trip;
@@ -320,7 +321,11 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
                 ),
                 SizedBox(width: 8),
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    if (widget.trip != null) {
+                      showOtherSettingDialog(context, trip: widget.trip!);
+                    }
+                  },
                   icon: const Icon(Icons.settings),
                   label: const Text('Others'),
                   style: ElevatedButton.styleFrom(

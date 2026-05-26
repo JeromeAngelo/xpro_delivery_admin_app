@@ -281,6 +281,7 @@ import '../common/app/features/trip_ticket/delivery_receipt/domain/repo/delivery
 import '../common/app/features/trip_ticket/trip/domain/usecase/filter_trips_by_user.dart';
 import '../common/app/features/trip_ticket/trip/domain/usecase/fiter_trips_by_data_range.dart';
 import '../common/app/features/trip_ticket/trip/domain/usecase/get_all_active_trips.dart';
+import '../common/app/features/trip_ticket/trip/domain/usecase/unassign_trip.dart';
 import '../common/app/features/invoice_status/data/datasource/remote_datasource/invoice_status_remote_datasource.dart';
 import '../common/app/features/invoice_status/data/repo/invoice_status_repo_impl.dart';
 import '../common/app/features/invoice_status/domain/repo/invoice_status_repo.dart'
@@ -771,6 +772,7 @@ Future<void> initTrip() async {
       filterTripsByDateRange: sl(),
       filterTripsByUser: sl(),
       getAllActiveTripTickets: sl(),
+      unassignTrip: sl(),
     ),
   );
 
@@ -786,6 +788,7 @@ Future<void> initTrip() async {
   sl.registerLazySingleton(() => DeleteAllTripTickets(sl()));
   sl.registerLazySingleton(() => FilterTripsByDateRange(sl())); // (start, end
   sl.registerLazySingleton(() => FilterTripsByUser(sl())); // (userId,)
+  sl.registerLazySingleton(() => UnassignTrip(sl()));
 
   // Repository
   sl.registerLazySingleton<TripRepo>(() => TripRepoImpl(sl()));

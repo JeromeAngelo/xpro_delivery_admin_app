@@ -18,7 +18,9 @@ class TripRepoImpl implements TripRepo {
     try {
       debugPrint('🔄 REPO: Fetching all trip tickets');
       final remoteTrips = await _remoteDatasource.getAllTripTickets();
-      debugPrint('✅ REPO: Successfully retrieved ${remoteTrips.length} trip tickets');
+      debugPrint(
+        '✅ REPO: Successfully retrieved ${remoteTrips.length} trip tickets',
+      );
       return Right(remoteTrips);
     } on ServerException catch (e) {
       debugPrint('❌ REPO: Server error: ${e.message}');
@@ -30,10 +32,10 @@ class TripRepoImpl implements TripRepo {
   ResultFuture<TripEntity> createTripTicket(TripEntity trip) async {
     try {
       debugPrint('🔄 REPO: Creating new trip ticket');
-      
+
       // Convert entity to model
       final tripModel = trip as TripModel;
-      
+
       final createdTrip = await _remoteDatasource.createTripTicket(tripModel);
       debugPrint('✅ REPO: Trip ticket created successfully: ${createdTrip.id}');
       return Right(createdTrip);
@@ -91,10 +93,10 @@ class TripRepoImpl implements TripRepo {
   ResultFuture<TripEntity> updateTripTicket(TripEntity trip) async {
     try {
       debugPrint('🔄 REPO: Updating trip ticket: ${trip.id}');
-      
+
       // Convert entity to model
       final tripModel = trip as TripModel;
-      
+
       final updatedTrip = await _remoteDatasource.updateTripTicket(tripModel);
       debugPrint('✅ REPO: Trip ticket updated successfully');
       return Right(updatedTrip);
@@ -129,55 +131,61 @@ class TripRepoImpl implements TripRepo {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     }
   }
-  
-@override
-ResultFuture<List<TripEntity>> filterTripsByDateRange({
-  required DateTime startDate,
-  required DateTime endDate,
-}) async {
-  try {
-    debugPrint('🔄 REPO: Filtering trips by date range');
-    debugPrint('📅 REPO: Start Date: ${startDate.toIso8601String()}');
-    debugPrint('📅 REPO: End Date: ${endDate.toIso8601String()}');
-    
-    final remoteTrips = await _remoteDatasource.filterTripsByDateRange(
-      startDate: startDate,
-      endDate: endDate,
-    );
-    
-    debugPrint('✅ REPO: Successfully retrieved ${remoteTrips.length} trips by date range');
-    return Right(remoteTrips);
-  } on ServerException catch (e) {
-    debugPrint('❌ REPO: Server error filtering by date range: ${e.message}');
-    return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-  }
-}
 
-@override
-ResultFuture<List<TripEntity>> filterTripsByUser({
-  required String userId,
-}) async {
-  try {
-    debugPrint('🔄 REPO: Filtering trips by user ID: $userId');
-    
-    final remoteTrips = await _remoteDatasource.filterTripsByUser(
-      userId: userId,
-    );
-    
-    debugPrint('✅ REPO: Successfully retrieved ${remoteTrips.length} trips for user: $userId');
-    return Right(remoteTrips);
-  } on ServerException catch (e) {
-    debugPrint('❌ REPO: Server error filtering by user: ${e.message}');
-    return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+  @override
+  ResultFuture<List<TripEntity>> filterTripsByDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      debugPrint('🔄 REPO: Filtering trips by date range');
+      debugPrint('📅 REPO: Start Date: ${startDate.toIso8601String()}');
+      debugPrint('📅 REPO: End Date: ${endDate.toIso8601String()}');
+
+      final remoteTrips = await _remoteDatasource.filterTripsByDateRange(
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      debugPrint(
+        '✅ REPO: Successfully retrieved ${remoteTrips.length} trips by date range',
+      );
+      return Right(remoteTrips);
+    } on ServerException catch (e) {
+      debugPrint('❌ REPO: Server error filtering by date range: ${e.message}');
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    }
   }
-}
+
+  @override
+  ResultFuture<List<TripEntity>> filterTripsByUser({
+    required String userId,
+  }) async {
+    try {
+      debugPrint('🔄 REPO: Filtering trips by user ID: $userId');
+
+      final remoteTrips = await _remoteDatasource.filterTripsByUser(
+        userId: userId,
+      );
+
+      debugPrint(
+        '✅ REPO: Successfully retrieved ${remoteTrips.length} trips for user: $userId',
+      );
+      return Right(remoteTrips);
+    } on ServerException catch (e) {
+      debugPrint('❌ REPO: Server error filtering by user: ${e.message}');
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    }
+  }
 
   @override
   ResultFuture<List<TripEntity>> getAllActiveTripTickets() async {
     try {
       debugPrint('🔄 REPO: Fetching all trip tickets');
       final remoteTrips = await _remoteDatasource.getAllActiveTripTickets();
-      debugPrint('✅ REPO: Successfully retrieved active ${remoteTrips.length} trip tickets');
+      debugPrint(
+        '✅ REPO: Successfully retrieved active ${remoteTrips.length} trip tickets',
+      );
       return Right(remoteTrips);
     } on ServerException catch (e) {
       debugPrint('❌ REPO: Server error: ${e.message}');
@@ -185,4 +193,25 @@ ResultFuture<List<TripEntity>> filterTripsByUser({
     }
   }
 
+  @override
+  ResultFuture<TripEntity> unassignTrip({
+    required String tripId,
+    required String remarks,
+  }) async {
+    try {
+      debugPrint('🔄 REPO: Unassigning trip: $tripId');
+      final result = await _remoteDatasource.unassignTrip(
+        tripId: tripId,
+        remarks: remarks,
+      );
+      debugPrint('✅ REPO: Trip unassigned successfully: $tripId');
+      return Right(result);
+    } on ServerException catch (e) {
+      debugPrint('❌ REPO: Failed to unassign trip: ${e.message}');
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      debugPrint('❌ REPO: Unexpected error: ${e.toString()}');
+      return Left(ServerFailure(message: e.toString(), statusCode: '500'));
+    }
+  }
 }

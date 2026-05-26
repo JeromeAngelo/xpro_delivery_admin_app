@@ -387,7 +387,15 @@ class _TripTicketSpecificTripViewState
             );
           }
 
-          return const Center(child: Text('Select a trip to view details'));
+          return const Center(
+            child: Column(
+              children: [
+                Text('Select a trip to view details'),
+                const SizedBox(height: 12),
+                IconButton(icon: Icon(Icons.refresh), onPressed: null),
+              ],
+            ),
+          );
         },
       ),
     );
