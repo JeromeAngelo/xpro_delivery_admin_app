@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-
 abstract class CollectionsEvent extends Equatable {
   const CollectionsEvent();
 
@@ -79,4 +78,9 @@ class FilterCollectionsByDateEvent extends CollectionsEvent {
   List<Object?> get props => [startDate, endDate];
 }
 
+class FixDeliveryCollectionsEvent extends CollectionsEvent {
+  const FixDeliveryCollectionsEvent();
 
+  @override
+  List<Object?> get props => [];
+}

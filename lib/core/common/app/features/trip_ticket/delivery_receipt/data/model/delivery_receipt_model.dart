@@ -8,7 +8,6 @@ import '../../../delivery_data/data/model/delivery_data_model.dart';
 import '../../../delivery_data/domain/entity/delivery_data_entity.dart';
 import '../../domain/entity/delivery_receipt_entity.dart';
 
-
 class DeliveryReceiptModel extends DeliveryReceiptEntity {
   String pocketbaseId;
 
@@ -20,20 +19,20 @@ class DeliveryReceiptModel extends DeliveryReceiptEntity {
     DeliveryDataModel? deliveryData,
     super.status,
     super.dateTimeCompleted,
+    super.totalAmount,
+    super.mop,
     super.customerImages,
     super.customerSignature,
     super.receiptFile,
     super.created,
     super.updated,
-  }) : 
-    pocketbaseId = id ?? '',
-    super(
-      trip: trip,
-      deliveryData: deliveryData,
-    );
+  }) : pocketbaseId = id ?? '',
+       super(trip: trip, deliveryData: deliveryData);
 
   factory DeliveryReceiptModel.fromJson(DataMap json) {
-    debugPrint('🔧 DeliveryReceiptModel.fromJson: Processing delivery receipt data');
+    debugPrint(
+      '🔧 DeliveryReceiptModel.fromJson: Processing delivery receipt data',
+    );
     debugPrint('📋 Raw JSON keys: ${json.keys.toList()}');
     debugPrint('📋 Delivery Receipt ID from JSON: ${json['id']}');
     debugPrint('📋 Status from JSON: ${json['status']}');
@@ -48,23 +47,32 @@ class DeliveryReceiptModel extends DeliveryReceiptEntity {
       }
     }
 
+    // Add safe double parsing
+    double? parseDouble(dynamic value) {
+      if (value == null) return null;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+      return null;
+    }
+
     // Parse customer images list
     List<String>? parseCustomerImages(dynamic value) {
       if (value == null) return null;
-      
+
       if (value is List) {
         return value.map((e) => e.toString()).toList();
       } else if (value is String && value.isNotEmpty) {
         // Handle comma-separated string format
         return value.split(',').where((s) => s.trim().isNotEmpty).toList();
       }
-      
+
       return null;
     }
 
     // Handle expanded data for relations
     final expandedData = json['expand'] as Map<String, dynamic>?;
-    
+
     // Process trip relation
     TripModel? tripModel;
     if (expandedData != null && expandedData.containsKey('trip')) {
@@ -86,7 +94,7 @@ class DeliveryReceiptModel extends DeliveryReceiptEntity {
       // If not expanded, just store the ID
       tripModel = TripModel(id: json['trip'].toString());
     }
-    
+
     // Process deliveryData relation
     DeliveryDataModel? deliveryDataModel;
     if (expandedData != null && expandedData.containsKey('deliveryData')) {
@@ -101,19 +109,25 @@ class DeliveryReceiptModel extends DeliveryReceiptEntity {
             'expand': deliveryDataData.expand,
           });
         } else if (deliveryDataData is Map) {
-          deliveryDataModel = DeliveryDataModel.fromJson(deliveryDataData as DataMap);
+          deliveryDataModel = DeliveryDataModel.fromJson(
+            deliveryDataData as DataMap,
+          );
         }
       }
     } else if (json['deliveryData'] != null) {
       // If not expanded, just store the ID
-      deliveryDataModel = DeliveryDataModel(id: json['deliveryData'].toString());
+      deliveryDataModel = DeliveryDataModel(
+        id: json['deliveryData'].toString(),
+      );
     }
 
     debugPrint('🔗 Relations summary for delivery receipt ${json['id']}:');
     debugPrint('   - Trip: ${tripModel?.id ?? "null"}');
     debugPrint('   - DeliveryData: ${deliveryDataModel?.id ?? "null"}');
     debugPrint('   - Status: ${json['status']}');
-    debugPrint('   - Customer Images: ${parseCustomerImages(json['customerImages'])?.length ?? 0}');
+    debugPrint(
+      '   - Customer Images: ${parseCustomerImages(json['customerImages'])?.length ?? 0}',
+    );
     debugPrint('   - Has Signature: ${json['customerSignature'] != null}');
     debugPrint('   - Has Receipt: ${json['receiptFile'] != null}');
 
@@ -123,6 +137,8 @@ class DeliveryReceiptModel extends DeliveryReceiptEntity {
       collectionName: json['collectionName']?.toString(),
       status: json['status']?.toString(),
       dateTimeCompleted: parseDate(json['dateTimeCompleted']),
+      totalAmount: parseDouble(json['totalAmount']),
+      mop: json['mop']?.toString(),
       customerImages: parseCustomerImages(json['customerImages']),
       customerSignature: json['customerSignature']?.toString(),
       receiptFile: json['receiptFile']?.toString(),
@@ -140,6 +156,8 @@ class DeliveryReceiptModel extends DeliveryReceiptEntity {
       'collectionName': collectionName,
       'status': status,
       'dateTimeCompleted': dateTimeCompleted?.toIso8601String(),
+      'totalAmount': totalAmount,
+      'mop': mop,
       'customerImages': customerImages, // Will be serialized as JSON array
       'customerSignature': customerSignature,
       'receiptFile': receiptFile,
@@ -157,6 +175,8 @@ class DeliveryReceiptModel extends DeliveryReceiptEntity {
       collectionName: entity.collectionName,
       status: entity.status,
       dateTimeCompleted: entity.dateTimeCompleted,
+      totalAmount: entity.totalAmount,
+      mop: entity.mop,
       customerImages: entity.customerImages,
       customerSignature: entity.customerSignature,
       receiptFile: entity.receiptFile,
@@ -174,6 +194,8 @@ class DeliveryReceiptModel extends DeliveryReceiptEntity {
     DeliveryDataEntity? deliveryData,
     String? status,
     DateTime? dateTimeCompleted,
+    double? totalAmount,
+    String? mop,
     List<String>? customerImages,
     String? customerSignature,
     String? receiptFile,
@@ -184,26 +206,28 @@ class DeliveryReceiptModel extends DeliveryReceiptEntity {
       id: id ?? this.id,
       collectionId: collectionId ?? this.collectionId,
       collectionName: collectionName ?? this.collectionName,
-      trip: trip != null 
-          ? (trip is TripModel 
-              ? trip 
-              : TripModel(id: trip.id))
-          : (this.trip is TripModel 
-              ? this.trip as TripModel 
-              : this.trip != null 
+      trip:
+          trip != null
+              ? (trip is TripModel ? trip : TripModel(id: trip.id))
+              : (this.trip is TripModel
+                  ? this.trip as TripModel
+                  : this.trip != null
                   ? TripModel(id: this.trip!.id)
                   : null),
-      deliveryData: deliveryData != null 
-          ? (deliveryData is DeliveryDataModel 
-              ? deliveryData 
-              : DeliveryDataModel(id: deliveryData.id))
-          : (this.deliveryData is DeliveryDataModel 
-              ? this.deliveryData as DeliveryDataModel 
-              : this.deliveryData != null 
+      deliveryData:
+          deliveryData != null
+              ? (deliveryData is DeliveryDataModel
+                  ? deliveryData
+                  : DeliveryDataModel(id: deliveryData.id))
+              : (this.deliveryData is DeliveryDataModel
+                  ? this.deliveryData as DeliveryDataModel
+                  : this.deliveryData != null
                   ? DeliveryDataModel(id: this.deliveryData!.id)
                   : null),
       status: status ?? this.status,
       dateTimeCompleted: dateTimeCompleted ?? this.dateTimeCompleted,
+      totalAmount: totalAmount ?? this.totalAmount,
+      mop: mop ?? this.mop,
       customerImages: customerImages ?? this.customerImages,
       customerSignature: customerSignature ?? this.customerSignature,
       receiptFile: receiptFile ?? this.receiptFile,
@@ -221,6 +245,8 @@ class DeliveryReceiptModel extends DeliveryReceiptEntity {
       deliveryData: null,
       status: '',
       dateTimeCompleted: null,
+      totalAmount: 0.0,
+      mop: '',
       customerImages: [],
       customerSignature: '',
       receiptFile: '',

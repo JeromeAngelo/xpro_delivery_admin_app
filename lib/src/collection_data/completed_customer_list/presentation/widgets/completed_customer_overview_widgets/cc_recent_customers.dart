@@ -131,7 +131,12 @@ class RecentCompletedCustomers extends StatelessWidget {
                         ),
                         _buildTableCell(
                           context,
-                          _formatCurrency(collection.totalAmount ?? 0),
+                          _formatCurrency(
+                            (collection.totalAmount != null &&
+                                    collection.totalAmount! > 0)
+                                ? collection.totalAmount!
+                                : collection.deliveryData?.totalAmount ?? 0,
+                          ),
                         ),
                         _buildActionCell(context, collection),
                       ],

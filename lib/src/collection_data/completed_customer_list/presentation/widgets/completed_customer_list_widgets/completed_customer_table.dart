@@ -105,16 +105,17 @@ class CompletedCustomerDataTable extends StatelessWidget {
                 ),
                 DataCell(
                   Text(
-                    collection.totalAmount != null
-                        ? currencyFormatter.format(collection.totalAmount)
-                        : 'N/A',
+                    currencyFormatter.format(
+                      (collection.totalAmount != null &&
+                              collection.totalAmount! > 0)
+                          ? collection.totalAmount!
+                          : collection.deliveryData?.totalAmount ?? 0.0,
+                    ),
                   ),
                   onTap: () => _navigateToCollectionData(context, collection),
                 ),
                 DataCell(
-                  Text(
-                    _formatModeOfPayment(collection.mop),
-                  ),
+                  Text(_formatModeOfPayment(collection.mop ?? 'N/A')),
                   onTap: () => _navigateToCollectionData(context, collection),
                 ),
                 DataCell(
@@ -312,9 +313,12 @@ class CompletedCustomerDataTable extends StatelessWidget {
 
                   _buildDetailRow(
                     'Total Amount',
-                    collection.totalAmount != null
-                        ? currencyFormatter.format(collection.totalAmount)
-                        : 'N/A',
+                    currencyFormatter.format(
+                      (collection.totalAmount != null &&
+                              collection.totalAmount! > 0)
+                          ? collection.totalAmount!
+                          : collection.deliveryData?.totalAmount ?? 0.0,
+                    ),
                   ),
                   _buildDetailRow(
                     'Created At',

@@ -100,6 +100,24 @@ class AllCollectionsLoaded extends CollectionsState {
   List<Object?> get props => [collections, isFromCache];
 }
 
+class DeliveryCollectionsFixed extends CollectionsState {
+  final List<CollectionEntity> updatedCollections;
+  final int totalMatched;
+  final int totalUpdated;
+  final int totalSkipped;
+
+  const DeliveryCollectionsFixed({
+    required this.updatedCollections,
+    required this.totalMatched,
+    required this.totalUpdated,
+    required this.totalSkipped,
+  });
+
+  @override
+  List<Object?> get props => [updatedCollections, totalMatched, totalUpdated, totalSkipped];
+}
+
+
 class CollectionsFilteredByDate extends CollectionsState {
   final List<CollectionEntity> collections;
   final DateTime startDate;

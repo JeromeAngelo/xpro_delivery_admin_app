@@ -29,14 +29,14 @@ class CollectionModel extends CollectionEntity {
     super.created,
     super.mop,
     super.updated,
-  })  : pocketbaseId = id ?? '',
-        super(
-          customer: customer,
-          invoice: invoice,
-          trip: trip,
-          deliveryData: deliveryData,
-          invoices: invoices, // ✅ IMPORTANT: pass to super so entity has it
-        );
+  }) : pocketbaseId = id ?? '',
+       super(
+         customer: customer,
+         invoice: invoice,
+         trip: trip,
+         deliveryData: deliveryData,
+         invoices: invoices, // ✅ IMPORTANT: pass to super so entity has it
+       );
 
   factory CollectionModel.fromJson(DataMap json) {
     debugPrint('🔧 CollectionModel.fromJson: Processing collection data');
@@ -62,7 +62,9 @@ class CollectionModel extends CollectionEntity {
         debugPrint('📊 Parsed totalAmount "$value" to: $parsed');
         return parsed;
       }
-      debugPrint('⚠️ Could not parse totalAmount: $value (${value.runtimeType})');
+      debugPrint(
+        '⚠️ Could not parse totalAmount: $value (${value.runtimeType})',
+      );
       return null;
     }
 
@@ -87,7 +89,9 @@ class CollectionModel extends CollectionEntity {
         }
       }
     } else if (json['deliveryData'] != null) {
-      deliveryDataModel = DeliveryDataModel(id: json['deliveryData'].toString());
+      deliveryDataModel = DeliveryDataModel(
+        id: json['deliveryData'].toString(),
+      );
     }
 
     TripModel? tripModel;
@@ -155,25 +159,27 @@ class CollectionModel extends CollectionEntity {
     if (expandedData != null && expandedData.containsKey('invoices')) {
       final invoicesData = expandedData['invoices'];
       if (invoicesData != null && invoicesData is List) {
-        invoicesList = invoicesData.map((invoice) {
-          if (invoice is RecordModel) {
-            return InvoiceDataModel.fromJson({
-              'id': invoice.id,
-              'collectionId': invoice.collectionId,
-              'collectionName': invoice.collectionName,
-              ...invoice.data,
-              'expand': invoice.expand,
-            });
-          } else if (invoice is Map) {
-            return InvoiceDataModel.fromJson(invoice as DataMap);
-          }
-          return InvoiceDataModel(id: invoice.toString());
-        }).toList();
+        invoicesList =
+            invoicesData.map((invoice) {
+              if (invoice is RecordModel) {
+                return InvoiceDataModel.fromJson({
+                  'id': invoice.id,
+                  'collectionId': invoice.collectionId,
+                  'collectionName': invoice.collectionName,
+                  ...invoice.data,
+                  'expand': invoice.expand,
+                });
+              } else if (invoice is Map) {
+                return InvoiceDataModel.fromJson(invoice as DataMap);
+              }
+              return InvoiceDataModel(id: invoice.toString());
+            }).toList();
       }
     } else if (json['invoices'] != null && json['invoices'] is List) {
-      invoicesList = (json['invoices'] as List)
-          .map((id) => InvoiceDataModel(id: id.toString()))
-          .toList();
+      invoicesList =
+          (json['invoices'] as List)
+              .map((id) => InvoiceDataModel(id: id.toString()))
+              .toList();
     }
 
     double? totalAmount = parseDouble(json['totalAmount']);
@@ -211,7 +217,8 @@ class CollectionModel extends CollectionEntity {
       'status': status,
       'mop': mop,
       'customer': customer?.id,
-      'invoices': invoices?.map((inv) => inv.id).toList(), // ✅ uses entity field
+      'invoices':
+          invoices?.map((inv) => inv.id).toList(), // ✅ uses entity field
       'invoice': invoice?.id,
       'created': created?.toIso8601String(),
       'updated': updated?.toIso8601String(),
@@ -240,101 +247,115 @@ class CollectionModel extends CollectionEntity {
     DateTime? updated,
   }) {
     // ✅ convert incoming entity invoices -> model invoices
-    final List<InvoiceDataModel>? convertedInvoices = invoices
-        ?.map((inv) => inv is InvoiceDataModel ? inv : InvoiceDataModel(id: inv.id))
-        .toList();
+    final List<InvoiceDataModel>? convertedInvoices =
+        invoices
+            ?.map(
+              (inv) =>
+                  inv is InvoiceDataModel ? inv : InvoiceDataModel(id: inv.id),
+            )
+            .toList();
 
     // ✅ ensure existing invoices are model typed
     final List<InvoiceDataModel>? currentInvoices =
-        (this.invoices?.map((inv) => inv is InvoiceDataModel ? inv : InvoiceDataModel(id: inv.id)).toList());
+        (this.invoices
+            ?.map(
+              (inv) =>
+                  inv is InvoiceDataModel ? inv : InvoiceDataModel(id: inv.id),
+            )
+            .toList());
 
     return CollectionModel(
       id: id ?? this.id,
       collectionId: collectionId ?? this.collectionId,
       collectionName: collectionName ?? this.collectionName,
 
-      customer: customer != null
-          ? (customer is CustomerDataModel
-              ? customer
-              : CustomerDataModel(
-                  id: customer.id,
-                  collectionId: customer.collectionId,
-                  collectionName: customer.collectionName,
-                  name: customer.name,
-                  created: customer.created,
-                  updated: customer.updated,
-                ))
-          : (this.customer is CustomerDataModel
-              ? this.customer as CustomerDataModel
-              : this.customer != null
+      customer:
+          customer != null
+              ? (customer is CustomerDataModel
+                  ? customer
+                  : CustomerDataModel(
+                    id: customer.id,
+                    collectionId: customer.collectionId,
+                    collectionName: customer.collectionName,
+                    name: customer.name,
+                    created: customer.created,
+                    updated: customer.updated,
+                  ))
+              : (this.customer is CustomerDataModel
+                  ? this.customer as CustomerDataModel
+                  : this.customer != null
                   ? CustomerDataModel(
-                      id: this.customer!.id,
-                      collectionId: this.customer!.collectionId,
-                      collectionName: this.customer!.collectionName,
-                      name: this.customer!.name,
-                      created: this.customer!.created,
-                      updated: this.customer!.updated,
-                    )
+                    id: this.customer!.id,
+                    collectionId: this.customer!.collectionId,
+                    collectionName: this.customer!.collectionName,
+                    name: this.customer!.name,
+                    created: this.customer!.created,
+                    updated: this.customer!.updated,
+                  )
                   : null),
 
-      invoice: invoice != null
-          ? (invoice is InvoiceDataModel
-              ? invoice
-              : InvoiceDataModel(
-                  id: invoice.id,
-                  collectionId: invoice.collectionId,
-                  collectionName: invoice.collectionName,
-                  refId: invoice.refId,
-                  name: invoice.name,
-                  documentDate: invoice.documentDate,
-                  totalAmount: invoice.totalAmount,
-                  volume: invoice.volume,
-                  weight: invoice.weight,
-                  created: invoice.created,
-                  updated: invoice.updated,
-                  customer: invoice.customer,
-                ))
-          : (this.invoice is InvoiceDataModel
-              ? this.invoice as InvoiceDataModel
-              : this.invoice != null
+      invoice:
+          invoice != null
+              ? (invoice is InvoiceDataModel
+                  ? invoice
+                  : InvoiceDataModel(
+                    id: invoice.id,
+                    collectionId: invoice.collectionId,
+                    collectionName: invoice.collectionName,
+                    refId: invoice.refId,
+                    name: invoice.name,
+                    documentDate: invoice.documentDate,
+                    totalAmount: invoice.totalAmount,
+                    volume: invoice.volume,
+                    weight: invoice.weight,
+                    created: invoice.created,
+                    updated: invoice.updated,
+                    customer: invoice.customer,
+                  ))
+              : (this.invoice is InvoiceDataModel
+                  ? this.invoice as InvoiceDataModel
+                  : this.invoice != null
                   ? InvoiceDataModel(
-                      id: this.invoice!.id,
-                      collectionId: this.invoice!.collectionId,
-                      collectionName: this.invoice!.collectionName,
-                      refId: this.invoice!.refId,
-                      name: this.invoice!.name,
-                      documentDate: this.invoice!.documentDate,
-                      totalAmount: this.invoice!.totalAmount,
-                      volume: this.invoice!.volume,
-                      weight: this.invoice!.weight,
-                      created: this.invoice!.created,
-                      updated: this.invoice!.updated,
-                      customer: this.invoice!.customer,
-                    )
+                    id: this.invoice!.id,
+                    collectionId: this.invoice!.collectionId,
+                    collectionName: this.invoice!.collectionName,
+                    refId: this.invoice!.refId,
+                    name: this.invoice!.name,
+                    documentDate: this.invoice!.documentDate,
+                    totalAmount: this.invoice!.totalAmount,
+                    volume: this.invoice!.volume,
+                    weight: this.invoice!.weight,
+                    created: this.invoice!.created,
+                    updated: this.invoice!.updated,
+                    customer: this.invoice!.customer,
+                  )
                   : null),
 
       // ✅ FIX: always pass model list
       invoices: convertedInvoices ?? currentInvoices,
 
-      trip: trip != null
-          ? (trip is TripModel ? trip : TripModel(id: trip.id))
-          : (this.trip is TripModel
-              ? this.trip as TripModel
-              : this.trip != null
+      trip:
+          trip != null
+              ? (trip is TripModel ? trip : TripModel(id: trip.id))
+              : (this.trip is TripModel
+                  ? this.trip as TripModel
+                  : this.trip != null
                   ? TripModel(id: this.trip!.id)
                   : null),
 
-      deliveryData: deliveryData != null
-          ? (deliveryData is DeliveryDataModel
-              ? deliveryData
-              : DeliveryDataModel(id: deliveryData.id))
-          : (this.deliveryData is DeliveryDataModel
-              ? this.deliveryData as DeliveryDataModel
-              : this.deliveryData != null
+      deliveryData:
+          deliveryData != null
+              ? (deliveryData is DeliveryDataModel
+                  ? deliveryData
+                  : DeliveryDataModel(id: deliveryData.id))
+              : (this.deliveryData is DeliveryDataModel
+                  ? this.deliveryData as DeliveryDataModel
+                  : this.deliveryData != null
                   ? DeliveryDataModel(id: this.deliveryData!.id)
                   : null),
 
       totalAmount: totalAmount ?? this.totalAmount,
+      mop: mop ?? this.mop,
       status: status ?? this.status,
       created: created ?? this.created,
       updated: updated ?? this.updated,

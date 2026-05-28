@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 import '../../../trip/domain/entity/trip_entity.dart';
 import '../../../delivery_data/domain/entity/delivery_data_entity.dart';
 
-
 class DeliveryReceiptEntity extends Equatable {
   final String? id;
   final String? collectionId;
@@ -15,6 +14,10 @@ class DeliveryReceiptEntity extends Equatable {
 
   final String? status;
   final DateTime? dateTimeCompleted;
+
+  // Financial fields - used to fix delivery collections
+  final double? totalAmount;
+  final String? mop; // Method of Payment
 
   // File fields
   final List<String>? customerImages; // List of image file paths/URLs
@@ -33,6 +36,8 @@ class DeliveryReceiptEntity extends Equatable {
     this.deliveryData,
     this.status,
     this.dateTimeCompleted,
+    this.totalAmount,
+    this.mop,
     this.customerImages,
     this.customerSignature,
     this.receiptFile,
@@ -49,6 +54,8 @@ class DeliveryReceiptEntity extends Equatable {
     deliveryData?.id,
     status,
     dateTimeCompleted,
+    totalAmount,
+    mop,
     customerImages,
     customerSignature,
     receiptFile,
@@ -66,6 +73,8 @@ class DeliveryReceiptEntity extends Equatable {
       deliveryData: null,
       status: '',
       dateTimeCompleted: null,
+      totalAmount: 0.0,
+      mop: '',
       customerImages: [],
       customerSignature: '',
       receiptFile: '',
@@ -83,6 +92,8 @@ class DeliveryReceiptEntity extends Equatable {
     DeliveryDataEntity? deliveryData,
     String? status,
     DateTime? dateTimeCompleted,
+    double? totalAmount,
+    String? mop,
     List<String>? customerImages,
     String? customerSignature,
     String? receiptFile,
@@ -97,6 +108,8 @@ class DeliveryReceiptEntity extends Equatable {
       deliveryData: deliveryData ?? this.deliveryData,
       status: status ?? this.status,
       dateTimeCompleted: dateTimeCompleted ?? this.dateTimeCompleted,
+      totalAmount: totalAmount ?? this.totalAmount,
+      mop: mop ?? this.mop,
       customerImages: customerImages ?? this.customerImages,
       customerSignature: customerSignature ?? this.customerSignature,
       receiptFile: receiptFile ?? this.receiptFile,
@@ -106,14 +119,17 @@ class DeliveryReceiptEntity extends Equatable {
   }
 
   // Helper methods for file management
-  bool get hasCustomerImages => customerImages != null && customerImages!.isNotEmpty;
-  bool get hasCustomerSignature => customerSignature != null && customerSignature!.isNotEmpty;
+  bool get hasCustomerImages =>
+      customerImages != null && customerImages!.isNotEmpty;
+  bool get hasCustomerSignature =>
+      customerSignature != null && customerSignature!.isNotEmpty;
   bool get hasReceiptFile => receiptFile != null && receiptFile!.isNotEmpty;
-  
+
   int get customerImagesCount => customerImages?.length ?? 0;
-  
-  bool get isCompleted => status?.toLowerCase() == 'completed' || dateTimeCompleted != null;
-  
+
+  bool get isCompleted =>
+      status?.toLowerCase() == 'completed' || dateTimeCompleted != null;
+
   // Validation helpers
   bool get hasAllRequiredFiles => hasCustomerSignature && hasReceiptFile;
   bool get isReadyForCompletion => hasAllRequiredFiles && status != null;

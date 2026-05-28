@@ -168,6 +168,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/del
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_receipt/domain/usecases/generate_pdf.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_receipt/domain/usecases/get_delivery_receipt_by_delivery_data_id.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_receipt/domain/usecases/get_delivery_receipt_by_trip_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_receipt/domain/usecases/get_all_delivery_receipts.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_receipt/presentation/bloc/delivery_receipt_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/data/datasource/remote_datasource/delivery_vehicle_remote_datasource.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/data/repo/delivery_vehicle_repo_impl.dart';
@@ -269,6 +270,7 @@ import '../common/app/features/trip_ticket/collection/data/datasource/remote_dat
 import '../common/app/features/trip_ticket/collection/domain/repo/collection_repo.dart';
 import '../common/app/features/trip_ticket/collection/domain/usecases/delete_collection.dart';
 import '../common/app/features/trip_ticket/collection/domain/usecases/filter_collection_by_date.dart';
+import '../common/app/features/trip_ticket/collection/domain/usecases/fix_delivery_collections.dart';
 import '../common/app/features/trip_ticket/collection/domain/usecases/get_collection_by_id.dart';
 import '../common/app/features/trip_ticket/collection/domain/usecases/get_collection_by_trip_id.dart'
     show GetCollectionsByTripId;
@@ -1042,6 +1044,7 @@ Future<void> initDeliveryCollectionsData() async {
       getCollectionsByTripId: sl(),
       getAllCollections: sl(),
       filterCollectionsByDate: sl(),
+      fixDeliveryCollections: sl(),
     ),
   );
 
@@ -1050,6 +1053,7 @@ Future<void> initDeliveryCollectionsData() async {
   sl.registerLazySingleton(() => GetCollectionsByTripId(sl()));
   sl.registerLazySingleton(() => GetAllCollections(sl()));
   sl.registerLazySingleton(() => FilterCollectionsByDate(sl()));
+  sl.registerLazySingleton(() => FixDeliveryCollections(collectionRepo: sl()));
 
   sl.registerLazySingleton<CollectionRepo>(
     () => CollectionRepoImpl(remoteDataSource: sl()),
@@ -1101,6 +1105,7 @@ Future<void> initDeliveryReceipt() async {
 
   sl.registerLazySingleton(() => GetDeliveryReceiptByTripId(sl()));
   sl.registerLazySingleton(() => GetDeliveryReceiptByDeliveryDataId(sl()));
+  sl.registerLazySingleton(() => GetAllDeliveryReceipts(sl()));
   sl.registerLazySingleton(() => CreateDeliveryReceipt(sl()));
   sl.registerLazySingleton(() => DeleteDeliveryReceipt(sl()));
   sl.registerLazySingleton(() => GenerateDeliveryReceiptPdf(sl()));

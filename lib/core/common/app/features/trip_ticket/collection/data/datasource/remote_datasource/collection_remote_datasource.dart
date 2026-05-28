@@ -29,6 +29,17 @@ abstract class CollectionRemoteDataSource {
     required DateTime startDate,
     required DateTime endDate,
   });
+
+  /// Update a collection's totalAmount and mop in PocketBase
+  Future<CollectionModel> updateCollection({
+    required String collectionId,
+    required double totalAmount,
+    required String mop,
+  });
+
+  /// Fix delivery collections by matching deliveryData id with deliveryReceipt
+  /// and copying totalAmount and mop from deliveryReceipt to collection
+  Future<List<CollectionModel>> fixDeliveryCollections();
 }
 
 class CollectionRemoteDataSourceImpl implements CollectionRemoteDataSource {
@@ -330,8 +341,6 @@ class CollectionRemoteDataSourceImpl implements CollectionRemoteDataSource {
       }
     }
 
-  
-
     debugPrint(
       '💰 Final totalAmount for collection ${record.id}: $totalAmount',
     );
@@ -443,6 +452,221 @@ class CollectionRemoteDataSourceImpl implements CollectionRemoteDataSource {
     return formattedDate;
   }
 
+  @override
+  Future<CollectionModel> updateCollection({
+    required String collectionId,
+    required double totalAmount,
+    required String mop,
+  }) async {
+    try {
+      debugPrint(
+        '🔄 Updating collection: $collectionId with totalAmount: $totalAmount, mop: $mop',
+      );
+
+      await _ensureAuthenticated();
+
+      final record = await _pocketBaseClient
+          .collection('deliveryCollection')
+          .update(collectionId, body: {'totalAmount': totalAmount, 'mop': mop});
+
+      debugPrint('✅ Successfully updated collection: ${record.id}');
+
+      return _processCollectionRecord(record);
+    } catch (e) {
+      debugPrint('❌ Failed to update collection: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to update collection: ${e.toString()}',
+        statusCode: '500',
+      );
+    }
+  }
+
+  @override
+  Future<List<CollectionModel>> fixDeliveryCollections() async {
+    try {
+      debugPrint('🔧 FIX: Starting fix delivery collections process');
+
+      await _ensureAuthenticated();
+
+      // Step 1: Fetch collections and receipts in parallel
+      debugPrint('🔧 FIX: Fetching collections and receipts in parallel');
+      final fetchResults = await Future.wait([
+        _pocketBaseClient
+            .collection('deliveryCollection')
+            .getFullList(sort: '-created'),
+        _pocketBaseClient
+            .collection('deliveryReceipt')
+            .getFullList(sort: '-created'),
+      ]);
+      final collectionRecords = fetchResults[0];
+      final receiptRecords = fetchResults[1];
+      debugPrint(
+        '🔧 FIX: Fetched ${collectionRecords.length} collections, ${receiptRecords.length} receipts',
+      );
+
+      // Step 2: Debug — log sample data to understand field structure
+      if (collectionRecords.isNotEmpty) {
+        debugPrint(
+          '🔧 FIX: Sample collection data keys: ${collectionRecords.first.data.keys.toList()}',
+        );
+        debugPrint(
+          '🔧 FIX: Sample collection data: ${collectionRecords.first.data}',
+        );
+      }
+      if (receiptRecords.isNotEmpty) {
+        debugPrint(
+          '🔧 FIX: Sample receipt data keys: ${receiptRecords.first.data.keys.toList()}',
+        );
+        debugPrint('🔧 FIX: Sample receipt data: ${receiptRecords.first.data}');
+      }
+
+      // Step 3: Build receipt lookup map — receipt id -> {totalAmount, mop}
+      final receiptById = <String, _ReceiptData>{};
+      for (final receipt in receiptRecords) {
+        final totalAmount = _parseDouble(receipt.data['totalAmount']);
+        final mop = receipt.data['mop']?.toString();
+
+        if (totalAmount != null || mop != null) {
+          receiptById[receipt.id] = _ReceiptData(
+            totalAmount: totalAmount,
+            mop: mop,
+          );
+          debugPrint(
+            '🔧 FIX: Receipt ${receipt.id} -> totalAmount: $totalAmount, mop: $mop',
+          );
+        } else {
+          debugPrint('⚠️ FIX: Receipt ${receipt.id} has no totalAmount or mop');
+        }
+      }
+      debugPrint(
+        '🔧 FIX: Built receipt map with ${receiptById.length} entries (out of ${receiptRecords.length} receipts)',
+      );
+
+      // Step 4: Identify collections that need updating
+      final updates = <_CollectionUpdate>[];
+      int noReceiptField = 0;
+      int noMatchingReceipt = 0;
+      int alreadyMatched = 0;
+
+      for (final record in collectionRecords) {
+        // Try multiple possible field names for the receipt reference
+        final receiptId =
+            record.data['deliveryReceipt']?.toString() ??
+            record.data['delivery_receipt']?.toString() ??
+            record.data['receipt']?.toString();
+
+        if (receiptId == null || receiptId.isEmpty) {
+          debugPrint(
+            '⚠️ FIX: Collection ${record.id} has no receipt reference field. Fields: ${record.data.keys.toList()}',
+          );
+          noReceiptField++;
+          continue;
+        }
+
+        final receiptData = receiptById[receiptId];
+        if (receiptData == null) {
+          debugPrint(
+            '⚠️ FIX: Collection ${record.id} references receipt $receiptId but not found in receipt map',
+          );
+          noMatchingReceipt++;
+          continue;
+        }
+
+        final existingTotalAmount = _parseDouble(record.data['totalAmount']);
+        final existingMop = record.data['mop']?.toString();
+
+        final newTotalAmount =
+            receiptData.totalAmount ?? existingTotalAmount ?? 0.0;
+        final newMop = receiptData.mop ?? existingMop ?? '';
+
+        debugPrint(
+          '🔧 FIX: Collection ${record.id} | receipt: $receiptId | existing: totalAmount=$existingTotalAmount, mop=$existingMop | new: totalAmount=$newTotalAmount, mop=$newMop',
+        );
+
+        // Skip if values already match — no update needed
+        if (existingTotalAmount == newTotalAmount && existingMop == newMop) {
+          debugPrint(
+            '⏭️ FIX: Collection ${record.id} already up to date, skipping',
+          );
+          alreadyMatched++;
+          continue;
+        }
+
+        updates.add(
+          _CollectionUpdate(
+            id: record.id,
+            totalAmount: newTotalAmount,
+            mop: newMop,
+          ),
+        );
+      }
+
+      debugPrint(
+        '🔧 FIX: ${updates.length} to update, $noReceiptField no receipt field, $noMatchingReceipt no matching receipt, $alreadyMatched already matched',
+      );
+
+      if (updates.isEmpty) {
+        debugPrint('✅ FIX: All collections are already up to date');
+        return [];
+      }
+
+      // Step 4: Batch update — run all updates in parallel (batches of 10)
+      final updatedCollections = <CollectionModel>[];
+      const batchSize = 10;
+
+      for (var i = 0; i < updates.length; i += batchSize) {
+        final batch = updates.sublist(
+          i,
+          (i + batchSize).clamp(0, updates.length),
+        );
+
+        final results = await Future.wait(
+          batch.map((update) async {
+            try {
+              final record = await _pocketBaseClient
+                  .collection('deliveryCollection')
+                  .update(
+                    update.id,
+                    body: {
+                      'totalAmount': update.totalAmount,
+                      'mop': update.mop,
+                    },
+                  );
+              debugPrint('✅ FIX: Updated collection ${update.id}');
+              return _processCollectionRecord(record);
+            } catch (e) {
+              debugPrint('❌ FIX: Failed to update ${update.id}: $e');
+              return null;
+            }
+          }),
+        );
+
+        updatedCollections.addAll(results.whereType<CollectionModel>());
+      }
+
+      debugPrint(
+        '📊 FIX: Updated ${updatedCollections.length}/${updates.length} collections',
+      );
+
+      return updatedCollections;
+    } catch (e) {
+      debugPrint('❌ FIX: Failed to fix delivery collections: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to fix delivery collections: ${e.toString()}',
+        statusCode: '500',
+      );
+    }
+  }
+
+  /// Helper to parse dynamic double values (int, double, String)
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
   /// Helper method to create date range for a specific day
   // Map<String, DateTime> _createDayRange(DateTime date) {
   //   final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
@@ -453,4 +677,23 @@ class CollectionRemoteDataSourceImpl implements CollectionRemoteDataSource {
   //     'end': endOfDay,
   //   };
   // }
+}
+
+/// Lightweight holder for receipt data used during fix matching
+class _ReceiptData {
+  const _ReceiptData({this.totalAmount, this.mop});
+  final double? totalAmount;
+  final String? mop;
+}
+
+/// Lightweight holder for a pending collection update
+class _CollectionUpdate {
+  const _CollectionUpdate({
+    required this.id,
+    required this.totalAmount,
+    required this.mop,
+  });
+  final String id;
+  final double totalAmount;
+  final String mop;
 }

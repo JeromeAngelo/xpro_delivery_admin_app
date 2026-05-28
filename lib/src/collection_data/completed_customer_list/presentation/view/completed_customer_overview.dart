@@ -61,6 +61,29 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
     });
   }
 
+  void _fixDeliveryCollections() {
+    context.read<CollectionsBloc>().add(const FixDeliveryCollectionsEvent());
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('Updating collections with delivery receipt data...'),
+          ],
+        ),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _showDateRangePickerDialog() {
     showDialog(
       context: context,
@@ -349,8 +372,44 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
       onProfileTap: () {
         // Handle profile tap
       },
-      child: BlocBuilder<CollectionsBloc, CollectionsState>(
-        builder: (context, state) {
+      child: BlocListener<CollectionsBloc, CollectionsState>(
+        listener: (context, state) {
+          if (state is DeliveryCollectionsFixed) {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.white),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Updated ${state.totalUpdated} collection(s) successfully',
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.green.shade700,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          } else if (state is CollectionsError) {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text('Error: ${state.message}')),
+                  ],
+                ),
+                backgroundColor: Colors.red.shade700,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+        },
+        child: BlocBuilder<CollectionsBloc, CollectionsState>(
+          builder: (context, state) {
           // Handle different states
           if (state is CollectionsInitial) {
             // Initial state, trigger loading
@@ -372,6 +431,11 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
             pageTitle = 'Filtered Collections';
             pageSubtitle =
                 'Collections from ${DateFormat('MMM dd').format(state.startDate)} to ${DateFormat('MMM dd, yyyy').format(state.endDate)}';
+          } else if (state is DeliveryCollectionsFixed) {
+            customers = state.updatedCollections;
+            pageTitle = 'Collections Updated';
+            pageSubtitle =
+                'Updated ${state.totalUpdated} collection(s) with delivery receipt data';
           }
 
           return SingleChildScrollView(
@@ -446,6 +510,16 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
                           ],
                         ),
                       ),
+
+                    // Update Collection Button
+                    Tooltip(
+                      message: 'Update Collection',
+                      child: IconButton(
+                        onPressed: _fixDeliveryCollections,
+                        icon: const Icon(Icons.download),
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -613,7 +687,7 @@ class _CompletedCustomerOverviewState extends State<CompletedCustomerOverview> {
           );
         },
       ),
-    );
+    ));
   }
 
   // void _showSearchDialog(BuildContext context) {

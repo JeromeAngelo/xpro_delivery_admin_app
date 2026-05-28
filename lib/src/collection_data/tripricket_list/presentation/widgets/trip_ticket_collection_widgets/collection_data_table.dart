@@ -127,15 +127,23 @@ class CollectionDataTable extends StatelessWidget {
     final blocCollections = collectionsByTripId[trip.id];
     if (blocCollections != null && blocCollections.isNotEmpty) {
       for (var collection in blocCollections) {
-        totalAmount += collection.totalAmount ?? 0;
+        // If collection totalAmount is 0 or null, fall back to deliveryData totalAmount
+        final amount =
+            (collection.totalAmount != null && collection.totalAmount! > 0)
+                ? collection.totalAmount!
+                : collection.deliveryData?.totalAmount ?? 0;
+        totalAmount += amount;
       }
     } else {
       // Fallback to trip's embedded deliveryCollection
       totalAmount =
-          trip.deliveryCollection?.fold<double>(
-            0,
-            (sum, collection) => sum + (collection.totalAmount ?? 0),
-          ) ??
+          trip.deliveryCollection?.fold<double>(0, (sum, collection) {
+            final amount =
+                (collection.totalAmount != null && collection.totalAmount! > 0)
+                    ? collection.totalAmount!
+                    : collection.deliveryData?.totalAmount ?? 0;
+            return sum + amount;
+          }) ??
           0;
     }
 

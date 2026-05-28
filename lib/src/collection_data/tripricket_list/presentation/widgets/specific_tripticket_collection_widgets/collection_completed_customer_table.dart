@@ -135,9 +135,12 @@ class _CollectionCompletedCustomersTableState
                     DataCell(Text(_formatModeOfPayment(customer.mop))),
                     DataCell(
                       Text(
-                        customer.totalAmount != null
-                            ? currencyFormatter.format(customer.totalAmount)
-                            : 'N/A',
+                        currencyFormatter.format(
+                          (customer.totalAmount != null &&
+                                  customer.totalAmount! > 0)
+                              ? customer.totalAmount!
+                              : customer.deliveryData?.totalAmount ?? 0.0,
+                        ),
                       ),
                       onTap: () => _navigateToCustomerData(context, customer),
                     ),
@@ -226,11 +229,14 @@ class _CollectionCompletedCustomersTableState
       } else if (modeOfPaymentStr == 'bankTransfer' ||
           modeOfPaymentStr == 'Bank Transfer') {
         modeOfPayment = ModeOfPayment.bankTransfer;
-      } else if (modeOfPaymentStr == 'dtcCheque' || modeOfPaymentStr == 'DTC Cheque') {
+      } else if (modeOfPaymentStr == 'dtcCheque' ||
+          modeOfPaymentStr == 'DTC Cheque') {
         modeOfPayment = ModeOfPayment.dtcCheque;
-      } else if (modeOfPaymentStr == 'stcCash' || modeOfPaymentStr == 'STC Cash') {
+      } else if (modeOfPaymentStr == 'stcCash' ||
+          modeOfPaymentStr == 'STC Cash') {
         modeOfPayment = ModeOfPayment.stcCash;
-      } else if (modeOfPaymentStr == 'stcCheque' || modeOfPaymentStr == 'STC Cheque') {
+      } else if (modeOfPaymentStr == 'stcCheque' ||
+          modeOfPaymentStr == 'STC Cheque') {
         modeOfPayment = ModeOfPayment.stcCheque;
       } else if (modeOfPaymentStr == 'eWallet' ||
           modeOfPaymentStr == 'E-Wallet') {
@@ -325,9 +331,12 @@ class _CollectionCompletedCustomersTableState
                   ),
                   _buildDetailRow(
                     'Total Amount',
-                    customer.totalAmount != null
-                        ? currencyFormatter.format(customer.totalAmount)
-                        : 'N/A',
+                    currencyFormatter.format(
+                      (customer.totalAmount != null &&
+                              customer.totalAmount! > 0)
+                          ? customer.totalAmount!
+                          : customer.deliveryData?.totalAmount ?? 0.0,
+                    ),
                   ),
                 ],
               ),
@@ -377,7 +386,7 @@ class _CollectionCompletedCustomersTableState
     if (customer.id != null) {
       context.read<CollectionsBloc>().add(GetCollectionByIdEvent(customer.id!));
 
-      context.go('/completed-customers/:{$customer.id}');
+      context.go('/completed-collections/${customer.id}');
     }
   }
 }
