@@ -13,9 +13,11 @@ class AuthInterceptor {
   }
 
   static void handleAuthError(dynamic error, {String? operation}) {
-    debugPrint('🔥 AuthInterceptor: Handling auth error for operation: $operation');
+    debugPrint(
+      '🔥 AuthInterceptor: Handling auth error for operation: $operation',
+    );
     debugPrint('🔥 Error details: ${error.toString()}');
-    
+
     if (_context == null) {
       debugPrint('⚠️ AuthInterceptor: Context not initialized');
       return;
@@ -24,13 +26,13 @@ class AuthInterceptor {
     // Check if error is related to authentication
     if (_isAuthError(error)) {
       debugPrint('🚨 Authentication error detected - logging out user');
-      
+
       // Trigger logout
       _context!.read<GeneralUserBloc>().add(const UserSignOutEvent());
-      
+
       // Navigate to login screen
       _context!.go('/');
-      
+
       // Show error message
       ScaffoldMessenger.of(_context!).showSnackBar(
         const SnackBar(
@@ -43,21 +45,35 @@ class AuthInterceptor {
 
   static bool _isAuthError(dynamic error) {
     if (error == null) return false;
-    
-    final errorString = error.toString().toLowerCase();
-    
-    // Check for common authentication error patterns
-    return errorString.contains('401') ||
-           errorString.contains('403') ||
-           errorString.contains('unauthorized') ||
-           errorString.contains('forbidden') ||
-           errorString.contains('authentication') ||
-           errorString.contains('auth') ||
-           errorString.contains('token') ||
-           errorString.contains('expired') ||
-           errorString.contains('invalid') ||
-           (error is ClientException && error.statusCode == 401) ||
-           (error is ClientException && error.statusCode == 403);
+
+    // 1) PocketBase client exceptions are the only reliable signal.
+    if (error is ClientException) {
+      final status = error.statusCode;
+      if (status == 401 || status == 403) {
+        return true;
+      }
+      // Don't blanket-match on substring for ClientException — only 401/403 count.
+      return false;
+    }
+
+    // 2) ServerException thrown by our own data sources: only treat
+    //    the status codes we explicitly mark as auth failures.
+    if (error.runtimeType.toString() == 'ServerException') {
+      try {
+        // Avoid hard-import to keep this file lightweight; read .statusCode via dynamic.
+        final status = (error as dynamic).statusCode?.toString() ?? '';
+        return status == '401' || status == '403';
+      } catch (_) {
+        return false;
+      }
+    }
+
+    // 3) Anything else: do NOT log the user out based on a substring match.
+    //    The previous implementation matched "auth", "token", "invalid", "expired"
+    //    anywhere in the message, which incorrectly logged users out whenever
+    //    PocketBase returned an error such as "Failed to load relation: auth ..."
+    //    or a field name containing "token" (e.g. tokenKey). Be strict here.
+    return false;
   }
 }
 

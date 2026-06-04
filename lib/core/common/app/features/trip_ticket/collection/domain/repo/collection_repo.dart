@@ -1,4 +1,5 @@
 import '../../../../../../../typedefs/typedefs.dart';
+import '../../../trip/domain/entity/trip_entity.dart';
 import '../entity/collection_entity.dart';
 
 abstract class CollectionRepo {
@@ -32,4 +33,10 @@ abstract class CollectionRepo {
   /// Fix delivery collections by matching deliveryData id with deliveryReceipt
   /// and copying totalAmount and mop from deliveryReceipt to collection
   ResultFuture<List<CollectionEntity>> fixDeliveryCollections();
+
+  /// Export trip collections to CSV bytes
+  ResultFuture<List<int>> exportTripCollections({
+    required TripEntity trip,
+    required List<CollectionEntity> collections,
+  });
 }

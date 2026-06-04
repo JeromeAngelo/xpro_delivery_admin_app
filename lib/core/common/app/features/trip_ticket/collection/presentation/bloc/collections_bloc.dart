@@ -1,7 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../trip/domain/entity/trip_entity.dart';
+import '../../domain/entity/collection_entity.dart';
 import '../../domain/usecases/delete_collection.dart';
+import '../../domain/usecases/export_trip_collections.dart';
 import '../../domain/usecases/filter_collection_by_date.dart';
 import '../../domain/usecases/fix_delivery_collections.dart';
 import '../../domain/usecases/get_all_collections.dart';
@@ -17,6 +20,7 @@ class CollectionsBloc extends Bloc<CollectionsEvent, CollectionsState> {
   final GetAllCollections _getAllCollections;
   final FilterCollectionsByDate _filterCollectionsByDate;
   final FixDeliveryCollections _fixDeliveryCollections;
+  final ExportTripCollections _exportTripCollections;
 
   CollectionsState? _cachedState;
 
@@ -27,12 +31,14 @@ class CollectionsBloc extends Bloc<CollectionsEvent, CollectionsState> {
     required GetAllCollections getAllCollections,
     required FilterCollectionsByDate filterCollectionsByDate,
     required FixDeliveryCollections fixDeliveryCollections,
+    required ExportTripCollections exportTripCollections,
   }) : _getCollectionsByTripId = getCollectionsByTripId,
        _getCollectionById = getCollectionById,
        _deleteCollection = deleteCollection,
        _getAllCollections = getAllCollections,
        _filterCollectionsByDate = filterCollectionsByDate,
        _fixDeliveryCollections = fixDeliveryCollections,
+       _exportTripCollections = exportTripCollections,
        super(const CollectionsInitial()) {
     on<GetCollectionsByTripIdEvent>(_onGetCollectionsByTripId);
     on<GetCollectionByIdEvent>(_onGetCollectionById);
@@ -41,6 +47,7 @@ class CollectionsBloc extends Bloc<CollectionsEvent, CollectionsState> {
     on<GetAllCollectionsEvent>(_onGetAllCollections);
     on<FilterCollectionsByDateEvent>(_onFilterCollectionsByDate);
     on<FixDeliveryCollectionsEvent>(_onFixDeliveryCollections);
+    on<ExportTripCollectionsEvent>(_onExportTripCollections);
   }
 
   Future<void> _onGetAllCollections(
@@ -300,6 +307,64 @@ class CollectionsBloc extends Bloc<CollectionsEvent, CollectionsState> {
             totalSkipped: 0,
           ),
         );
+      },
+    );
+  }
+
+  Future<void> _onExportTripCollections(
+    ExportTripCollectionsEvent event,
+    Emitter<CollectionsState> emit,
+  ) async {
+    debugPrint('📤 BLoC: Exporting trip collections for trip: ${event.tripId}');
+
+    // We need the trip and collections data to export
+    // Get them from the current state
+    final currentState = state;
+    List<CollectionEntity> collections = [];
+    if (currentState is CollectionLoadedByTrip &&
+        currentState.tripId == event.tripId) {
+      collections = currentState.collections;
+    } else if (currentState is CollectionsLoaded) {
+      collections = currentState.collections;
+    }
+
+    if (collections.isEmpty) {
+      debugPrint('⚠️ BLoC: No collections to export');
+      emit(
+        const CollectionsError(
+          message: 'No collections data available to export',
+        ),
+      );
+      return;
+    }
+
+    // Get trip from TripBloc state — we need the trip entity
+    // For now, we'll use the collections' trip reference
+    final trip =
+        collections.first.trip ??
+        TripEntity(id: event.tripId, tripNumberId: event.tripId);
+
+    final result = await _exportTripCollections(
+      ExportTripCollectionsParams(trip: trip, collections: collections),
+    );
+
+    result.fold(
+      (failure) {
+        debugPrint(
+          '❌ BLoC: Failed to export trip collections: ${failure.message}',
+        );
+        emit(
+          CollectionsError(
+            message: failure.message,
+            errorCode: failure.statusCode,
+          ),
+        );
+      },
+      (csvBytes) {
+        debugPrint(
+          '✅ BLoC: Successfully exported trip collections (${csvBytes.length} bytes)',
+        );
+        emit(TripCollectionsExported(csvBytes: csvBytes, tripId: event.tripId));
       },
     );
   }

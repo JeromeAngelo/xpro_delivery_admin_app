@@ -78,16 +78,24 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
         debugPrint('✅ Authentication restored from storage');
       } else {
         debugPrint('❌ No stored authentication found');
+        // Throw a non-401 exception so the AuthInterceptor does not
+        // log the user out when the auth store is just empty.
         throw const ServerException(
           message: 'User not authenticated. Please log in again.',
-          statusCode: '401',
+          statusCode: 'no-auth',
         );
       }
     } catch (e) {
       debugPrint('❌ Failed to ensure authentication: ${e.toString()}');
+      // Preserve the original status code if it was a ServerException,
+      // otherwise default to a non-auth code so we don't trigger a logout
+      // for unrelated errors (e.g. SharedPreferences failure).
+      if (e is ServerException) {
+        rethrow;
+      }
       throw ServerException(
         message: 'Authentication error: ${e.toString()}',
-        statusCode: '401',
+        statusCode: 'auth-restore-failed',
       );
     }
   }
@@ -213,26 +221,29 @@ class GeneralUserRemoteDataSourceImpl implements GeneralUserRemoteDataSource {
         // ✅ NEW FEATURE: Record login in authLogs collection
         // ======================================================
         // ======================================================
-// ✅ NEW FEATURE: Record login in authLogs collection
-// ======================================================
-try {
-  final meta = await buildDeviceMetadata();
+        // ✅ NEW FEATURE: Record login in authLogs collection
+        // ======================================================
+        try {
+          final meta = await buildDeviceMetadata();
 
-  await _pocketBaseClient.collection('authLogs').create(
-    body: {
-      'user': authData.record!.id,
-      'loginTime': DateTime.now().toIso8601String(),
+          await _pocketBaseClient
+              .collection('authLogs')
+              .create(
+                body: {
+                  'user': authData.record!.id,
+                  'loginTime': DateTime.now().toIso8601String(),
 
-      // device/app metadata
-      ...meta,
-    },
-  );
+                  // device/app metadata
+                  ...meta,
+                },
+              );
 
-  debugPrint('📝 Login recorded with device info for user: ${authData.record!.id}');
-} catch (logError) {
-  debugPrint('⚠️ Failed to write auth log: $logError');
-}
-
+          debugPrint(
+            '📝 Login recorded with device info for user: ${authData.record!.id}',
+          );
+        } catch (logError) {
+          debugPrint('⚠️ Failed to write auth log: $logError');
+        }
 
         return GeneralUserModel.fromJson(userData);
       } catch (e) {
@@ -986,7 +997,7 @@ try {
       debugPrint('🔄 Fetching user by ID: $userId');
 
       // Ensure PocketBase client is authenticated
-     // await _ensureAuthenticated();
+      // await _ensureAuthenticated();
 
       // Fetch the user with expanded relations
       final record = await _pocketBaseClient

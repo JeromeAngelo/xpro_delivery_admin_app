@@ -104,7 +104,10 @@ class _CollectionCompletedCustomersTableState
             DataColumn(label: Text('Ref ID')),
             DataColumn(label: Text('Invoices')), // ✅ added
             DataColumn(label: Text('Mode of Payment')),
-            DataColumn(label: Text('Amount')),
+            
+            DataColumn(label: Text('Expected Total Amount Collected')),
+            DataColumn(label: Text('Total Amount Collected')),
+
             DataColumn(label: Text('Completed At')),
             DataColumn(label: Text('Actions')),
           ],
@@ -133,7 +136,16 @@ class _CollectionCompletedCustomersTableState
                     ),
 
                     DataCell(Text(_formatModeOfPayment(customer.mop))),
+                   
                     DataCell(
+                      Text(
+                        currencyFormatter.format(
+                          customer.deliveryData?.totalAmount ?? 0.0,
+                        ),
+                      ),
+                      onTap: () => _navigateToCustomerData(context, customer),
+                    ),
+                     DataCell(
                       Text(
                         currencyFormatter.format(
                           (customer.totalAmount != null &&

@@ -270,6 +270,7 @@ import '../common/app/features/trip_ticket/collection/data/datasource/remote_dat
 import '../common/app/features/trip_ticket/collection/domain/repo/collection_repo.dart';
 import '../common/app/features/trip_ticket/collection/domain/usecases/delete_collection.dart';
 import '../common/app/features/trip_ticket/collection/domain/usecases/filter_collection_by_date.dart';
+import '../common/app/features/trip_ticket/collection/domain/usecases/export_trip_collections.dart';
 import '../common/app/features/trip_ticket/collection/domain/usecases/fix_delivery_collections.dart';
 import '../common/app/features/trip_ticket/collection/domain/usecases/get_collection_by_id.dart';
 import '../common/app/features/trip_ticket/collection/domain/usecases/get_collection_by_trip_id.dart'
@@ -1045,6 +1046,7 @@ Future<void> initDeliveryCollectionsData() async {
       getAllCollections: sl(),
       filterCollectionsByDate: sl(),
       fixDeliveryCollections: sl(),
+      exportTripCollections: sl(),
     ),
   );
 
@@ -1054,6 +1056,7 @@ Future<void> initDeliveryCollectionsData() async {
   sl.registerLazySingleton(() => GetAllCollections(sl()));
   sl.registerLazySingleton(() => FilterCollectionsByDate(sl()));
   sl.registerLazySingleton(() => FixDeliveryCollections(collectionRepo: sl()));
+  sl.registerLazySingleton(() => ExportTripCollections(sl()));
 
   sl.registerLazySingleton<CollectionRepo>(
     () => CollectionRepoImpl(remoteDataSource: sl()),

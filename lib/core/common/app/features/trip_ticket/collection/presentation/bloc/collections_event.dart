@@ -84,3 +84,12 @@ class FixDeliveryCollectionsEvent extends CollectionsEvent {
   @override
   List<Object?> get props => [];
 }
+
+class ExportTripCollectionsEvent extends CollectionsEvent {
+  final String tripId;
+
+  const ExportTripCollectionsEvent(this.tripId);
+
+  @override
+  List<Object?> get props => [tripId];
+}

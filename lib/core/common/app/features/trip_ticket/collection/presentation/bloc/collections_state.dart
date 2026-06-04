@@ -114,9 +114,13 @@ class DeliveryCollectionsFixed extends CollectionsState {
   });
 
   @override
-  List<Object?> get props => [updatedCollections, totalMatched, totalUpdated, totalSkipped];
+  List<Object?> get props => [
+    updatedCollections,
+    totalMatched,
+    totalUpdated,
+    totalSkipped,
+  ];
 }
-
 
 class CollectionsFilteredByDate extends CollectionsState {
   final List<CollectionEntity> collections;
@@ -133,4 +137,14 @@ class CollectionsFilteredByDate extends CollectionsState {
 
   @override
   List<Object?> get props => [collections, startDate, endDate, isFromCache];
+}
+
+class TripCollectionsExported extends CollectionsState {
+  final List<int> csvBytes;
+  final String tripId;
+
+  const TripCollectionsExported({required this.csvBytes, required this.tripId});
+
+  @override
+  List<Object?> get props => [csvBytes, tripId];
 }

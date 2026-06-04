@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../../../../errors/exceptions.dart';
 import '../../../../../../../errors/failures.dart';
 import '../../../../../../../typedefs/typedefs.dart';
+import '../../../trip/domain/entity/trip_entity.dart';
 import '../../domain/entity/collection_entity.dart';
 import '../../domain/repo/collection_repo.dart';
 import '../datasource/remote_datasource/collection_remote_datasource.dart';
@@ -191,5 +194,99 @@ class CollectionRepoImpl implements CollectionRepo {
       );
       return Left(ServerFailure(message: e.toString(), statusCode: '500'));
     }
+  }
+
+  @override
+  ResultFuture<List<int>> exportTripCollections({
+    required TripEntity trip,
+    required List<CollectionEntity> collections,
+  }) async {
+    try {
+      debugPrint('🔄 REPO: Exporting trip collections to CSV');
+
+      final csvBytes = _buildTripCollectionsCsv(trip, collections);
+
+      debugPrint(
+        '✅ REPO: Successfully generated CSV (${csvBytes.length} bytes)',
+      );
+      return Right(csvBytes);
+    } catch (e) {
+      debugPrint('❌ REPO: Failed to export trip collections: ${e.toString()}');
+      return Left(ServerFailure(message: e.toString(), statusCode: '500'));
+    }
+  }
+
+  /// Build CSV bytes from trip and collections data
+  List<int> _buildTripCollectionsCsv(
+    TripEntity trip,
+    List<CollectionEntity> collections,
+  ) {
+    String csvEscape(String v) {
+      final needsQuotes =
+          v.contains(',') ||
+          v.contains('"') ||
+          v.contains('\n') ||
+          v.contains('\r');
+      var out = v.replaceAll('"', '""');
+      if (needsQuotes) out = '"$out"';
+      return out;
+    }
+
+    final rows = <List<String>>[
+      // Header row
+      [
+        'Trip Number',
+        'Trip Route',
+        'Customer RefID',
+        'Customer Name',
+        'Customer Location',
+        'Invoices',
+        'Picklist ID Ref',
+        'Mode of Payment',
+        'Expected Total Amount',
+        'Total Amount Collected',
+        'Status',
+        'Date Created',
+      ],
+      // Data rows
+      ...collections.map((collection) {
+        // If collection totalAmount is 0 or null, use deliveryData totalAmount
+        final totalAmountCollected =
+            (collection.totalAmount != null && collection.totalAmount! > 0)
+                ? collection.totalAmount!
+                : collection.deliveryData?.totalAmount ?? 0.0;
+
+        // Format invoices list — show all invoice names in one row
+        String invoicesText = 'N/A';
+        if (collection.invoices != null && collection.invoices!.isNotEmpty) {
+          invoicesText = collection.invoices!
+              .map((inv) => inv.name ?? 'N/A')
+              .join('; ');
+        } else if (collection.invoice?.name != null) {
+          invoicesText = collection.invoice!.name!;
+        }
+
+        return [
+          trip.tripNumberId ?? 'N/A',
+          trip.name ?? 'N/A',
+          collection.customer?.refId ?? 'N/A',
+          collection.customer?.name ?? 'N/A',
+          collection.customer?.province ?? 'N/A',
+          invoicesText,
+          collection.deliveryData?.refID ?? 'N/A',
+          collection.mop ?? 'N/A',
+          (collection.deliveryData?.totalAmount ?? 0.0).toStringAsFixed(2),
+          totalAmountCollected.toStringAsFixed(2),
+          collection.status ?? 'N/A',
+          collection.created != null
+              ? collection.created!.toIso8601String()
+              : 'N/A',
+        ];
+      }),
+    ];
+
+    final csv = rows.map((r) => r.map(csvEscape).join(',')).join('\r\n');
+
+    return utf8.encode(csv);
   }
 }
