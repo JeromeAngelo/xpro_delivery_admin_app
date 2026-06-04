@@ -162,6 +162,20 @@ class TripCustomersTable extends StatelessWidget {
       status = latestUpdate.title?.toString().split('.').last ?? "No Status";
     }
 
+    // Forced "End Delivery" status: if ANY of the delivery updates is an
+    // "End Delivery" update, lock the displayed status to "End Delivery"
+    // regardless of the latest update's title.
+    final bool hasEndDeliveryUpdate = delivery.deliveryUpdates.any((update) {
+      final rawTitle = update.title?.toString() ?? '';
+      final shortTitle =
+          rawTitle.contains('.') ? rawTitle.split('.').last : rawTitle;
+      return shortTitle.toLowerCase() == 'end delivery';
+    });
+
+    if (hasEndDeliveryUpdate) {
+      status = 'End Delivery';
+    }
+
     // Map status to color
     Color color;
     switch (status.toLowerCase()) {
