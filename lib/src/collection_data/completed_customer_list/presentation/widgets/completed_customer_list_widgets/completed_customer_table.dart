@@ -105,12 +105,7 @@ class CompletedCustomerDataTable extends StatelessWidget {
                 ),
                 DataCell(
                   Text(
-                    currencyFormatter.format(
-                      (collection.totalAmount != null &&
-                              collection.totalAmount! > 0)
-                          ? collection.totalAmount!
-                          : collection.deliveryData?.totalAmount ?? 0.0,
-                    ),
+                    currencyFormatter.format((collection.totalAmount ?? 0.0)),
                   ),
                   onTap: () => _navigateToCollectionData(context, collection),
                 ),

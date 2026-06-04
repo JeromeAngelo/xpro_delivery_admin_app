@@ -20,7 +20,10 @@ class CollectionEntity extends Equatable {
   final List<InvoiceDataEntity>? invoices;
   final String? mop; // Method of Payment
   final String? status;
-
+  final String? transactionNumber;
+  final String? bankName;
+  final String? refNumber;
+  final String? bankAccountNumber;
   final double? totalAmount;
 
   // Standard fields
@@ -37,6 +40,10 @@ class CollectionEntity extends Equatable {
     this.status,
     this.customer,
     this.invoices,
+    this.refNumber,
+    this.transactionNumber,
+    this.bankName,
+    this.bankAccountNumber,
     this.invoice,
     this.totalAmount,
     this.created,
@@ -72,6 +79,11 @@ class CollectionEntity extends Equatable {
       status: '',
       invoice: null,
       invoices: [],
+      transactionNumber: '',
+      bankName: '',
+      refNumber: '',
+      bankAccountNumber: '',
+
       totalAmount: 0.0,
       created: null,
       updated: null,
@@ -90,6 +102,10 @@ class CollectionEntity extends Equatable {
     List<InvoiceDataEntity>? invoices,
     String? mop,
     String? status,
+    String? transactionNumber,
+    String? bankName,
+    String? refNumber,
+    String? bankAccountNumber,
     double? totalAmount,
     DateTime? created,
     DateTime? updated,
@@ -105,6 +121,10 @@ class CollectionEntity extends Equatable {
       invoice: invoice ?? this.invoice,
       mop: mop ?? this.mop,
       status: status ?? this.status,
+      transactionNumber: transactionNumber ?? this.transactionNumber,
+      bankName: bankName ?? this.bankName,
+      refNumber: refNumber ?? this.refNumber,
+      bankAccountNumber: bankAccountNumber ?? this.bankAccountNumber, 
       totalAmount: totalAmount ?? this.totalAmount,
       created: created ?? this.created,
       updated: updated ?? this.updated,

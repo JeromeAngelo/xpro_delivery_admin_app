@@ -107,7 +107,7 @@ class _CollectionCompletedCustomersTableState
             
             DataColumn(label: Text('Expected Total Amount Collected')),
             DataColumn(label: Text('Total Amount Collected')),
-
+            DataColumn(label: Text('Transaction Number')),
             DataColumn(label: Text('Completed At')),
             DataColumn(label: Text('Actions')),
           ],
@@ -148,12 +148,14 @@ class _CollectionCompletedCustomersTableState
                      DataCell(
                       Text(
                         currencyFormatter.format(
-                          (customer.totalAmount != null &&
-                                  customer.totalAmount! > 0)
-                              ? customer.totalAmount!
-                              : customer.deliveryData?.totalAmount ?? 0.0,
+                         (customer.totalAmount ?? 0.0)
+                             
                         ),
                       ),
+                      onTap: () => _navigateToCustomerData(context, customer),
+                    ),
+                    DataCell(
+                      Text(customer.transactionNumber ?? 'N/A'),
                       onTap: () => _navigateToCustomerData(context, customer),
                     ),
                     DataCell(

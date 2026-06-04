@@ -366,6 +366,11 @@ class CollectionRemoteDataSourceImpl implements CollectionRemoteDataSource {
       customer: customerModel,
       invoices: invoicesList,
       mop: record.data['mop'],
+      transactionNumber: record.data['transactionNumber'],
+      bankName: record.data['bankName'],
+      refNumber: record.data['refNumber'],
+      bankAccountNumber: record.data['bankAccountNumber'],
+      
       invoice: invoiceModel,
       status: record.data['status'],
       created: parseDate(record.created),

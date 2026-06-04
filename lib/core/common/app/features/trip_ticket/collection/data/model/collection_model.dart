@@ -27,6 +27,10 @@ class CollectionModel extends CollectionEntity {
     super.totalAmount,
     super.status,
     super.created,
+    super.bankAccountNumber,
+    super.refNumber,
+    super.transactionNumber,
+    super.bankName,
     super.mop,
     super.updated,
   }) : pocketbaseId = id ?? '',
@@ -199,6 +203,11 @@ class CollectionModel extends CollectionEntity {
       deliveryData: deliveryDataModel,
       trip: tripModel,
       customer: customerModel,
+      transactionNumber: json['transactionNumber']?.toString(),
+      bankName: json['bankName']?.toString(),
+      refNumber: json['refNumber']?.toString(),
+      bankAccountNumber: json['bankAccountNumber']?.toString(),
+
       invoices: invoicesList,
       invoice: invoiceModel,
       created: parseDate(json['created']),
@@ -217,6 +226,10 @@ class CollectionModel extends CollectionEntity {
       'status': status,
       'mop': mop,
       'customer': customer?.id,
+      'transactionNumber': transactionNumber,
+      'bankName': bankName,
+      'refNumber': refNumber,
+      'bankAccountNumber': bankAccountNumber,
       'invoices':
           invoices?.map((inv) => inv.id).toList(), // ✅ uses entity field
       'invoice': invoice?.id,
@@ -233,6 +246,11 @@ class CollectionModel extends CollectionEntity {
     DeliveryDataEntity? deliveryData,
     TripEntity? trip,
     String? status,
+    String? refNumber,
+    String? bankName,
+    String? bankAccountNumber,
+    String? transactionNumber,
+    
     String? mop,
     CustomerDataEntity? customer,
 
