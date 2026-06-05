@@ -39,6 +39,9 @@ class CollectionTripDashboardWidget extends StatelessWidget {
       }
     }
 
+    // Calculate discrepancy: expected total amount - total amount collected
+    final double discrepancy = expectedTotalAmount - totalAmountCollected;
+
     // Format currency
     final currencyFormatter = NumberFormat.currency(
       symbol: '₱',
@@ -76,6 +79,18 @@ class CollectionTripDashboardWidget extends StatelessWidget {
                   : 'N/A',
           label: 'Expected Total Amount',
           iconColor: Colors.deepOrange,
+        ),
+        DashboardInfoItem(
+          icon: Icons.warning_amber_rounded,
+          value:
+              expectedTotalAmount > 0
+                  ? currencyFormatter.format(discrepancy)
+                  : 'N/A',
+          label: 'Discrepancy',
+          iconColor:
+              discrepancy == 0
+                  ? Colors.green
+                  : (discrepancy > 0 ? Colors.red : Colors.blue),
         ),
         DashboardInfoItem(
           icon: Icons.calendar_today,
@@ -139,7 +154,7 @@ class CollectionTripDashboardWidget extends StatelessWidget {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               children: List.generate(
-                6, // Same number as actual items
+                7, // Same number as actual items
                 (index) => _buildDashboardItemSkeleton(context),
               ),
             ),
