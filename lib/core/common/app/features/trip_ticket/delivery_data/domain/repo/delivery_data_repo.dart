@@ -5,30 +5,32 @@ abstract class DeliveryDataRepo {
   const DeliveryDataRepo();
 
   /// Load all delivery data
-  /// 
+  ///
   /// Returns a list of all delivery data entities
   ResultFuture<List<DeliveryDataEntity>> getAllDeliveryData();
-  
+
   /// Load all delivery data by trip ID
-  /// 
+  ///
   /// Takes a trip ID and returns all delivery data entities associated with that trip
   ResultFuture<List<DeliveryDataEntity>> getDeliveryDataByTripId(String tripId);
-  
+
   /// Load delivery data by ID
-  /// 
+  ///
   /// Takes a delivery data ID and returns the corresponding delivery data entity
   ResultFuture<DeliveryDataEntity> getDeliveryDataById(String id);
 
   ResultFuture<bool> deleteDeliveryData(String id);
 
-  ResultFuture<List<DeliveryDataEntity>> getAllDeliveryDataWithTrips();
-  
+  ResultFuture<List<DeliveryDataEntity>> getAllDeliveryDataWithTrips({
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+
   /// Add delivery data to existing trip
-  /// 
+  ///
   /// Takes a trip ID and adds delivery data to that trip
   ResultFuture<bool> addDeliveryDataToTrip(String tripId);
 
-
-/// Returns a list (can be empty, single, or multiple results)
-ResultFuture<List<DeliveryDataEntity>> searchDeliveryData(String query);
+  /// Returns a list (can be empty, single, or multiple results)
+  ResultFuture<List<DeliveryDataEntity>> searchDeliveryData(String query);
 }

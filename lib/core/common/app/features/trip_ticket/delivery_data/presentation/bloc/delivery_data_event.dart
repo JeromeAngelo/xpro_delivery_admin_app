@@ -32,7 +32,6 @@ class DeleteDeliveryDataEvent extends DeliveryDataEvent {
   List<Object?> get props => [id];
 }
 
-
 /// Event to get delivery data by ID
 class GetDeliveryDataByIdEvent extends DeliveryDataEvent {
   final String id;
@@ -45,7 +44,13 @@ class GetDeliveryDataByIdEvent extends DeliveryDataEvent {
 
 /// Event to get all delivery data with trips
 class GetAllDeliveryDataWithTripsEvent extends DeliveryDataEvent {
-  const GetAllDeliveryDataWithTripsEvent();
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  const GetAllDeliveryDataWithTripsEvent({this.startDate, this.endDate});
+
+  @override
+  List<Object?> get props => [startDate, endDate];
 }
 
 /// Event to add delivery data to existing trip

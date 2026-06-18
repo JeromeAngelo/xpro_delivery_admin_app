@@ -17,7 +17,9 @@ class DeliveryDataRepoImpl implements DeliveryDataRepo {
     try {
       debugPrint('🌐 Fetching all delivery data from remote');
       final remoteDeliveryData = await _remoteDataSource.getAllDeliveryData();
-      debugPrint('✅ Retrieved ${remoteDeliveryData.length} delivery data records');
+      debugPrint(
+        '✅ Retrieved ${remoteDeliveryData.length} delivery data records',
+      );
       return Right(remoteDeliveryData);
     } on ServerException catch (e) {
       debugPrint('⚠️ API Error: ${e.message}');
@@ -29,11 +31,16 @@ class DeliveryDataRepoImpl implements DeliveryDataRepo {
   }
 
   @override
-  ResultFuture<List<DeliveryDataEntity>> getDeliveryDataByTripId(String tripId) async {
+  ResultFuture<List<DeliveryDataEntity>> getDeliveryDataByTripId(
+    String tripId,
+  ) async {
     try {
       debugPrint('🌐 Fetching delivery data for trip ID: $tripId from remote');
-      final remoteDeliveryData = await _remoteDataSource.getDeliveryDataByTripId(tripId);
-      debugPrint('✅ Retrieved ${remoteDeliveryData.length} delivery data records for trip ID: $tripId');
+      final remoteDeliveryData = await _remoteDataSource
+          .getDeliveryDataByTripId(tripId);
+      debugPrint(
+        '✅ Retrieved ${remoteDeliveryData.length} delivery data records for trip ID: $tripId',
+      );
       return Right(remoteDeliveryData);
     } on ServerException catch (e) {
       debugPrint('⚠️ API Error: ${e.message}');
@@ -48,7 +55,9 @@ class DeliveryDataRepoImpl implements DeliveryDataRepo {
   ResultFuture<DeliveryDataEntity> getDeliveryDataById(String id) async {
     try {
       debugPrint('🌐 Fetching delivery data with ID: $id from remote');
-      final remoteDeliveryData = await _remoteDataSource.getDeliveryDataById(id);
+      final remoteDeliveryData = await _remoteDataSource.getDeliveryDataById(
+        id,
+      );
       debugPrint('✅ Retrieved delivery data with ID: $id');
       return Right(remoteDeliveryData);
     } on ServerException catch (e) {
@@ -60,7 +69,7 @@ class DeliveryDataRepoImpl implements DeliveryDataRepo {
     }
   }
 
-    @override
+  @override
   ResultFuture<bool> deleteDeliveryData(String id) async {
     try {
       debugPrint('🌐 Deleting delivery data with ID: $id from remote');
@@ -75,22 +84,28 @@ class DeliveryDataRepoImpl implements DeliveryDataRepo {
       return Left(ServerFailure(message: e.toString(), statusCode: '500'));
     }
   }
-  
+
   @override
-ResultFuture<List<DeliveryDataEntity>> getAllDeliveryDataWithTrips() async {
-  try {
-    debugPrint('🌐 Fetching all delivery data with trips from remote');
-    final remoteDeliveryData = await _remoteDataSource.getAllDeliveryDataWithTrips();
-    debugPrint('✅ Retrieved ${remoteDeliveryData.length} delivery data records with trips');
-    return Right(remoteDeliveryData);
-  } on ServerException catch (e) {
-    debugPrint('⚠️ API Error: ${e.message}');
-    return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-  } catch (e) {
-    debugPrint('⚠️ Unexpected Error: ${e.toString()}');
-    return Left(ServerFailure(message: e.toString(), statusCode: '500'));
+  ResultFuture<List<DeliveryDataEntity>> getAllDeliveryDataWithTrips({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      debugPrint('🌐 Fetching all delivery data with trips from remote');
+      final remoteDeliveryData = await _remoteDataSource
+          .getAllDeliveryDataWithTrips(startDate: startDate, endDate: endDate);
+      debugPrint(
+        '✅ Retrieved ${remoteDeliveryData.length} delivery data records with trips',
+      );
+      return Right(remoteDeliveryData);
+    } on ServerException catch (e) {
+      debugPrint('⚠️ API Error: ${e.message}');
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      debugPrint('⚠️ Unexpected Error: ${e.toString()}');
+      return Left(ServerFailure(message: e.toString(), statusCode: '500'));
+    }
   }
-}
 
   @override
   ResultFuture<bool> addDeliveryDataToTrip(String tripId) async {
@@ -107,21 +122,26 @@ ResultFuture<List<DeliveryDataEntity>> getAllDeliveryDataWithTrips() async {
       return Left(ServerFailure(message: e.toString(), statusCode: '500'));
     }
   }
-  
-  @override
-  ResultFuture<List<DeliveryDataEntity>> searchDeliveryData(String query) async {
-   try {
-     debugPrint('🌐 Searching delivery data with query: "$query" from remote');
-     final remoteDeliveryData = await _remoteDataSource.searchDeliveryData(query);
-     debugPrint('✅ Retrieved ${remoteDeliveryData.length} delivery data records for query: "$query"');
-     return Right(remoteDeliveryData);
-   } on ServerException catch (e) {
-     debugPrint('⚠️ API Error: ${e.message}');
-     return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-   } catch (e) {
-     debugPrint('⚠️ Unexpected Error: ${e.toString()}');
-     return Left(ServerFailure(message: e.toString(), statusCode: '500'));
-   }
-  }
 
+  @override
+  ResultFuture<List<DeliveryDataEntity>> searchDeliveryData(
+    String query,
+  ) async {
+    try {
+      debugPrint('🌐 Searching delivery data with query: "$query" from remote');
+      final remoteDeliveryData = await _remoteDataSource.searchDeliveryData(
+        query,
+      );
+      debugPrint(
+        '✅ Retrieved ${remoteDeliveryData.length} delivery data records for query: "$query"',
+      );
+      return Right(remoteDeliveryData);
+    } on ServerException catch (e) {
+      debugPrint('⚠️ API Error: ${e.message}');
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      debugPrint('⚠️ Unexpected Error: ${e.toString()}');
+      return Left(ServerFailure(message: e.toString(), statusCode: '500'));
+    }
+  }
 }

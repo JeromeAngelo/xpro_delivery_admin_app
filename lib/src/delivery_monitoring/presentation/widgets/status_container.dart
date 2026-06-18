@@ -9,6 +9,7 @@ class StatusContainer extends StatelessWidget {
   final Color statusColor;
   final List<DeliveryDataEntity> deliveryDataList;
   final Function(DeliveryDataEntity) onDeliveryDataTap;
+  final bool isLoading;
 
   const StatusContainer({
     super.key,
@@ -18,6 +19,7 @@ class StatusContainer extends StatelessWidget {
     required this.deliveryDataList,
     required this.onDeliveryDataTap,
     required this.subtitle,
+    this.isLoading = false,
   });
 
   @override
@@ -106,7 +108,9 @@ class StatusContainer extends StatelessWidget {
             ),
 
             // Delivery data list
-            if (deliveryDataList.isEmpty)
+            if (isLoading)
+              const Expanded(child: Center(child: CircularProgressIndicator()))
+            else if (deliveryDataList.isEmpty)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),

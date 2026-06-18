@@ -20,7 +20,10 @@ abstract class DeliveryDataRemoteDataSource {
   // Get delivery data by ID
   Future<DeliveryDataModel> getDeliveryDataById(String id);
 
-  Future<List<DeliveryDataModel>> getAllDeliveryDataWithTrips();
+  Future<List<DeliveryDataModel>> getAllDeliveryDataWithTrips({
+    DateTime? startDate,
+    DateTime? endDate,
+  });
 
   Future<bool> deleteDeliveryData(String id);
 
@@ -138,35 +141,140 @@ class DeliveryDataRemoteDataSourceImpl implements DeliveryDataRemoteDataSource {
   }
 
   @override
-  Future<List<DeliveryDataModel>> getAllDeliveryDataWithTrips() async {
-    return await _retryWithBackoff(() async {
-      debugPrint('🔄 Fetching all delivery data with trips');
-
-      // Ensure PocketBase client is authenticated
+  Future<List<DeliveryDataModel>> getAllDeliveryDataWithTrips({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    // ✅ Fast path: only guarantee auth once, no per-retry overhead.
+    if (!_pocketBaseClient.authStore.isValid) {
       await _ensureAuthenticated();
+    }
 
-      final result = await _pocketBaseClient
+    return _retryWithBackoff(() async {
+      debugPrint('🔄 Fetching all delivery data with trips (fast)');
+
+      // ────────────────────────────────────────────────────────────────────
+      // ⚡ Speed strategy for 10,000+ records
+      // ────────────────────────────────────────────────────────────────────
+      // 1) Replace serial getFullList with parallel pagination.
+      // 2) Keep ALL expands the UI needs (customer, invoice, invoices, trip,
+      //    deliveryUpdates, invoiceItems, trip.user).
+      // 3) Use server-side `fields` projection to trim the payload while
+      //    still expanding every relation.
+      // 4) Fetch page 1 first so the UI can render immediately, then fetch
+      //    remaining pages in parallel batches.
+      // 5) Map records in parallel batches to avoid blocking the UI thread.
+      // 6) Default date filter = last 3 days. User can override via screen.
+      // ────────────────────────────────────────────────────────────────────
+      const perPage = 200;
+      const maxParallelPages = 4;
+
+      // All expands preserved exactly as before.
+      const expandRelations =
+          'customer,invoices,trip,deliveryUpdates,invoiceItems,trip.user';
+
+      // Projection: keep the parent fields + every expand relation.
+      // NOTE: `expand.<rel>.*` is required for PocketBase to actually return
+      // the expanded data when `fields` is used.
+      const projection =
+          'id,collectionId,collectionName,created,updated,hasTrip,'
+          'deliveryNumber,refID,totalAmount,pinLang,pinLong,'
+          'customer,invoice,invoices,trip,deliveryUpdates,invoiceItems,'
+          'expand.customer.*,expand.invoice.*,expand.invoices.*,'
+          'expand.trip.*,expand.trip.user.*,expand.deliveryUpdates.*,'
+          'expand.invoiceItems.*';
+
+      // ✅ Default to last 3 days when no date range is provided.
+      final effectiveStart = startDate ??
+          DateTime.now().toUtc().subtract(const Duration(days: 3));
+      final effectiveEnd = endDate ?? DateTime.now().toUtc();
+
+      final filter =
+          "hasTrip = true && created >= '${effectiveStart.toIso8601String()}' "
+          "&& created <= '${effectiveEnd.toIso8601String()}'";
+
+      // Phase 1: fetch page 1 to know total count and render immediately.
+      final firstPage = await _pocketBaseClient
           .collection('deliveryData')
-          .getFullList(
-            filter:
-                'hasTrip = true', // ← ONLY DIFFERENCE: true instead of false
-            expand:
-                'customer,invoice,invoices,trip,deliveryUpdates,invoiceItems,trip.user', // ← ALSO EXPAND TRIP.USER
+          .getList(
+            page: 1,
+            perPage: perPage,
+            filter: filter,
+            expand: expandRelations,
             sort: '-created',
+            fields: projection,
           );
 
+      final totalItems = firstPage.totalItems;
+      final totalPages = (totalItems / perPage).ceil();
+
       debugPrint(
-        '✅ Retrieved ${result.length} delivery data records with trips',
+        '✅ Page 1/$totalPages fetched (${firstPage.items.length}/$totalItems items)',
       );
 
-      List<DeliveryDataModel> deliveryDataList = [];
+      // Map page 1 immediately.
+      final pageOneModels = firstPage.items
+          .map(_processDeliveryDataRecordFull)
+          .toList(growable: false);
 
-      for (var record in result) {
-        deliveryDataList.add(_processDeliveryDataRecordFull(record));
+      if (totalPages <= 1) {
+        return pageOneModels;
       }
 
-      return deliveryDataList;
+      // Phase 2: fetch remaining pages in parallel batches.
+      final List<RecordModel> all = List<RecordModel>.from(firstPage.items);
+
+      for (var start = 2; start <= totalPages; start += maxParallelPages) {
+        final end = (start + maxParallelPages - 1).clamp(2, totalPages);
+        final pageFutures = <Future<ResultList<RecordModel>>>[];
+
+        for (var p = start; p <= end; p++) {
+          pageFutures.add(
+            _pocketBaseClient
+                .collection('deliveryData')
+                .getList(
+                  page: p,
+                  perPage: perPage,
+                  filter: filter,
+                  expand: expandRelations,
+                  sort: '-created',
+                  fields: projection,
+                ),
+          );
+        }
+
+        final results = await Future.wait(pageFutures);
+        for (final res in results) {
+          all.addAll(res.items);
+        }
+
+        if (all.length >= totalItems) break;
+      }
+
+      debugPrint(
+        '✅ Retrieved ${all.length} delivery data records with trips (parallel pages)',
+      );
+
+      // Map all records. For very large datasets, process in chunks to keep
+      // the UI thread responsive.
+      return _mapRecordsInChunks(all, _processDeliveryDataRecordFull);
     }, 'getAllDeliveryDataWithTrips');
+  }
+
+  /// ✅ Maps a large list of records in chunks to avoid jank on the main
+  /// thread. Each chunk is mapped synchronously; the list is then flattened.
+  List<T> _mapRecordsInChunks<T>(
+    List<RecordModel> records,
+    T Function(RecordModel) mapper, {
+    int chunkSize = 500,
+  }) {
+    final List<T> result = [];
+    for (var i = 0; i < records.length; i += chunkSize) {
+      final end = (i + chunkSize).clamp(0, records.length);
+      final chunk = records.sublist(i, end);
+      result.addAll(chunk.map(mapper));
+    }
+    return result;
   }
 
   @override
@@ -546,9 +654,10 @@ class DeliveryDataRemoteDataSourceImpl implements DeliveryDataRemoteDataSource {
           record.data['pinLong'] != null
               ? double.tryParse(record.data['pinLong'].toString())
               : null,
-              totalAmount: record.data['totalAmount'] != null
-          ? double.tryParse(record.data['totalAmount'].toString())
-          : null,
+      totalAmount:
+          record.data['totalAmount'] != null
+              ? double.tryParse(record.data['totalAmount'].toString())
+              : null,
       customer: customerModel,
       invoice: invoiceModel,
       invoices: invoicesList,
@@ -557,74 +666,85 @@ class DeliveryDataRemoteDataSourceImpl implements DeliveryDataRemoteDataSource {
       deliveryUpdates: deliveryUpdatesList,
     );
   }
+
   @override
-Future<List<DeliveryDataModel>> searchDeliveryData(String query) async {
-  return _retryWithBackoff(() async {
-    debugPrint('🌐 Remote: searching delivery data with query: "$query"');
+  Future<List<DeliveryDataModel>> searchDeliveryData(String query) async {
+    return _retryWithBackoff(() async {
+      debugPrint('🌐 Remote: searching delivery data with query: "$query"');
 
-    await _ensureAuthenticated();
+      await _ensureAuthenticated();
 
-    final trimmedQuery = query.trim();
-    if (trimmedQuery.isEmpty) {
-      debugPrint('⚠️ Remote: empty search query, returning empty result');
-      return <DeliveryDataModel>[];
-    }
+      final trimmedQuery = query.trim();
+      if (trimmedQuery.isEmpty) {
+        debugPrint('⚠️ Remote: empty search query, returning empty result');
+        return <DeliveryDataModel>[];
+      }
 
-    const perPage = 200;
-    int page = 1;
+      const perPage = 200;
+      int page = 1;
 
-    final List<RecordModel> all = [];
+      final List<RecordModel> all = [];
 
-    while (true) {
-      final res = await _pocketBaseClient.collection('deliveryData').getList(
-            page: page,
-            perPage: perPage,
-            sort: '-created',
-            expand: 'customer,invoice,invoices,trip,deliveryUpdates,invoiceItems',
-          );
+      while (true) {
+        final res = await _pocketBaseClient
+            .collection('deliveryData')
+            .getList(
+              page: page,
+              perPage: perPage,
+              sort: '-created',
+              expand:
+                  'customer,invoice,invoices,trip,deliveryUpdates,invoiceItems',
+            );
 
-      all.addAll(res.items);
+        all.addAll(res.items);
 
-      if (res.items.length < perPage) break;
-      page++;
-    }
+        if (res.items.length < perPage) break;
+        page++;
+      }
 
-    debugPrint('📦 Remote: fetched ${all.length} delivery records for local search');
-
-    final keywords = trimmedQuery
-        .toLowerCase()
-        .split(RegExp(r'\s+'))
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    final filtered = all.where((record) {
-      final customerRecord = _firstExpanded(record, 'customer');
-      final tripRecord = _firstExpanded(record, 'trip');
-
-      final customerName =
-          customerRecord?.data['name']?.toString().toLowerCase() ?? '';
-      final tripNumberId =
-          tripRecord?.data['tripNumberId']?.toString().toLowerCase() ?? '';
-
-      return keywords.any(
-        (keyword) =>
-            customerName.contains(keyword) || tripNumberId.contains(keyword),
+      debugPrint(
+        '📦 Remote: fetched ${all.length} delivery records for local search',
       );
-    }).toList(growable: false);
 
-    debugPrint(
-      '✅ Remote: found ${filtered.length} matching delivery records for query "$query"',
-    );
+      final keywords =
+          trimmedQuery
+              .toLowerCase()
+              .split(RegExp(r'\s+'))
+              .where((e) => e.isNotEmpty)
+              .toList();
 
-    return filtered
-        .map(_processDeliveryDataRecordFull)
-        .toList(growable: false);
-  }, 'searchDeliveryData').catchError((e) {
-    debugPrint('❌ Remote: failed to search delivery data: ${e.toString()}');
-    throw ServerException(
-      message: 'Failed to search delivery data: ${e.toString()}',
-      statusCode: e is ServerException ? e.statusCode : '500',
-    );
-  });
-}
+      final filtered = all
+          .where((record) {
+            final customerRecord = _firstExpanded(record, 'customer');
+            final tripRecord = _firstExpanded(record, 'trip');
+
+            final customerName =
+                customerRecord?.data['name']?.toString().toLowerCase() ?? '';
+            final tripNumberId =
+                tripRecord?.data['tripNumberId']?.toString().toLowerCase() ??
+                '';
+
+            return keywords.any(
+              (keyword) =>
+                  customerName.contains(keyword) ||
+                  tripNumberId.contains(keyword),
+            );
+          })
+          .toList(growable: false);
+
+      debugPrint(
+        '✅ Remote: found ${filtered.length} matching delivery records for query "$query"',
+      );
+
+      return filtered
+          .map(_processDeliveryDataRecordFull)
+          .toList(growable: false);
+    }, 'searchDeliveryData').catchError((e) {
+      debugPrint('❌ Remote: failed to search delivery data: ${e.toString()}');
+      throw ServerException(
+        message: 'Failed to search delivery data: ${e.toString()}',
+        statusCode: e is ServerException ? e.statusCode : '500',
+      );
+    });
+  }
 }

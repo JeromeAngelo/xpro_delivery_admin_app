@@ -192,6 +192,30 @@ class _TripTicketSpecificTripViewState
     });
   }
 
+  /// ✅ Re-fetches every data source this screen depends on. Called when an
+  /// action that mutates the trip (like "unassign") completes successfully.
+  void _refreshAllTripData() {
+    if (!mounted) return;
+    debugPrint('🔄 Refreshing all trip data after unassign...');
+
+    // Core trip + customer/team data
+    context.read<TripBloc>().add(GetTripTicketByIdEvent(widget.tripId));
+    context.read<DeliveryDataBloc>().add(
+      GetDeliveryDataByTripIdEvent(widget.tripId),
+    );
+    context.read<PersonelBloc>().add(LoadPersonelsByTripIdEvent(widget.tripId));
+
+    // OTPs
+    context.read<OtpBloc>().add(LoadOtpByTripIdEvent(widget.tripId));
+    context.read<EndTripOtpBloc>().add(
+      LoadEndTripOtpByTripIdEvent(widget.tripId),
+    );
+
+    // Map-related data
+    _loadTripUpdatesForMap();
+    _loadTripCoordinatesForMap();
+  }
+
   @override
   void dispose() {
     _mapRefreshTimer?.cancel();
@@ -223,7 +247,19 @@ class _TripTicketSpecificTripViewState
         // Handle profile tap
       },
       disableScrolling: true,
-      child: BlocBuilder<TripBloc, TripState>(
+      child: BlocConsumer<TripBloc, TripState>(
+        // ✅ When the unassign trip flow completes successfully, the dialog
+        // emits TripUnassigned and closes itself. We catch that state here
+        // and refresh every data source on this screen so the UI reflects
+        // the new (unassigned) state of the trip.
+        listener: (context, state) {
+          if (state is TripUnassigned) {
+            debugPrint(
+              '🔄 Trip unassigned detected — refreshing all trip data...',
+            );
+            _refreshAllTripData();
+          }
+        },
         builder: (context, state) {
           if (state is TripLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -391,7 +427,7 @@ class _TripTicketSpecificTripViewState
             child: Column(
               children: [
                 Text('Select a trip to view details'),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 IconButton(icon: Icon(Icons.refresh), onPressed: null),
               ],
             ),

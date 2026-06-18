@@ -11,6 +11,7 @@ import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/wid
 import 'package:xpro_delivery_admin_app/src/delivery_monitoring/presentation/widgets/status_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import '../widgets/delivery_timeline_drawer.dart';
 import '../widgets/search_customer_dialog.dart';
@@ -32,6 +33,10 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
   // Auto-refresh duration - 2 minutes
   static const Duration autoRefreshDuration = Duration(minutes: 2);
 
+  DateTime? _selectedStartDate;
+  DateTime? _selectedEndDate;
+  bool _isDateFiltered = false;
+
   String _formatDateTime(DateTime dateTime) {
     final hour = dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour;
     final amPm = dateTime.hour >= 12 ? 'PM' : 'AM';
@@ -50,12 +55,304 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
   void initState() {
     super.initState();
 
-    context.read<DeliveryDataBloc>().add(
-      const GetAllDeliveryDataWithTripsEvent(),
-    );
+    // ✅ Default to last 3 days on first load.
+    _loadDefaultDateRange();
 
     // Set up auto-refresh timer
     _setupAutoRefreshTimer();
+  }
+
+  /// ✅ Loads the default 3-day window and fetches delivery data.
+  void _loadDefaultDateRange() {
+    final now = DateTime.now();
+    final start = now.subtract(const Duration(days: 3));
+
+    setState(() {
+      _selectedStartDate = DateTime(start.year, start.month, start.day);
+      _selectedEndDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+      _isDateFiltered = false; // default range is not a user filter
+    });
+
+    context.read<DeliveryDataBloc>().add(
+      GetAllDeliveryDataWithTripsEvent(
+        startDate: _selectedStartDate,
+        endDate: _selectedEndDate,
+      ),
+    );
+  }
+
+  /// ✅ Refreshes data using the currently selected date range.
+  void _refreshWithCurrentDateRange() {
+    context.read<DeliveryDataBloc>().add(
+      GetAllDeliveryDataWithTripsEvent(
+        startDate: _selectedStartDate,
+        endDate: _selectedEndDate,
+      ),
+    );
+  }
+
+  /// ✅ Shows the date range picker dialog.
+  void _showDateRangePickerDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        DateTime? tempStartDate = _selectedStartDate;
+        DateTime? tempEndDate = _selectedEndDate;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.date_range, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('Filter by Date Range'),
+                ],
+              ),
+              content: SizedBox(
+                width: 400,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Select date range to filter deliveries:',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Start Date Picker
+                    Row(
+                      children: [
+                        const SizedBox(
+                          width: 80,
+                          child: Text(
+                            'From:',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () async {
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate: tempStartDate ?? DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime.now(),
+                              );
+                              if (date != null) {
+                                setDialogState(() {
+                                  tempStartDate = date;
+                                  if (tempEndDate != null &&
+                                      tempEndDate!.isBefore(date)) {
+                                    tempEndDate = null;
+                                  }
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    tempStartDate != null
+                                        ? DateFormat(
+                                          'MMM dd, yyyy',
+                                        ).format(tempStartDate!)
+                                        : 'Select start date',
+                                    style: TextStyle(
+                                      color:
+                                          tempStartDate != null
+                                              ? Colors.black
+                                              : Colors.grey,
+                                    ),
+                                  ),
+                                  const Icon(Icons.calendar_today, size: 16),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // End Date Picker
+                    Row(
+                      children: [
+                        const SizedBox(
+                          width: 80,
+                          child: Text(
+                            'To:',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        Expanded(
+                          child: InkWell(
+                            onTap:
+                                tempStartDate == null
+                                    ? null
+                                    : () async {
+                                      final date = await showDatePicker(
+                                        context: context,
+                                        initialDate:
+                                            tempEndDate ?? tempStartDate!,
+                                        firstDate: tempStartDate!,
+                                        lastDate: DateTime.now(),
+                                      );
+                                      if (date != null) {
+                                        setDialogState(() {
+                                          tempEndDate = date;
+                                        });
+                                      }
+                                    },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color:
+                                      tempStartDate == null
+                                          ? Colors.grey.shade200
+                                          : Colors.grey.shade300,
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                                color:
+                                    tempStartDate == null
+                                        ? Colors.grey.shade50
+                                        : Colors.white,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    tempEndDate != null
+                                        ? DateFormat(
+                                          'MMM dd, yyyy',
+                                        ).format(tempEndDate!)
+                                        : 'Select end date',
+                                    style: TextStyle(
+                                      color:
+                                          tempStartDate == null
+                                              ? Colors.grey.shade400
+                                              : tempEndDate != null
+                                              ? Colors.black
+                                              : Colors.grey,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 16,
+                                    color:
+                                        tempStartDate == null
+                                            ? Colors.grey.shade400
+                                            : Colors.grey,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    if (tempStartDate != null && tempEndDate != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: Colors.blue.shade700,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Date range: ${DateFormat('MMM dd').format(tempStartDate!)} - ${DateFormat('MMM dd, yyyy').format(tempEndDate!)}',
+                                  style: TextStyle(
+                                    color: Colors.blue.shade700,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _loadDefaultDateRange();
+                  },
+                  child: const Text('Reset to 3 Days'),
+                ),
+                ElevatedButton(
+                  onPressed:
+                      tempStartDate == null || tempEndDate == null
+                          ? null
+                          : () {
+                            Navigator.of(context).pop();
+                            _applyDateFilter(tempStartDate!, tempEndDate!);
+                          },
+                  child: const Text('Apply Filter'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// ✅ Applies the selected date range and fetches filtered data.
+  void _applyDateFilter(DateTime startDate, DateTime endDate) {
+    final endOfDay = DateTime(
+      endDate.year,
+      endDate.month,
+      endDate.day,
+      23,
+      59,
+      59,
+    );
+
+    setState(() {
+      _selectedStartDate = startDate;
+      _selectedEndDate = endOfDay;
+      _isDateFiltered = true;
+    });
+
+    context.read<DeliveryDataBloc>().add(
+      GetAllDeliveryDataWithTripsEvent(startDate: startDate, endDate: endOfDay),
+    );
   }
 
   @override
@@ -89,274 +386,293 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
         ),
       );
 
-      // Refresh delivery data
-      context.read<DeliveryDataBloc>().add(
-        const GetAllDeliveryDataWithTripsEvent(),
-      );
+      // Refresh delivery data using current date range
+      _refreshWithCurrentDateRange();
     }
   }
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    key: _scaffoldKey,
-    endDrawer: DeliveryTimelineDrawer(
-      onRefresh: () {
-        context.read<DeliveryDataBloc>().add(
-          const GetAllDeliveryDataWithTripsEvent(),
-        );
-      },
-      formatDate: _formatDateTime,
-    ),
-    appBar: AppBar(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      iconTheme: IconThemeData(
-        color: Theme.of(context).colorScheme.surface,
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: _scaffoldKey,
+      endDrawer: DeliveryTimelineDrawer(
+        onRefresh: _refreshWithCurrentDateRange,
+        formatDate: _formatDateTime,
       ),
-      title: Text(
-        'Delivery Monitoring',
-        style: TextStyle(color: Theme.of(context).colorScheme.surface),
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Center(
-            child: StreamBuilder<int>(
-              stream: Stream.periodic(
-                const Duration(seconds: 1),
-                (count) =>
-                    autoRefreshDuration.inSeconds -
-                    (count % autoRefreshDuration.inSeconds),
-              ),
-              builder: (context, snapshot) {
-                final remainingSeconds =
-                    snapshot.data ?? autoRefreshDuration.inSeconds;
-                final minutes = remainingSeconds ~/ 60;
-                final seconds = remainingSeconds % 60;
-                return Text(
-                  'Auto-refresh in: ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.surface,
-                  ),
-                );
-              },
-            ),
-          ),
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.surface),
+        title: Text(
+          'Delivery Monitoring',
+          style: TextStyle(color: Theme.of(context).colorScheme.surface),
         ),
-        IconButton(
-          icon: Icon(
-            Icons.refresh,
-            color: Theme.of(context).colorScheme.surface,
-          ),
-          tooltip: 'Refresh',
-          onPressed: () {
-            searchController.clear();
-            context.read<DeliveryDataBloc>().add(
-              const GetAllDeliveryDataWithTripsEvent(),
-            );
-          },
-        ),
-        IconButton(
-          icon: Icon(
-            Icons.search,
-            color: Theme.of(context).colorScheme.surface,
-          ),
-          tooltip: 'Search Delivery Data',
-          onPressed: () {
-            CustomerSearchDialog.show(
-              context,
-              controller: searchController,
-              onSearch: () {
-                final query = searchController.text.trim();
-
-                if (query.isEmpty) return;
-
-                context.read<DeliveryDataBloc>().add(
-                  SearchDeliveryDataEvent(query),
-                );
-              },
-            );
-          },
-        ),
-        IconButton(
-          icon: Icon(
-            Icons.timeline,
-            color: Theme.of(context).colorScheme.surface,
-          ),
-          tooltip: 'View Timeline',
-          onPressed: () => _openTimelineDrawer(context),
-        ),
-        const SizedBox(width: 8),
-      ],
-    ),
-    drawer: const DefaultDrawer(),
-    body: BlocBuilder<DeliveryDataBloc, DeliveryDataState>(
-      builder: (context, state) {
-        if (state is DeliveryDataLoading || state is SearchingDeliveryData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (state is DeliveryDataError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-                const SizedBox(height: 16),
-                Text(
-                  'Error loading delivery data: ${state.message}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Center(
+              child: StreamBuilder<int>(
+                stream: Stream.periodic(
+                  const Duration(seconds: 1),
+                  (count) =>
+                      autoRefreshDuration.inSeconds -
+                      (count % autoRefreshDuration.inSeconds),
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    context.read<DeliveryDataBloc>().add(
-                      const GetAllDeliveryDataWithTripsEvent(),
-                    );
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        // ✅ SEARCH RESULT VIEW
-        if (state is SearchDeliveryDataLoaded) {
-          return _buildSearchResultsView(context, state.results, state.query);
-        }
-
-        // ✅ NORMAL MONITORING VIEW
-        List<DeliveryDataEntity> deliveryDataList = [];
-
-        if (state is AllDeliveryDataWithTripsLoaded) {
-          deliveryDataList = state.deliveryData;
-        }
-
-        return CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(16.0),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 0.85,
-                  crossAxisSpacing: 16.0,
-                  mainAxisSpacing: 16.0,
-                ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final status = statuses[index];
-                  final statusDeliveryData = _filterDeliveryDataByStatus(
-                    deliveryDataList,
-                    status.name,
-                  );
-
-                  return SizedBox(
-                    height: 500,
-                    child: StatusContainer(
-                      statusName: status.name,
-                      statusIcon: status.icon,
-                      statusColor: status.color,
-                      deliveryDataList: statusDeliveryData,
-                      onDeliveryDataTap: (deliveryData) {
-                        _showDeliveryDataDetails(context, deliveryData);
-                      },
-                      subtitle: status.subtitle,
+                builder: (context, snapshot) {
+                  final remainingSeconds =
+                      snapshot.data ?? autoRefreshDuration.inSeconds;
+                  final minutes = remainingSeconds ~/ 60;
+                  final seconds = remainingSeconds % 60;
+                  return Text(
+                    'Auto-refresh in: ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
-                  );
-                }, childCount: statuses.length),
-              ),
-            ),
-          ],
-        );
-      },
-    ),
-  );
-}
-
-Widget _buildSearchResultsView(
-  BuildContext context,
-  List<DeliveryDataEntity> results,
-  String query,
-) {
-  return Column(
-    children: [
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
-          border: Border(
-            bottom: BorderSide(color: Colors.grey.shade300),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.search,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Search results for "$query" • ${results.length} found',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            OutlinedButton.icon(
-              onPressed: () {
-                searchController.clear();
-                context.read<DeliveryDataBloc>().add(
-                  const GetAllDeliveryDataWithTripsEvent(),
-                );
-              },
-              icon: const Icon(Icons.close),
-              label: const Text('Close Search'),
-            ),
-          ],
-        ),
-      ),
-      Expanded(
-        child: results.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.search_off, size: 56, color: Colors.grey[400]),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No delivery data found',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Try searching by customer name or trip number ID.',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: results.length,
-                itemBuilder: (context, index) {
-                  final delivery = results[index];
-                  return CustomerTile(
-                    deliveryData: delivery,
-                    onTap: () {
-                      _showDeliveryDataDetails(context, delivery);
-                    },
                   );
                 },
               ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).colorScheme.surface,
+            ),
+            tooltip: 'Refresh',
+            onPressed: () {
+              searchController.clear();
+              _refreshWithCurrentDateRange();
+            },
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.calendar_today,
+              color: Theme.of(context).colorScheme.surface,
+            ),
+            tooltip: 'Filter Date',
+            onPressed: _showDateRangePickerDialog,
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.search,
+              color: Theme.of(context).colorScheme.surface,
+            ),
+            tooltip: 'Search Delivery Data',
+            onPressed: () {
+              CustomerSearchDialog.show(
+                context,
+                controller: searchController,
+                onSearch: () {
+                  final query = searchController.text.trim();
+
+                  if (query.isEmpty) return;
+
+                  context.read<DeliveryDataBloc>().add(
+                    SearchDeliveryDataEvent(query),
+                  );
+                },
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.timeline,
+              color: Theme.of(context).colorScheme.surface,
+            ),
+            tooltip: 'View Timeline',
+            onPressed: () => _openTimelineDrawer(context),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
-    ],
-  );
-}
+      drawer: const DefaultDrawer(),
+      body: BlocBuilder<DeliveryDataBloc, DeliveryDataState>(
+        builder: (context, state) {
+          // ✅ SEARCH RESULT VIEW still takes over the whole body.
+          if (state is SearchDeliveryDataLoaded) {
+            return _buildSearchResultsView(context, state.results, state.query);
+          }
+
+          // ✅ Determine loading / data / error states for the grid.
+          final bool isLoading =
+              state is DeliveryDataLoading || state is SearchingDeliveryData;
+          final bool isError = state is DeliveryDataError;
+
+          List<DeliveryDataEntity> deliveryDataList = [];
+          if (state is AllDeliveryDataWithTripsLoaded) {
+            deliveryDataList = state.deliveryData;
+          }
+
+          // ✅ Always render the status grid. Each container shows its own
+          // loading indicator while data is being fetched, so the app bar
+          // (and its refresh button) stays usable at all times.
+          return CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(16.0),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 0.85,
+                    crossAxisSpacing: 16.0,
+                    mainAxisSpacing: 16.0,
+                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final status = statuses[index];
+                    final statusDeliveryData =
+                        isError
+                            ? const <DeliveryDataEntity>[]
+                            : _filterDeliveryDataByStatus(
+                              deliveryDataList,
+                              status.name,
+                            );
+
+                    return SizedBox(
+                      height: 500,
+                      child: StatusContainer(
+                        statusName: status.name,
+                        statusIcon: status.icon,
+                        statusColor: status.color,
+                        deliveryDataList: statusDeliveryData,
+                        isLoading: isLoading,
+                        onDeliveryDataTap: (deliveryData) {
+                          _showDeliveryDataDetails(context, deliveryData);
+                        },
+                        subtitle: status.subtitle,
+                      ),
+                    );
+                  }, childCount: statuses.length),
+                ),
+              ),
+
+              // ✅ Error banner at the bottom of the grid when loading fails.
+              if (isError)
+                SliverPadding(
+                  padding: const EdgeInsets.all(16.0),
+                  sliver: SliverToBoxAdapter(
+                    child: Card(
+                      color: Colors.red.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red.shade700,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Error loading delivery data: ${state.message}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(color: Colors.red.shade700),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              onPressed: _refreshWithCurrentDateRange,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSearchResultsView(
+    BuildContext context,
+    List<DeliveryDataEntity> results,
+    String query,
+  ) {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+            border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Search results for "$query" • ${results.length} found',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  searchController.clear();
+                  _refreshWithCurrentDateRange();
+                },
+                icon: const Icon(Icons.close),
+                label: const Text('Close Search'),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child:
+              results.isEmpty
+                  ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.search_off,
+                          size: 56,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No delivery data found',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Try searching by customer name or trip number ID.',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  )
+                  : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: results.length,
+                    itemBuilder: (context, index) {
+                      final delivery = results[index];
+                      return CustomerTile(
+                        deliveryData: delivery,
+                        onTap: () {
+                          _showDeliveryDataDetails(context, delivery);
+                        },
+                      );
+                    },
+                  ),
+        ),
+      ],
+    );
+  }
 
   // Filter delivery data by their delivery status
   List<DeliveryDataEntity> _filterDeliveryDataByStatus(

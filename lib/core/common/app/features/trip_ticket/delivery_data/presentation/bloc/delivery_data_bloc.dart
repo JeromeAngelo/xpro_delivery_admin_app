@@ -30,14 +30,14 @@ class DeliveryDataBloc extends Bloc<DeliveryDataEvent, DeliveryDataState> {
     required DeleteDeliveryData deleteDeliveryData,
     required AddDeliveryDataToTrip addDeliveryDataToTrip,
     required SearchDeliveryData searchDeliveryData,
-  })  : _getAllDeliveryData = getAllDeliveryData,
-        _getAllDeliveryDataWithTrips = getAllDeliveryDataWithTrips,
-        _getDeliveryDataByTripId = getDeliveryDataByTripId,
-        _getDeliveryDataById = getDeliveryDataById,
-        _deleteDeliveryData = deleteDeliveryData,
-        _addDeliveryDataToTrip = addDeliveryDataToTrip,
-        _searchDeliveryData = searchDeliveryData,
-        super(const DeliveryDataInitial()) {
+  }) : _getAllDeliveryData = getAllDeliveryData,
+       _getAllDeliveryDataWithTrips = getAllDeliveryDataWithTrips,
+       _getDeliveryDataByTripId = getDeliveryDataByTripId,
+       _getDeliveryDataById = getDeliveryDataById,
+       _deleteDeliveryData = deleteDeliveryData,
+       _addDeliveryDataToTrip = addDeliveryDataToTrip,
+       _searchDeliveryData = searchDeliveryData,
+       super(const DeliveryDataInitial()) {
     on<GetAllDeliveryDataEvent>(_onGetAllDeliveryData);
     on<GetAllDeliveryDataWithTripsEvent>(_onGetAllDeliveryDataWithTrips);
     on<GetDeliveryDataByTripIdEvent>(_onGetDeliveryDataByTripId);
@@ -58,10 +58,17 @@ class DeliveryDataBloc extends Bloc<DeliveryDataEvent, DeliveryDataState> {
     result.fold(
       (failure) {
         debugPrint('❌ BLOC: Failed to get delivery data: ${failure.message}');
-        emit(DeliveryDataError(message: failure.message, statusCode: failure.statusCode));
+        emit(
+          DeliveryDataError(
+            message: failure.message,
+            statusCode: failure.statusCode,
+          ),
+        );
       },
       (deliveryData) {
-        debugPrint('✅ BLOC: Successfully retrieved ${deliveryData.length} delivery data records');
+        debugPrint(
+          '✅ BLOC: Successfully retrieved ${deliveryData.length} delivery data records',
+        );
         final newState = AllDeliveryDataLoaded(deliveryData);
         _cachedState = newState;
         emit(newState);
@@ -76,14 +83,28 @@ class DeliveryDataBloc extends Bloc<DeliveryDataEvent, DeliveryDataState> {
     emit(const DeliveryDataLoading());
     debugPrint('🔄 BLOC: Getting all delivery data with trips');
 
-    final result = await _getAllDeliveryDataWithTrips();
+    final result = await _getAllDeliveryDataWithTrips(
+      GetAllDeliveryDataWithTripsParams(
+        startDate: event.startDate,
+        endDate: event.endDate,
+      ),
+    );
     result.fold(
       (failure) {
-        debugPrint('❌ BLOC: Failed to get delivery data with trips: ${failure.message}');
-        emit(DeliveryDataError(message: failure.message, statusCode: failure.statusCode));
+        debugPrint(
+          '❌ BLOC: Failed to get delivery data with trips: ${failure.message}',
+        );
+        emit(
+          DeliveryDataError(
+            message: failure.message,
+            statusCode: failure.statusCode,
+          ),
+        );
       },
       (deliveryData) {
-        debugPrint('✅ BLOC: Successfully retrieved ${deliveryData.length} delivery data records with trips');
+        debugPrint(
+          '✅ BLOC: Successfully retrieved ${deliveryData.length} delivery data records with trips',
+        );
         final newState = AllDeliveryDataWithTripsLoaded(deliveryData);
         _cachedState = newState;
         emit(newState);
@@ -102,13 +123,22 @@ class DeliveryDataBloc extends Bloc<DeliveryDataEvent, DeliveryDataState> {
     final result = await _deleteDeliveryData(event.id);
     result.fold(
       (failure) {
-        debugPrint('❌ BLOC: Failed to delete delivery data: ${failure.message}');
-        emit(DeliveryDataError(message: failure.message, statusCode: failure.statusCode));
+        debugPrint(
+          '❌ BLOC: Failed to delete delivery data: ${failure.message}',
+        );
+        emit(
+          DeliveryDataError(
+            message: failure.message,
+            statusCode: failure.statusCode,
+          ),
+        );
       },
       (success) {
-        debugPrint('✅ BLOC: Successfully deleted delivery data with ID: ${event.id}');
+        debugPrint(
+          '✅ BLOC: Successfully deleted delivery data with ID: ${event.id}',
+        );
         emit(DeliveryDataDeleted(event.id));
-        
+
         // Optionally refresh the list after deletion
         add(const GetAllDeliveryDataEvent());
       },
@@ -125,13 +155,22 @@ class DeliveryDataBloc extends Bloc<DeliveryDataEvent, DeliveryDataState> {
     final result = await _addDeliveryDataToTrip(event.tripId);
     result.fold(
       (failure) {
-        debugPrint('❌ BLOC: Failed to add delivery data to trip: ${failure.message}');
-        emit(DeliveryDataError(message: failure.message, statusCode: failure.statusCode));
+        debugPrint(
+          '❌ BLOC: Failed to add delivery data to trip: ${failure.message}',
+        );
+        emit(
+          DeliveryDataError(
+            message: failure.message,
+            statusCode: failure.statusCode,
+          ),
+        );
       },
       (success) {
-        debugPrint('✅ BLOC: Successfully added delivery data to trip ID: ${event.tripId}');
+        debugPrint(
+          '✅ BLOC: Successfully added delivery data to trip ID: ${event.tripId}',
+        );
         emit(DeliveryDataAddedToTrip(event.tripId));
-        
+
         // Optionally refresh the list after adding
         add(const GetAllDeliveryDataWithTripsEvent());
       },
@@ -148,11 +187,20 @@ class DeliveryDataBloc extends Bloc<DeliveryDataEvent, DeliveryDataState> {
     final result = await _getDeliveryDataByTripId(event.tripId);
     result.fold(
       (failure) {
-        debugPrint('❌ BLOC: Failed to get delivery data by trip ID: ${failure.message}');
-        emit(DeliveryDataError(message: failure.message, statusCode: failure.statusCode));
+        debugPrint(
+          '❌ BLOC: Failed to get delivery data by trip ID: ${failure.message}',
+        );
+        emit(
+          DeliveryDataError(
+            message: failure.message,
+            statusCode: failure.statusCode,
+          ),
+        );
       },
       (deliveryData) {
-        debugPrint('✅ BLOC: Successfully retrieved ${deliveryData.length} delivery data records for trip ID: ${event.tripId}');
+        debugPrint(
+          '✅ BLOC: Successfully retrieved ${deliveryData.length} delivery data records for trip ID: ${event.tripId}',
+        );
         final newState = DeliveryDataByTripLoaded(
           deliveryData: deliveryData,
           tripId: event.tripId,
@@ -173,11 +221,20 @@ class DeliveryDataBloc extends Bloc<DeliveryDataEvent, DeliveryDataState> {
     final result = await _getDeliveryDataById(event.id);
     result.fold(
       (failure) {
-        debugPrint('❌ BLOC: Failed to get delivery data by ID: ${failure.message}');
-        emit(DeliveryDataError(message: failure.message, statusCode: failure.statusCode));
+        debugPrint(
+          '❌ BLOC: Failed to get delivery data by ID: ${failure.message}',
+        );
+        emit(
+          DeliveryDataError(
+            message: failure.message,
+            statusCode: failure.statusCode,
+          ),
+        );
       },
       (deliveryData) {
-        debugPrint('✅ BLOC: Successfully retrieved delivery data with ID: ${event.id}');
+        debugPrint(
+          '✅ BLOC: Successfully retrieved delivery data with ID: ${event.id}',
+        );
         final newState = DeliveryDataLoaded(deliveryData);
         _cachedState = newState;
         emit(newState);
@@ -185,41 +242,41 @@ class DeliveryDataBloc extends Bloc<DeliveryDataEvent, DeliveryDataState> {
     );
   }
 
-Future<void> _onSearchDeliveryData(
-  SearchDeliveryDataEvent event,
-  Emitter<DeliveryDataState> emit,
-) async {
-  debugPrint('🔍 BLOC: Searching delivery data with query: ${event.query}');
+  Future<void> _onSearchDeliveryData(
+    SearchDeliveryDataEvent event,
+    Emitter<DeliveryDataState> emit,
+  ) async {
+    debugPrint('🔍 BLOC: Searching delivery data with query: ${event.query}');
 
-  emit(const SearchingDeliveryData());
+    emit(const SearchingDeliveryData());
 
-  final result = await _searchDeliveryData(event.query);
+    final result = await _searchDeliveryData(event.query);
 
-  result.fold(
-    (failure) {
-      debugPrint('❌ BLOC: Search failed: ${failure.message}');
-      emit(
-        DeliveryDataError(
-          message: failure.message,
-          statusCode: failure.statusCode,
-        ),
-      );
-    },
-    (results) {
-      debugPrint(
-        '✅ BLOC: Found ${results.length} delivery records for query: ${event.query}',
-      );
+    result.fold(
+      (failure) {
+        debugPrint('❌ BLOC: Search failed: ${failure.message}');
+        emit(
+          DeliveryDataError(
+            message: failure.message,
+            statusCode: failure.statusCode,
+          ),
+        );
+      },
+      (results) {
+        debugPrint(
+          '✅ BLOC: Found ${results.length} delivery records for query: ${event.query}',
+        );
 
-      final newState = SearchDeliveryDataLoaded(
-        results: results,
-        query: event.query,
-      );
+        final newState = SearchDeliveryDataLoaded(
+          results: results,
+          query: event.query,
+        );
 
-      _cachedState = newState;
-      emit(newState);
-    },
-  );
-}
+        _cachedState = newState;
+        emit(newState);
+      },
+    );
+  }
 
   @override
   Future<void> close() {

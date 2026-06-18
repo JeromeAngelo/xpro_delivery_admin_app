@@ -10,7 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import 'show_print_qr_dialog.dart';
-import 'other_setting_dialog.dart';
+import 'unassigned_trip_dialog.dart';
 
 class TripDashboardWidget extends StatefulWidget {
   final TripEntity? trip;
@@ -323,7 +323,10 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
                 ElevatedButton.icon(
                   onPressed: () {
                     if (widget.trip != null) {
-                      showOtherSettingDialog(context, trip: widget.trip!);
+                      // ✅ Show the unassigned trip dialog via the existing
+                      // TripBloc context. The dialog handles the unassign
+                      // flow and emits TripUnassigned on success.
+                      showUnassignedTripDialog(context, trip: widget.trip!);
                     }
                   },
                   icon: const Icon(Icons.settings),
