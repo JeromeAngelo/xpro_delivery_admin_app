@@ -10,6 +10,12 @@ abstract class VehicleProfileRepo {
   /// Fetch single vehicle profile by id
   ResultFuture<VehicleProfileEntity> getVehicleProfileById(String id);
 
+  /// Fetch the [VehicleProfileEntity] whose `deliveryVehicleData` relation
+  /// matches the given delivery vehicle record id.
+  ResultFuture<VehicleProfileEntity> getVehicleProfileByDeliveryVehicleId(
+    String deliveryVehicleDataId,
+  );
+
   /// Create a vehicle profile
   ResultFuture<VehicleProfileEntity> createVehicleProfile(
     VehicleProfileEntity vehicleProfile,

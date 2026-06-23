@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart' show PocketBase, RecordModel;
+import 'package:xpro_delivery_admin_app/core/common/app/features/place_lookups/municipality/data/model/municipality_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/place_lookups/municipality/domain/entity/municipality_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/place_lookups/province/data/model/province_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/place_lookups/province/domain/entity/province_entity.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/place_lookups/region/data/model/region_model.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/place_lookups/region/domain/entity/region_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_profile/data/model/vehicle_profile_model.dart';
 
 import '../../../../../../../../enums/vehicle_status.dart';
 import '../../../../../../../../errors/exceptions.dart';
+import '../../../../../delivery_team/personels/data/models/personel_models.dart';
 import '../../../../../trip_ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
 import '../../../../../trip_ticket/trip/data/models/trip_models.dart';
 
@@ -12,6 +19,12 @@ abstract class VehicleProfileRemoteDatasource {
 
   /// Fetch single vehicle profile by id
   Future<VehicleProfileModel> getVehicleProfileById(String id);
+
+  /// Fetch the vehicle profile associated with the given `deliveryVehicleData`
+  /// record id (relation field).
+  Future<VehicleProfileModel> getVehicleProfileByDeliveryVehicleId(
+    String deliveryVehicleDataId,
+  );
 
   /// Create a vehicle profile
   Future<VehicleProfileModel> createVehicleProfile(
@@ -69,6 +82,29 @@ class VehicleProfileRemoteDatasourceImpl
         formData['attachments'] = vehicleProfile.attachments;
       }
 
+      // Scalar fields
+      if (vehicleProfile.yearModel != null &&
+          vehicleProfile.yearModel!.isNotEmpty) {
+        formData['yearModel'] = vehicleProfile.yearModel;
+      }
+      if (vehicleProfile.designatedRegion != null &&
+          vehicleProfile.designatedRegion!.isNotEmpty) {
+        formData['designatedRegion'] = vehicleProfile.designatedRegion;
+      }
+      if (vehicleProfile.designatedProvince != null &&
+          vehicleProfile.designatedProvince!.isNotEmpty) {
+        formData['designatedProvince'] = vehicleProfile.designatedProvince;
+      }
+      if (vehicleProfile.designatedMunicipality != null &&
+          vehicleProfile.designatedMunicipality!.isNotEmpty) {
+        formData['designatedMunicipality'] =
+            vehicleProfile.designatedMunicipality;
+      }
+      if (vehicleProfile.remarks != null &&
+          vehicleProfile.remarks!.isNotEmpty) {
+        formData['remarks'] = vehicleProfile.remarks;
+      }
+
       debugPrint('📦 Payload to PocketBase: $formData');
 
       // ------------------------------
@@ -123,7 +159,8 @@ class VehicleProfileRemoteDatasourceImpl
           .collection('vehicleProfile')
           .getFullList(
             filter: 'deliveryVehicleData="$id"',
-            expand: 'deliveryVehicleData,assignedTrips,assignedTrips.personels',
+            expand:
+                'deliveryVehicleData,assignedTrips,assignedTrips.personels,assignedRegion,assignedProvince,assignedMunicipality',
             sort: '-created',
           );
 
@@ -153,6 +190,15 @@ class VehicleProfileRemoteDatasourceImpl
         '   Assigned Trips Count: ${vehicleProfile.assignedTrips?.length ?? 0}',
       );
       debugPrint(
+        '   Assigned Regions Count: ${vehicleProfile.assignedRegions?.length ?? 0}',
+      );
+      debugPrint(
+        '   Assigned Provinces Count: ${vehicleProfile.assignedProvinces?.length ?? 0}',
+      );
+      debugPrint(
+        '   Assigned Municipalities Count: ${vehicleProfile.assignedMunicipalities?.length ?? 0}',
+      );
+      debugPrint(
         '   Attachment Files: ${vehicleProfile.attachmentFiles?.join(', ') ?? 'None'}',
       );
       debugPrint('   Created At: ${vehicleProfile.created}');
@@ -173,6 +219,80 @@ class VehicleProfileRemoteDatasourceImpl
   }
 
   @override
+  Future<VehicleProfileModel> getVehicleProfileByDeliveryVehicleId(
+    String deliveryVehicleDataId,
+  ) async {
+    try {
+      debugPrint(
+        '🔄 [VEHICLE PROFILE] Start fetching profile for deliveryVehicleData ID: $deliveryVehicleDataId',
+      );
+
+      // Query vehicleProfile by deliveryVehicleData relation field
+      final records = await _pocketBaseClient
+          .collection('vehicleProfile')
+          .getFullList(
+            filter: 'deliveryVehicleData="$deliveryVehicleDataId"',
+            expand:
+                'deliveryVehicleData,assignedTrips,assignedTrips.personels,assignedRegion,assignedProvince,assignedMunicipality',
+            sort: '-created',
+          );
+
+      debugPrint(
+        'ℹ️ [VEHICLE PROFILE] Number of records fetched: ${records.length}',
+      );
+
+      if (records.isEmpty) {
+        debugPrint(
+          '⚠️ [VEHICLE PROFILE] No Vehicle Profile found for deliveryVehicleData ID: $deliveryVehicleDataId',
+        );
+        throw ServerException(
+          message:
+              'Vehicle profile not found for deliveryVehicleData: $deliveryVehicleDataId',
+          statusCode: '404',
+        );
+      }
+
+      final vehicleProfile = _mapRecordToVehicleProfileModel(records.first);
+
+      debugPrint(
+        '✅ [VEHICLE PROFILE] Successfully mapped VehicleProfileModel:',
+      );
+      debugPrint('   ID: ${vehicleProfile.id}');
+      debugPrint('   Delivery Vehicle ID: ${vehicleProfile.deliveryVehicleId}');
+      debugPrint('   Status: ${vehicleProfile.status?.name}');
+      debugPrint(
+        '   Assigned Trips Count: ${vehicleProfile.assignedTrips?.length ?? 0}',
+      );
+      debugPrint(
+        '   Assigned Regions Count: ${vehicleProfile.assignedRegions?.length ?? 0}',
+      );
+      debugPrint(
+        '   Assigned Provinces Count: ${vehicleProfile.assignedProvinces?.length ?? 0}',
+      );
+      debugPrint(
+        '   Assigned Municipalities Count: ${vehicleProfile.assignedMunicipalities?.length ?? 0}',
+      );
+      debugPrint(
+        '   Attachment Files: ${vehicleProfile.attachmentFiles?.join(', ') ?? 'None'}',
+      );
+      debugPrint('   Created At: ${vehicleProfile.created}');
+      debugPrint('   Updated At: ${vehicleProfile.updated}');
+
+      return vehicleProfile;
+    } catch (e, stackTrace) {
+      debugPrint(
+        '❌ [VEHICLE PROFILE] Error fetching vehicle profile for deliveryVehicleData ID: $deliveryVehicleDataId',
+      );
+      debugPrint('   Error: $e');
+      debugPrint('   StackTrace: $stackTrace');
+      throw ServerException(
+        message: 'Failed to fetch vehicle profile: ${e.toString()}',
+        statusCode: '500',
+      );
+    }
+  }
+
+  @override
   Future<List<VehicleProfileModel>> getVehicleProfiles() async {
     try {
       debugPrint('🔄 Fetching all vehicle profiles');
@@ -180,7 +300,10 @@ class VehicleProfileRemoteDatasourceImpl
       // Fetch all records from vehicleProfile collection
       final records = await _pocketBaseClient
           .collection('vehicleProfile')
-          .getFullList(expand: 'deliveryVehicleData,assignedTrips');
+          .getFullList(
+            expand:
+                'deliveryVehicleData,assignedTrips,assignedRegion,assignedProvince,assignedMunicipality',
+          );
 
       debugPrint('✅ Successfully fetched ${records.length} vehicle profiles');
 
@@ -205,27 +328,46 @@ class VehicleProfileRemoteDatasourceImpl
         '🔄 Updating vehicle profile for deliveryVehicleId: $deliveryVehicleId',
       );
 
-      // First, find the vehicleProfile record that matches the deliveryVehicleData id
+      // First, find the vehicleProfile record that matches the deliveryVehicleData id.
       final records = await _pocketBaseClient
           .collection('vehicleProfile')
           .getFullList(
             filter: 'deliveryVehicleData="$deliveryVehicleId"',
-            expand: 'deliveryVehicleData,assignedTrips',
+            expand:
+                'deliveryVehicleData,assignedTrips,assignedRegion,assignedProvince,assignedMunicipality',
           );
 
       if (records.isEmpty) {
-        throw ServerException(
-          message:
-              'Vehicle profile with deliveryVehicleData id $deliveryVehicleId not found',
-          statusCode: '404',
+        // ---------------------------------------------------
+        // No existing profile found – fall back to CREATE
+        // ---------------------------------------------------
+        // We don't fail the update flow when the profile is
+        // missing; we transparently create one so the caller's
+        // "update vehicle + profile" never half-succeeds.
+        debugPrint(
+          '⚠️ [VEHICLE PROFILE] No profile found for deliveryVehicleData id '
+          '$deliveryVehicleId — falling back to CREATE.',
         );
+
+        // Ensure the model carries the deliveryVehicleData id
+        // before we hand it to the create path.
+        final toCreate = updatedVehicleProfile.copyWith(
+          deliveryVehicleId:
+              updatedVehicleProfile.deliveryVehicleId ??
+              (deliveryVehicleId.isEmpty ? null : deliveryVehicleId),
+        );
+        return createVehicleProfile(toCreate);
       }
 
       final profileRecord = records.first;
       final String profileId = profileRecord.id;
 
-      // Prepare the updated data
-      final updatedData = updatedVehicleProfile.toJson();
+      // Prepare the updated data, but strip PocketBase-managed /
+      // read-only fields first. PocketBase rejects updates that
+      // try to send `id`, `collectionId`, `collectionName`,
+      // `created` or `updated` back to the server with a
+      // `validation_pk_change` error.
+      final updatedData = _sanitizeForUpdate(updatedVehicleProfile.toJson());
 
       // Update the vehicleProfile record
       final updatedRecord = await _pocketBaseClient
@@ -244,6 +386,29 @@ class VehicleProfileRemoteDatasourceImpl
     }
   }
 
+  /// Removes PocketBase-managed / read-only fields from a
+  /// [VehicleProfileModel.toJson()] body before sending it via
+  /// the `update(...)` call.
+  ///
+  /// Sending `id`, `collectionId`, `collectionName`, `created` or
+  /// `updated` makes PocketBase return
+  /// `validation_pk_change: The record primary key cannot be
+  /// changed.` (HTTP 400), so we drop them.
+  Map<String, dynamic> _sanitizeForUpdate(Map<String, dynamic> body) {
+    const readOnly = <String>{
+      'id',
+      'collectionId',
+      'collectionName',
+      'created',
+      'updated',
+    };
+    final cleaned = <String, dynamic>{};
+    body.forEach((key, value) {
+      if (!readOnly.contains(key)) cleaned[key] = value;
+    });
+    return cleaned;
+  }
+
   // -----------------------------
   // HELPER: Map RecordModel to VehicleProfileModel
   // -----------------------------
@@ -260,6 +425,15 @@ class VehicleProfileRemoteDatasourceImpl
         } catch (_) {}
       }
 
+      // DRIVER (expanded)
+      PersonelModel? driver;
+      final driverData = _mapExpandedItem(record.expand['deliveryVehicleData']);
+      if (driverData != null) {
+        try {
+          driver = PersonelModel.fromJson(driverData);
+        } catch (_) {}
+      }
+
       // ASSIGNED TRIPS (expanded)
       List<TripModel> assignedTripsList = [];
       final tripsExpand = record.expand['assignedTrips'];
@@ -268,6 +442,29 @@ class VehicleProfileRemoteDatasourceImpl
           assignedTripsList.add(_mapRecordToTripModel(t));
         }
       }
+
+      // ASSIGNED REGIONS (expanded)
+      List<RegionEntity> assignedRegionsList = _mapExpandedList<RegionEntity>(
+        record.expand['assignedRegion'],
+        (data) => RegionModel.fromJson(data),
+        (id) => RegionEntity(id: id),
+      );
+
+      // ASSIGNED PROVINCES (expanded)
+      List<ProvinceEntity> assignedProvincesList =
+          _mapExpandedList<ProvinceEntity>(
+            record.expand['assignedProvince'],
+            (data) => ProvinceModel.fromJson(data),
+            (id) => ProvinceEntity(id: id),
+          );
+
+      // ASSIGNED MUNICIPALITIES (expanded)
+      List<MunicipalityEntity> assignedMunicipalitiesList =
+          _mapExpandedList<MunicipalityEntity>(
+            record.expand['assignedMunicipality'],
+            (data) => MunicipalityModel.fromJson(data),
+            (id) => MunicipalityEntity(id: id),
+          );
 
       // ATTACHMENTS
       List<String> attachmentsList = [];
@@ -314,6 +511,23 @@ class VehicleProfileRemoteDatasourceImpl
         assignedTrips: assignedTripsList,
         attachments: attachmentsList,
         deliveryVehicleId: record.data['deliveryVehicleData']?.toString(),
+        driver: driver,
+        designatedProvince: record.data['designatedProvince']?.toString(),
+        designatedMunicipality:
+            record.data['designatedMunicipality']?.toString(),
+        designatedRegion: record.data['designatedRegion']?.toString(),
+        remarks: record.data['remarks']?.toString(),
+        yearModel: record.data['yearModel']?.toString(),
+
+        // Assigned place lookups (multiple relations)
+        assignedRegions: assignedRegionsList,
+        assignedProvinces: assignedProvincesList,
+        assignedMunicipalities: assignedMunicipalitiesList,
+        assignedRegionIds: assignedRegionsList.map((e) => e.id ?? '').toList(),
+        assignedProvinceIds:
+            assignedProvincesList.map((e) => e.id ?? '').toList(),
+        assignedMunicipalityIds:
+            assignedMunicipalitiesList.map((e) => e.id ?? '').toList(),
 
         status: status,
         created: created,
@@ -326,6 +540,38 @@ class VehicleProfileRemoteDatasourceImpl
         statusCode: '500',
       );
     }
+  }
+
+  // -----------------------------
+  // HELPER: Map an expanded list (List<RecordModel>) into List<T>
+  // -----------------------------
+  List<T> _mapExpandedList<T>(
+    dynamic expandValue,
+    T Function(Map<String, dynamic> json) fromJson,
+    T Function(String id) fromId,
+  ) {
+    final result = <T>[];
+    if (expandValue == null) return result;
+    final items = expandValue is List ? expandValue : [expandValue];
+    for (final item in items) {
+      if (item is RecordModel) {
+        final map = _mapExpandedItem(item) ?? {};
+        try {
+          result.add(fromJson(map));
+        } catch (_) {
+          result.add(fromId(item.id));
+        }
+      } else if (item is Map) {
+        try {
+          result.add(fromJson(item.cast<String, dynamic>()));
+        } catch (_) {
+          if (item['id'] != null) result.add(fromId(item['id'].toString()));
+        }
+      } else if (item is String) {
+        result.add(fromId(item));
+      }
+    }
+    return result;
   }
 
   // -----------------------------

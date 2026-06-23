@@ -28,6 +28,18 @@ class GetVehicleProfileByIdEvent extends VehicleProfileEvent {
 }
 
 // -----------------------------
+// GET VEHICLE PROFILE BY DELIVERY VEHICLE DATA ID
+// -----------------------------
+class GetVehicleProfileByDeliveryVehicleIdEvent extends VehicleProfileEvent {
+  final String deliveryVehicleDataId;
+
+  const GetVehicleProfileByDeliveryVehicleIdEvent(this.deliveryVehicleDataId);
+
+  @override
+  List<Object> get props => [deliveryVehicleDataId];
+}
+
+// -----------------------------
 // CREATE VEHICLE PROFILE
 // -----------------------------
 class CreateVehicleProfileEvent extends VehicleProfileEvent {

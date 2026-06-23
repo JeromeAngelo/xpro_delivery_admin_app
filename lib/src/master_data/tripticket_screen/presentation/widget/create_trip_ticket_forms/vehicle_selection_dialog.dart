@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/presentation/bloc/delivery_data_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_profile/presentation/bloc/vehicle_profile_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_profile/presentation/bloc/vehicle_profile_event.dart';
 import 'vehicle_capacity_info.dart';
 
 class VehicleSelectionDialog extends StatefulWidget {
@@ -33,7 +35,30 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
     // Initialize with first available vehicle if any
     if (widget.availableVehicles.isNotEmpty) {
       _selectedVehicle = widget.availableVehicles.first;
+      // Fire the vehicle-profile lookup for the initially-selected vehicle
+      _fetchVehicleProfile(_selectedVehicle);
     }
+  }
+
+  /// Dispatch the new `GetVehicleProfileByDeliveryVehicleIdEvent` so that the
+  /// VehicleCapacityInfo widget can render the corresponding profile fields
+  /// (designated municipality, designated province, status chip).
+  void _fetchVehicleProfile(DeliveryVehicleModel? vehicle) {
+    if (vehicle == null || vehicle.id == null || vehicle.id!.isEmpty) {
+      return;
+    }
+    // Use the addPostFrameCallback to make sure we dispatch only after the
+    // dialog's widget tree is mounted.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        context.read<VehicleProfileBloc>().add(
+          GetVehicleProfileByDeliveryVehicleIdEvent(vehicle.id!),
+        );
+      } catch (_) {
+        // Bloc not available in this subtree – ignore.
+      }
+    });
   }
 
   List<DeliveryVehicleModel> get filteredVehicles {
@@ -87,7 +112,7 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
             SizedBox(
               width: 500,
               child: TextField(
-                style:  const TextStyle(color: Colors.black),
+                style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   hintText: 'Search vehicles...',
                   prefixIcon: const Icon(Icons.search),
@@ -227,6 +252,12 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
                                                 setState(() {
                                                   _selectedVehicle = vehicle;
                                                 });
+                                                // Live-fetch the vehicle
+                                                // profile whenever the user
+                                                // picks a vehicle so the
+                                                // capacity pane can render
+                                                // the profile details.
+                                                _fetchVehicleProfile(vehicle);
                                               },
                                             ),
                                           ),
@@ -252,24 +283,6 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(8),
-                                topRight: Radius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              'Vehicle Capacity Information',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
                           Expanded(
                             child: Padding(
                               padding: const EdgeInsets.all(16),
@@ -285,6 +298,11 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
                                           BlocProvider.value(
                                             value: BlocProvider.of<
                                               DeliveryDataBloc
+                                            >(context),
+                                          ),
+                                          BlocProvider.value(
+                                            value: BlocProvider.of<
+                                              VehicleProfileBloc
                                             >(context),
                                           ),
                                         ],

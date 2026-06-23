@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/presentation/bloc/delivery_data_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_profile/presentation/bloc/vehicle_profile_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/app_textfield.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/form_title.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/widget/create_trip_ticket_forms/vehicle_capacity_info.dart';
@@ -70,6 +71,9 @@ class _VehicleFormState extends State<VehicleForm> {
                     ),
                     BlocProvider.value(
                       value: BlocProvider.of<DeliveryDataBloc>(context),
+                    ),
+                    BlocProvider.value(
+                      value: BlocProvider.of<VehicleProfileBloc>(context),
                     ),
                   ],
                   child: VehicleCapacityInfo(

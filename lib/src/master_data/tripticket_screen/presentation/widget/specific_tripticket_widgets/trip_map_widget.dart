@@ -63,7 +63,7 @@ class _TripMapWidgetState extends State<TripMapWidget>
   bool isActivityLogExpanded = false;
   final ScrollController _horizontalScrollController = ScrollController();
   bool _isSatelliteView = false;
-  
+
   // Street View functionality
   bool _isStreetViewMode = false;
   LatLng? _streetViewPosition;
@@ -94,37 +94,43 @@ class _TripMapWidgetState extends State<TripMapWidget>
   Future<void> _saveToPersistentCache() async {
     try {
       if (widget.trip == null) return;
-      
+
       final prefs = await SharedPreferences.getInstance();
       final cacheData = {
         'tripId': widget.tripId,
         'timestamp': DateTime.now().toIso8601String(),
         'latitude': widget.trip!.latitude,
         'longitude': widget.trip!.longitude,
-        'coordinates': widget.tripCoordinates
-            .where((c) => c.latitude != null && c.longitude != null)
-            .map((c) => {
-                  'lat': c.latitude,
-                  'lng': c.longitude,
-                  'created': c.created?.toIso8601String(),
-                })
-            .toList(),
-        'deliveries': widget.deliveryData
-            .where((d) => d.pinLang != null && d.pinLong != null)
-            .map((d) => {
-                  'lat': d.pinLang,
-                  'lng': d.pinLong,
-                  'name': d.customer?.name,
-                  'deliveryNumber': d.deliveryNumber,
-                })
-            .toList(),
+        'coordinates':
+            widget.tripCoordinates
+                .where((c) => c.latitude != null && c.longitude != null)
+                .map(
+                  (c) => {
+                    'lat': c.latitude,
+                    'lng': c.longitude,
+                    'created': c.created?.toIso8601String(),
+                  },
+                )
+                .toList(),
+        'deliveries':
+            widget.deliveryData
+                .where((d) => d.pinLang != null && d.pinLong != null)
+                .map(
+                  (d) => {
+                    'lat': d.pinLang,
+                    'lng': d.pinLong,
+                    'name': d.customer?.name,
+                    'deliveryNumber': d.deliveryNumber,
+                  },
+                )
+                .toList(),
       };
 
       await prefs.setString(
         'trip_map_cache_${widget.tripId}',
         jsonEncode(cacheData),
       );
-      
+
       debugPrint('✅ Map data cached for trip ${widget.tripId}');
     } catch (e) {
       debugPrint('⚠️ Failed to save map cache: $e');
@@ -132,7 +138,9 @@ class _TripMapWidgetState extends State<TripMapWidget>
   }
 
   // Load map data from persistent cache
-  Future<bool> _loadFromPersistentCache() async {
+  /// When [silent] is true, no SnackBars are shown (used for automatic fallback
+  /// when the map fails to load).
+  Future<bool> _loadFromPersistentCache({bool silent = false}) async {
     try {
       setState(() {
         _isLoadingFromCache = true;
@@ -143,12 +151,17 @@ class _TripMapWidgetState extends State<TripMapWidget>
 
       if (cachedJson == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No cached map data available for this trip'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          setState(() {
+            _isLoadingFromCache = false;
+          });
+          if (!silent) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No cached map data available for this trip'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
         }
         return false;
       }
@@ -163,15 +176,17 @@ class _TripMapWidgetState extends State<TripMapWidget>
           _isLoadingFromCache = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Loaded cached map data from ${age.inHours}h ${age.inMinutes % 60}m ago',
+        if (!silent) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Loaded cached map data from ${age.inHours}h ${age.inMinutes % 60}m ago',
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
             ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+          );
+        }
       }
 
       debugPrint('✅ Loaded map data from cache (age: ${age.inHours}h)');
@@ -182,12 +197,14 @@ class _TripMapWidgetState extends State<TripMapWidget>
         setState(() {
           _isLoadingFromCache = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load cached data: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (!silent) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to load cached data: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
       return false;
     }
@@ -198,7 +215,7 @@ class _TripMapWidgetState extends State<TripMapWidget>
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('trip_map_cache_${widget.tripId}');
-      
+
       if (mounted) {
         setState(() {
           _persistentCachedData = null;
@@ -210,7 +227,7 @@ class _TripMapWidgetState extends State<TripMapWidget>
           ),
         );
       }
-      
+
       debugPrint('🗑️ Cleared cached map data for trip ${widget.tripId}');
     } catch (e) {
       debugPrint('⚠️ Failed to clear cache: $e');
@@ -242,43 +259,18 @@ class _TripMapWidgetState extends State<TripMapWidget>
     // Only show start and end markers, not intermediate points
     if (orderedCoordinates.isNotEmpty) {
       // Start marker - optimized with RepaintBoundary
-      markers.add(Marker(
-        point: LatLng(orderedCoordinates.first.latitude!, orderedCoordinates.first.longitude!),
-        width: 30,
-        height: 30,
-        child: RepaintBoundary(
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.green,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.play_arrow,
-              size: 16,
-              color: Colors.white,
-            ),
+      markers.add(
+        Marker(
+          point: LatLng(
+            orderedCoordinates.first.latitude!,
+            orderedCoordinates.first.longitude!,
           ),
-        ),
-      ));
-
-      // End marker (only if different from start)
-      if (orderedCoordinates.length > 1) {
-        markers.add(Marker(
-          point: LatLng(orderedCoordinates.last.latitude!, orderedCoordinates.last.longitude!),
           width: 30,
           height: 30,
           child: RepaintBoundary(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.red,
+                color: Colors.green,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
@@ -290,13 +282,44 @@ class _TripMapWidgetState extends State<TripMapWidget>
                 ],
               ),
               child: const Icon(
-                Icons.flag,
+                Icons.play_arrow,
                 size: 16,
                 color: Colors.white,
               ),
             ),
           ),
-        ));
+        ),
+      );
+
+      // End marker (only if different from start)
+      if (orderedCoordinates.length > 1) {
+        markers.add(
+          Marker(
+            point: LatLng(
+              orderedCoordinates.last.latitude!,
+              orderedCoordinates.last.longitude!,
+            ),
+            width: 30,
+            height: 30,
+            child: RepaintBoundary(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.flag, size: 16, color: Colors.white),
+              ),
+            ),
+          ),
+        );
       }
     }
 
@@ -315,53 +338,56 @@ class _TripMapWidgetState extends State<TripMapWidget>
 
     for (int i = 0; i < widget.deliveryData.length; i++) {
       final delivery = widget.deliveryData[i];
-      
+
       // Check if delivery has valid coordinates
-      if (delivery.pinLang != null && delivery.pinLong != null &&
-          delivery.pinLang! != 0.0 && delivery.pinLong! != 0.0) {
-        
-        markers.add(Marker(
-          point: LatLng(delivery.pinLang!, delivery.pinLong!),
-          width: 40,
-          height: 40,
-          child: RepaintBoundary(
-            child: GestureDetector(
-              onTap: () => _showDeliveryInfo(delivery),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.purple,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.location_on,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                    Text(
-                      '${i + 1}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
+      if (delivery.pinLang != null &&
+          delivery.pinLong != null &&
+          delivery.pinLang! != 0.0 &&
+          delivery.pinLong! != 0.0) {
+        markers.add(
+          Marker(
+            point: LatLng(delivery.pinLang!, delivery.pinLong!),
+            width: 40,
+            height: 40,
+            child: RepaintBoundary(
+              child: GestureDetector(
+                onTap: () => _showDeliveryInfo(delivery),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.purple,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                      Text(
+                        '${i + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ));
+        );
       }
     }
 
@@ -373,28 +399,31 @@ class _TripMapWidgetState extends State<TripMapWidget>
   void _showDeliveryInfo(DeliveryDataEntity delivery) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delivery: ${delivery.customer?.name ?? "Unknown"}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Delivery Number: ${delivery.deliveryNumber ?? "N/A"}'),
-            const SizedBox(height: 8),
-            Text('Customer: ${delivery.customer?.name ?? "N/A"}'),
-            const SizedBox(height: 8),
-            Text('Invoices: ${delivery.invoices?.length ?? (delivery.invoice != null ? 1 : 0)}'),
-            const SizedBox(height: 8),
-            Text('Location: ${delivery.pinLang}, ${delivery.pinLong}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+      builder:
+          (context) => AlertDialog(
+            title: Text('Delivery: ${delivery.customer?.name ?? "Unknown"}'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Delivery Number: ${delivery.deliveryNumber ?? "N/A"}'),
+                const SizedBox(height: 8),
+                Text('Customer: ${delivery.customer?.name ?? "N/A"}'),
+                const SizedBox(height: 8),
+                Text(
+                  'Invoices: ${delivery.invoices?.length ?? (delivery.invoice != null ? 1 : 0)}',
+                ),
+                const SizedBox(height: 8),
+                Text('Location: ${delivery.pinLang}, ${delivery.pinLong}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -429,57 +458,64 @@ class _TripMapWidgetState extends State<TripMapWidget>
     return validCoordinates;
   }
 
-  
-List<LatLng> _createOrderedRoutePoints() {
-  // Return cached route points if available
-  if (_cachedRoutePoints != null) {
-    return _cachedRoutePoints!;
-  }
-
-  // 1. Filter valid trip coordinates
-  final validCoordinates = widget.tripCoordinates.where((coord) =>
-      coord.latitude != null &&
-      coord.longitude != null &&
-      coord.latitude! != 0.0 &&
-      coord.longitude! != 0.0).toList();
-
-  // 2. Sort coordinates by creation time (chronologically)
-  validCoordinates.sort((a, b) {
-    if (a.created != null && b.created != null) {
-      return a.created!.compareTo(b.created!);
+  List<LatLng> _createOrderedRoutePoints() {
+    // Return cached route points if available
+    if (_cachedRoutePoints != null) {
+      return _cachedRoutePoints!;
     }
-    if (a.created != null) return -1;
-    if (b.created != null) return 1;
-    return 0;
-  });
 
-  // 3. Map coordinates to LatLng
-  List<LatLng> orderedPoints = validCoordinates
-      .map((coord) => LatLng(coord.latitude!, coord.longitude!))
-      .toList();
+    // 1. Filter valid trip coordinates
+    final validCoordinates =
+        widget.tripCoordinates
+            .where(
+              (coord) =>
+                  coord.latitude != null &&
+                  coord.longitude != null &&
+                  coord.latitude! != 0.0 &&
+                  coord.longitude! != 0.0,
+            )
+            .toList();
 
-  // 4. Add current truck location (if it's not the same as the last coordinate)
-  if (widget.trip != null &&
-      widget.trip!.latitude != null &&
-      widget.trip!.longitude != null &&
-      widget.trip!.latitude! != 0.0 &&
-      widget.trip!.longitude! != 0.0) {
-    final truckLocation = LatLng(widget.trip!.latitude!, widget.trip!.longitude!);
+    // 2. Sort coordinates by creation time (chronologically)
+    validCoordinates.sort((a, b) {
+      if (a.created != null && b.created != null) {
+        return a.created!.compareTo(b.created!);
+      }
+      if (a.created != null) return -1;
+      if (b.created != null) return 1;
+      return 0;
+    });
 
-    if (orderedPoints.isEmpty ||
-        orderedPoints.last.latitude != truckLocation.latitude ||
-        orderedPoints.last.longitude != truckLocation.longitude) {
-      orderedPoints.add(truckLocation);
+    // 3. Map coordinates to LatLng
+    List<LatLng> orderedPoints =
+        validCoordinates
+            .map((coord) => LatLng(coord.latitude!, coord.longitude!))
+            .toList();
+
+    // 4. Add current truck location (if it's not the same as the last coordinate)
+    if (widget.trip != null &&
+        widget.trip!.latitude != null &&
+        widget.trip!.longitude != null &&
+        widget.trip!.latitude! != 0.0 &&
+        widget.trip!.longitude! != 0.0) {
+      final truckLocation = LatLng(
+        widget.trip!.latitude!,
+        widget.trip!.longitude!,
+      );
+
+      if (orderedPoints.isEmpty ||
+          orderedPoints.last.latitude != truckLocation.latitude ||
+          orderedPoints.last.longitude != truckLocation.longitude) {
+        orderedPoints.add(truckLocation);
+      }
     }
+
+    debugPrint('🗺️ Created TRIP ROUTE with ${orderedPoints.length} points');
+
+    // Cache the result
+    _cachedRoutePoints = orderedPoints;
+    return orderedPoints;
   }
-
-  debugPrint('🗺️ Created TRIP ROUTE with ${orderedPoints.length} points');
-  
-  // Cache the result
-  _cachedRoutePoints = orderedPoints;
-  return orderedPoints;
-}
-
 
   // Street View functionality methods
   /// Toggles the street view mode on/off
@@ -495,9 +531,10 @@ List<LatLng> _createOrderedRoutePoints() {
   }
 
   void _launchStreetView(LatLng position) async {
-    final url = 'https://www.google.com/maps/@?api=1&map_action=pano'
+    final url =
+        'https://www.google.com/maps/@?api=1&map_action=pano'
         '&viewpoint=${position.latitude},${position.longitude}';
-    
+
     try {
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
@@ -580,10 +617,7 @@ List<LatLng> _createOrderedRoutePoints() {
             ),
             const Text(
               'Tap map',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 10, color: Colors.grey),
             ),
           ],
         ),
@@ -613,7 +647,7 @@ List<LatLng> _createOrderedRoutePoints() {
         setState(() {
           isMapReady = true;
         });
-        
+
         // Save to persistent cache when map data is successfully loaded
         if (widget.trip != null && widget.tripCoordinates.isNotEmpty) {
           _saveToPersistentCache();
@@ -625,18 +659,18 @@ List<LatLng> _createOrderedRoutePoints() {
   @override
   void didUpdateWidget(TripMapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // Check if data has changed and invalidate cache if needed
     _updateCacheIfNeeded();
-    
+
     // Save to persistent cache when data updates successfully
-    if (widget.trip != null && 
+    if (widget.trip != null &&
         widget.tripCoordinates.isNotEmpty &&
         (oldWidget.tripCoordinates.length != widget.tripCoordinates.length ||
-         oldWidget.trip?.latitude != widget.trip?.latitude)) {
+            oldWidget.trip?.latitude != widget.trip?.latitude)) {
       _saveToPersistentCache();
     }
-    
+
     if (oldWidget.height != widget.height) {
       _heightAnimation = Tween<double>(
         begin: oldWidget.height,
@@ -666,7 +700,17 @@ List<LatLng> _createOrderedRoutePoints() {
     }
 
     if (widget.errorMessage != null) {
-      return _buildErrorCard(widget.errorMessage!);
+      // Automatically fall back to the cached trip coordinates map when
+      // loading fails — no manual user action required.
+      if (_persistentCachedData == null && !_isLoadingFromCache) {
+        // Fire-and-forget: load silently and rebuild once data is ready.
+        _loadFromPersistentCache(silent: true);
+        return _buildLoadingCard();
+      }
+      if (_isLoadingFromCache) {
+        return _buildLoadingCard();
+      }
+      return _buildCachedMapCard();
     }
 
     if (widget.trip != null) {
@@ -778,10 +822,15 @@ List<LatLng> _createOrderedRoutePoints() {
                   children: [
                     IconButton(
                       icon: Icon(
-                        _isStreetViewMode ? Icons.visibility_off : Icons.visibility,
+                        _isStreetViewMode
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         color: _isStreetViewMode ? Colors.orange : null,
                       ),
-                      tooltip: _isStreetViewMode ? 'Exit Street View Mode' : 'Street View Mode',
+                      tooltip:
+                          _isStreetViewMode
+                              ? 'Exit Street View Mode'
+                              : 'Street View Mode',
                       onPressed: _toggleStreetViewMode,
                     ),
                     IconButton(
@@ -826,7 +875,9 @@ List<LatLng> _createOrderedRoutePoints() {
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: Colors.orange.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -1171,7 +1222,7 @@ List<LatLng> _createOrderedRoutePoints() {
       final allMarkers = List<Marker>.from(markers);
       final deliveryMarkers = _createDeliveryMarkers(); // This will use cache
       allMarkers.addAll(deliveryMarkers);
-      
+
       if (_streetViewPosition != null) {
         allMarkers.add(
           Marker(
@@ -2038,7 +2089,8 @@ List<LatLng> _createOrderedRoutePoints() {
   }
 
   Widget _buildErrorCard(String errorMessage) {
-    // Check if we have cached data to display
+    // Kept for backwards compatibility. If cached data is available it is shown
+    // automatically by `build()`; otherwise we show a minimal error notice.
     if (_persistentCachedData != null) {
       return _buildCachedMapCard();
     }
@@ -2077,60 +2129,22 @@ List<LatLng> _createOrderedRoutePoints() {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: widget.onRefresh,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Retry'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _isLoadingFromCache
-                              ? null
-                              : () async {
-                                  final loaded = await _loadFromPersistentCache();
-                                  if (loaded) {
-                                    setState(() {});
-                                  }
-                                },
-                          icon: _isLoadingFromCache
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : const Icon(Icons.archive),
-                          label: Text(
-                            _isLoadingFromCache
-                                ? 'Loading...'
-                                : 'Load Cached Map',
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
+                    ElevatedButton.icon(
+                      onPressed: widget.onRefresh,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Tip: Cached map shows previously loaded location data',
+                      'No cached trip coordinates available for this trip.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                            fontStyle: FontStyle.italic,
-                          ),
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -2149,9 +2163,11 @@ List<LatLng> _createOrderedRoutePoints() {
       return _buildPlaceholderCard();
     }
 
-    final cachedTime = DateTime.parse(_persistentCachedData!['timestamp'] as String);
+    final cachedTime = DateTime.parse(
+      _persistentCachedData!['timestamp'] as String,
+    );
     final age = DateTime.now().difference(cachedTime);
-    
+
     final lat = _persistentCachedData!['latitude'] as double?;
     final lng = _persistentCachedData!['longitude'] as double?;
 
@@ -2159,74 +2175,93 @@ List<LatLng> _createOrderedRoutePoints() {
     List<Marker> markers = [];
 
     // Add cached coordinates as polyline points and start/end markers
-    final cachedCoordinates = _persistentCachedData!['coordinates'] as List<dynamic>;
+    final cachedCoordinates =
+        _persistentCachedData!['coordinates'] as List<dynamic>;
     if (cachedCoordinates.isNotEmpty) {
       final firstCoord = cachedCoordinates.first as Map<String, dynamic>;
       final lastCoord = cachedCoordinates.last as Map<String, dynamic>;
 
       // Start marker
-      markers.add(Marker(
-        point: LatLng(firstCoord['lat'] as double, firstCoord['lng'] as double),
-        width: 30,
-        height: 30,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.green,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
+      markers.add(
+        Marker(
+          point: LatLng(
+            firstCoord['lat'] as double,
+            firstCoord['lng'] as double,
           ),
-          child: const Icon(Icons.play_arrow, size: 16, color: Colors.white),
-        ),
-      ));
-
-      // End marker
-      if (cachedCoordinates.length > 1) {
-        markers.add(Marker(
-          point: LatLng(lastCoord['lat'] as double, lastCoord['lng'] as double),
           width: 30,
           height: 30,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.red,
+              color: Colors.green,
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2),
             ),
-            child: const Icon(Icons.flag, size: 16, color: Colors.white),
+            child: const Icon(Icons.play_arrow, size: 16, color: Colors.white),
           ),
-        ));
+        ),
+      );
+
+      // End marker
+      if (cachedCoordinates.length > 1) {
+        markers.add(
+          Marker(
+            point: LatLng(
+              lastCoord['lat'] as double,
+              lastCoord['lng'] as double,
+            ),
+            width: 30,
+            height: 30,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: const Icon(Icons.flag, size: 16, color: Colors.white),
+            ),
+          ),
+        );
       }
     }
 
     // Add current location marker if available
     if (lat != null && lng != null && lat != 0.0 && lng != 0.0) {
-      markers.add(Marker(
-        point: LatLng(lat, lng),
-        width: 40,
-        height: 40,
-        child: Icon(
-          Icons.local_shipping,
-          color: Theme.of(context).primaryColor,
-          size: 40,
+      markers.add(
+        Marker(
+          point: LatLng(lat, lng),
+          width: 40,
+          height: 40,
+          child: Icon(
+            Icons.local_shipping,
+            color: Theme.of(context).primaryColor,
+            size: 40,
+          ),
         ),
-      ));
+      );
     }
 
-    final mapCenter = lat != null && lng != null && lat != 0.0 && lng != 0.0
-        ? LatLng(lat, lng)
-        : (cachedCoordinates.isNotEmpty
-            ? LatLng(
-                (cachedCoordinates.first as Map<String, dynamic>)['lat'] as double,
-                (cachedCoordinates.first as Map<String, dynamic>)['lng'] as double,
-              )
-            : const LatLng(0, 0));
+    final mapCenter =
+        lat != null && lng != null && lat != 0.0 && lng != 0.0
+            ? LatLng(lat, lng)
+            : (cachedCoordinates.isNotEmpty
+                ? LatLng(
+                  (cachedCoordinates.first as Map<String, dynamic>)['lat']
+                      as double,
+                  (cachedCoordinates.first as Map<String, dynamic>)['lng']
+                      as double,
+                )
+                : const LatLng(0, 0));
 
     // Build route polyline from cached coordinates
-    final routePoints = cachedCoordinates
-        .map((c) => LatLng(
-              (c as Map<String, dynamic>)['lat'] as double,
-              c['lng'] as double,
-            ))
-        .toList();
+    final routePoints =
+        cachedCoordinates
+            .map(
+              (c) => LatLng(
+                (c as Map<String, dynamic>)['lat'] as double,
+                c['lng'] as double,
+              ),
+            )
+            .toList();
 
     return Card(
       elevation: 2,
@@ -2245,10 +2280,9 @@ List<LatLng> _createOrderedRoutePoints() {
                     children: [
                       Text(
                         'Delivery Route Map (Cached)',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Container(
@@ -2303,10 +2337,7 @@ List<LatLng> _createOrderedRoutePoints() {
                   Expanded(
                     child: Text(
                       'Showing cached map data. Try refreshing to load the latest location.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.orange[900],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.orange[900]),
                     ),
                   ),
                 ],
@@ -2331,7 +2362,8 @@ List<LatLng> _createOrderedRoutePoints() {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+                      urlTemplate:
+                          'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
                       userAgentPackageName: 'com.example.desktop_app',
                     ),
                     if (routePoints.length > 1)

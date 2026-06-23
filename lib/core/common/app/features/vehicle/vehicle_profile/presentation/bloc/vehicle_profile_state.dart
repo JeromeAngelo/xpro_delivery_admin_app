@@ -44,6 +44,15 @@ class VehicleProfileByIdLoaded extends VehicleProfileState {
   List<Object> get props => [vehicleProfile];
 }
 
+class VehicleProfileByDeliveryVehicleIdLoaded extends VehicleProfileState {
+  final VehicleProfileEntity vehicleProfile;
+
+  const VehicleProfileByDeliveryVehicleIdLoaded(this.vehicleProfile);
+
+  @override
+  List<Object> get props => [vehicleProfile];
+}
+
 // -----------------------------
 // CREATE STATE
 // -----------------------------

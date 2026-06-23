@@ -1,5 +1,3 @@
-import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/delivery_vehicle_data/presentation/bloc/vehicle_bloc.dart';
-import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/delivery_vehicle_data/presentation/bloc/vehicle_event.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/domain/enitity/delivery_vehicle_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 import 'package:xpro_delivery_admin_app/src/vehicle_management/widgets/vehicle_screen_widgets/vehicle_search_bar.dart';
@@ -43,8 +41,7 @@ class VehicleDataTable extends StatelessWidget {
         onSearchChanged: onSearchChanged,
       ),
       onCreatePressed: () {
-        // Navigate to create vehicle screen
-        _showCreateVehicleDialog(context);
+        context.go('/create-vehicle');
       },
       createButtonText: 'Add Vehicle',
       columns: const [
@@ -152,82 +149,5 @@ class VehicleDataTable extends StatelessWidget {
     return DateFormat('MMM dd, yyyy').format(date);
   }
 
-  Future<void> _showCreateVehicleDialog(BuildContext context) async {
-    final nameController = TextEditingController();
-    final plateNumberController = TextEditingController();
-    final typeController = TextEditingController();
-
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Add New Vehicle'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Vehicle Name',
-                    hintText: 'Enter vehicle name',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: plateNumberController,
-                  decoration: const InputDecoration(
-                    labelText: 'Plate Number',
-                    hintText: 'Enter plate number',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: typeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Vehicle Type',
-                    hintText: 'Enter vehicle type',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Create'),
-              onPressed: () {
-                if (nameController.text.isNotEmpty &&
-                    plateNumberController.text.isNotEmpty &&
-                    typeController.text.isNotEmpty) {
-                  context.read<VehicleBloc>().add(
-                    CreateVehicleEvent(
-                      vehicleName: nameController.text,
-                      vehiclePlateNumber: plateNumberController.text,
-                      vehicleType: typeController.text,
-                    ),
-                  );
-                  Navigator.of(dialogContext).pop();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill all fields')),
-                  );
-                }
-              },
-            ),
-          ],
-        );
-      },
-    ).then((_) {
-      // Dispose controllers
-      nameController.dispose();
-      plateNumberController.dispose();
-      typeController.dispose();
-    });
-  }
+ 
 }

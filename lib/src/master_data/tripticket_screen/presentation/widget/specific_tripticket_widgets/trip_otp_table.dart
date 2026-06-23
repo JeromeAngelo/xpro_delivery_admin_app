@@ -42,20 +42,21 @@ class TripOtpTable extends StatelessWidget {
       },
       createButtonText: 'Generate New OTP',
       columns: const [
-       // DataColumn(label: Text('Id')),
+        // DataColumn(label: Text('Id')),
         DataColumn(label: Text('OTP Code')),
         DataColumn(label: Text('Generated Code')),
         DataColumn(label: Text('Status')),
         DataColumn(label: Text('Odometer')),
+        DataColumn(label: Text('Verified At')),
+
         DataColumn(label: Text('Created')),
-        DataColumn(label: Text('Expires')),
         DataColumn(label: Text('Actions')),
       ],
       rows:
           otps.map((otp) {
             return DataRow(
               cells: [
-              //  DataCell(Text(otp.id)),
+                //  DataCell(Text(otp.id)),
                 // OTP Code cell with copy button
                 DataCell(
                   Row(
@@ -86,22 +87,28 @@ class TripOtpTable extends StatelessWidget {
 
                 // Status
                 DataCell(_buildStatusChip(otp.isVerified)),
-                DataCell(Text(otp.intransitOdometer != null ? '${otp.intransitOdometer} km' : 'N/A')),
-
-                // Created At
-                DataCell(Text(_formatDate(otp.createdAt))),
-
-                // Expires At
                 DataCell(
                   Text(
-                    _formatDate(otp.expiresAt),
+                    otp.intransitOdometer != null
+                        ? '${otp.intransitOdometer} km'
+                        : 'N/A',
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    _formatDate(otp.verifiedAt ?? otp.createdAt),
                     style: TextStyle(
-                      color: _isExpired(otp.expiresAt) ? Colors.red : null,
                       fontWeight:
-                          _isExpired(otp.expiresAt) ? FontWeight.bold : null,
+                          _isExpired(otp.verifiedAt ?? otp.createdAt)
+                              ? FontWeight.bold
+                              : null,
                     ),
                   ),
                 ),
+                // Created At
+                DataCell(Text(_formatDate(otp.createdAt))),
+
+                // Verified At
 
                 // Actions
                 DataCell(
@@ -147,7 +154,8 @@ class TripOtpTable extends StatelessWidget {
       totalPages: totalPages,
       onPageChanged: onPageChanged,
       isLoading: isLoading,
-      dataLength: '${otps.length}', onDeleted: () {  },
+      dataLength: '${otps.length}',
+      onDeleted: () {},
     );
   }
 
@@ -292,5 +300,4 @@ class TripOtpTable extends StatelessWidget {
       },
     );
   }
-
 }

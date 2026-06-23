@@ -173,9 +173,11 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/del
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/data/datasource/remote_datasource/delivery_vehicle_remote_datasource.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/data/repo/delivery_vehicle_repo_impl.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/domain/repo/delivery_vehicle_repo.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/domain/usecases/create_delivery_vehicle.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/domain/usecases/load_all_delivery_vehicle.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/domain/usecases/load_delivery_vehicle_by_id.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/domain/usecases/load_delivery_vehicle_by_trip_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/domain/usecases/update_delivery_vehicle.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/invoice_data/data/datasources/remote_datasource/invoice_data_remote_datasource.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/invoice_data/data/repo/invoice_data_repo_impl.dart';
@@ -305,9 +307,42 @@ import '../common/app/features/users_trip_collection/presentation/bloc/users_tri
 import '../common/app/features/vehicle/vehicle_profile/data/repo/vehicle_profile_repo_impl.dart';
 import '../common/app/features/vehicle/vehicle_profile/domain/repo/vehicle_profile_repo.dart';
 import '../common/app/features/vehicle/vehicle_profile/domain/usecases/create_vehicle_profile.dart';
+import '../common/app/features/vehicle/vehicle_profile/domain/usecases/get_vehicle_profile_by_delivery_vehicle_id.dart';
 import '../common/app/features/vehicle/vehicle_profile/domain/usecases/get_vehicle_profile_by_id.dart';
 import '../common/app/features/vehicle/vehicle_profile/domain/usecases/update_vehicle_profile.dart';
 import '../common/app/features/vehicle/vehicle_profile/presentation/bloc/vehicle_profile_bloc.dart';
+import '../common/app/features/place_lookups/municipality/data/datasources/remote_datasource/municipality_remote_datasource.dart';
+import '../common/app/features/place_lookups/municipality/data/repo/municipality_repo_impl.dart';
+import '../common/app/features/place_lookups/municipality/domain/repo/municipality_repo.dart';
+import '../common/app/features/place_lookups/municipality/domain/usecases/create_municipality.dart';
+import '../common/app/features/place_lookups/municipality/domain/usecases/delete_municipality.dart';
+import '../common/app/features/place_lookups/municipality/domain/usecases/get_all_municipalities.dart';
+import '../common/app/features/place_lookups/municipality/domain/usecases/get_all_municipalities_by_province_id.dart';
+import '../common/app/features/place_lookups/municipality/domain/usecases/get_assigned_municipalities_by_vehicle_profile_id.dart';
+import '../common/app/features/place_lookups/municipality/domain/usecases/get_municipality_by_id.dart';
+import '../common/app/features/place_lookups/municipality/domain/usecases/update_municipality.dart';
+import '../common/app/features/place_lookups/municipality/presentation/bloc/municipality_bloc.dart';
+import '../common/app/features/place_lookups/province/data/datasources/remote_datasource/province_remote_datasource.dart';
+import '../common/app/features/place_lookups/province/data/repo/province_repo_impl.dart';
+import '../common/app/features/place_lookups/province/domain/repo/province_repo.dart';
+import '../common/app/features/place_lookups/province/domain/usecases/create_province.dart';
+import '../common/app/features/place_lookups/province/domain/usecases/delete_province.dart';
+import '../common/app/features/place_lookups/province/domain/usecases/get_all_provinces.dart';
+import '../common/app/features/place_lookups/province/domain/usecases/get_all_provinces_by_region_id.dart';
+import '../common/app/features/place_lookups/province/domain/usecases/get_assigned_provinces_by_vehicle_profile_id.dart';
+import '../common/app/features/place_lookups/province/domain/usecases/get_province_by_id.dart';
+import '../common/app/features/place_lookups/province/domain/usecases/update_province.dart';
+import '../common/app/features/place_lookups/province/presentation/bloc/province_bloc.dart';
+import '../common/app/features/place_lookups/region/data/datasources/remote_datasource/region_remote_datasource.dart';
+import '../common/app/features/place_lookups/region/data/repo/region_repo_impl.dart';
+import '../common/app/features/place_lookups/region/domain/repo/region_repo.dart';
+import '../common/app/features/place_lookups/region/domain/usecases/create_region.dart';
+import '../common/app/features/place_lookups/region/domain/usecases/delete_region.dart';
+import '../common/app/features/place_lookups/region/domain/usecases/get_all_regions.dart';
+import '../common/app/features/place_lookups/region/domain/usecases/get_assigned_regions_by_vehicle_profile_id.dart';
+import '../common/app/features/place_lookups/region/domain/usecases/get_region_by_id.dart';
+import '../common/app/features/place_lookups/region/domain/usecases/update_region.dart';
+import '../common/app/features/place_lookups/region/presentation/bloc/region_bloc.dart';
 import 'notification_service.dart';
 
 final sl = GetIt.instance;
@@ -344,6 +379,9 @@ Future<void> init() async {
   await initPersonnelTrip();
   await initNotification();
   await initVehicleProfile();
+  await initRegion();
+  await initProvince();
+  await initMunicipality();
   await initUsertrips();
   await initDeliveryStatusChoices();
   // Providers
@@ -990,12 +1028,17 @@ Future<void> initDeliveryVehicleData() async {
       loadDeliveryVehicleById: sl(),
       loadDeliveryVehiclesByTripId: sl(),
       loadAllDeliveryVehicles: sl(),
+      createDeliveryVehicle: sl(),
+      updateDeliveryVehicle: sl(),
     ),
   );
 
   sl.registerLazySingleton(() => LoadDeliveryVehicleById(sl()));
   sl.registerLazySingleton(() => LoadDeliveryVehiclesByTripId(sl()));
   sl.registerLazySingleton(() => LoadAllDeliveryVehicles(sl()));
+
+  sl.registerLazySingleton(() => CreateDeliveryVehicle(sl()));
+  sl.registerLazySingleton(() => UpdateDeliveryVehicle(sl()));
 
   sl.registerLazySingleton<DeliveryVehicleRepo>(
     () => DeliveryVehicleRepoImpl(sl()),
@@ -1011,6 +1054,7 @@ Future<void> initVehicleProfile() async {
   sl.registerLazySingleton(
     () => VehicleProfileBloc(
       getVehicleProfileById: sl(),
+      getVehicleProfileByDeliveryVehicleId: sl(),
       getVehicleProfiles: sl(),
       createVehicleProfile: sl(),
       updateVehicleProfile: sl(),
@@ -1020,6 +1064,7 @@ Future<void> initVehicleProfile() async {
 
   // Usecases
   sl.registerLazySingleton(() => GetVehicleProfileById(sl()));
+  sl.registerLazySingleton(() => GetVehicleProfileByDeliveryVehicleId(sl()));
   sl.registerLazySingleton(() => GetVehicleProfiles(sl()));
 
   sl.registerLazySingleton(() => CreateVehicleProfile(sl()));
@@ -1034,6 +1079,102 @@ Future<void> initVehicleProfile() async {
   // Data sources
   sl.registerLazySingleton<VehicleProfileRemoteDatasource>(
     () => VehicleProfileRemoteDatasourceImpl(pocketBaseClient: sl()),
+  );
+}
+
+Future<void> initRegion() async {
+  // BLoC
+  sl.registerLazySingleton(
+    () => RegionBloc(
+      getAllRegions: sl(),
+      getRegionById: sl(),
+      createRegion: sl(),
+      updateRegion: sl(),
+      deleteRegion: sl(),
+      getAssignedRegionsByVehicleProfileId: sl(),
+    ),
+  );
+
+  // Usecases
+  sl.registerLazySingleton(() => GetAllRegions(sl()));
+  sl.registerLazySingleton(() => GetRegionById(sl()));
+  sl.registerLazySingleton(() => CreateRegion(sl()));
+  sl.registerLazySingleton(() => UpdateRegion(sl()));
+  sl.registerLazySingleton(() => DeleteRegion(sl()));
+  sl.registerLazySingleton(() => GetAssignedRegionsByVehicleProfileId(sl()));
+
+  // Repository
+  sl.registerLazySingleton<RegionRepo>(() => RegionRepoImpl(remoteDataSource: sl()));
+
+  // Data sources
+  sl.registerLazySingleton<RegionRemoteDataSource>(
+    () => RegionRemoteDataSourceImpl(pocketBaseClient: sl()),
+  );
+}
+
+Future<void> initProvince() async {
+  // BLoC
+  sl.registerLazySingleton(
+    () => ProvinceBloc(
+      getAllProvinces: sl(),
+      getAllProvincesByRegionId: sl(),
+      getProvinceById: sl(),
+      createProvince: sl(),
+      updateProvince: sl(),
+      deleteProvince: sl(),
+      getAssignedProvincesByVehicleProfileId: sl(),
+    ),
+  );
+
+  // Usecases
+  sl.registerLazySingleton(() => GetAllProvinces(sl()));
+  sl.registerLazySingleton(() => GetAllProvincesByRegionId(sl()));
+  sl.registerLazySingleton(() => GetProvinceById(sl()));
+  sl.registerLazySingleton(() => CreateProvince(sl()));
+  sl.registerLazySingleton(() => UpdateProvince(sl()));
+  sl.registerLazySingleton(() => DeleteProvince(sl()));
+  sl.registerLazySingleton(() => GetAssignedProvincesByVehicleProfileId(sl()));
+
+  // Repository
+  sl.registerLazySingleton<ProvinceRepo>(() => ProvinceRepoImpl(remoteDataSource: sl()));
+
+  // Data sources
+  sl.registerLazySingleton<ProvinceRemoteDataSource>(
+    () => ProvinceRemoteDataSourceImpl(pocketBaseClient: sl()),
+  );
+}
+
+Future<void> initMunicipality() async {
+  // BLoC
+  sl.registerLazySingleton(
+    () => MunicipalityBloc(
+      getAllMunicipalities: sl(),
+      getAllMunicipalitiesByProvinceId: sl(),
+      getMunicipalityById: sl(),
+      createMunicipality: sl(),
+      updateMunicipality: sl(),
+      deleteMunicipality: sl(),
+      getAssignedMunicipalitiesByVehicleProfileId: sl(),
+    ),
+  );
+
+  // Usecases
+  sl.registerLazySingleton(() => GetAllMunicipalities(sl()));
+  sl.registerLazySingleton(() => GetAllMunicipalitiesByProvinceId(sl()));
+  sl.registerLazySingleton(() => GetMunicipalityById(sl()));
+  sl.registerLazySingleton(() => CreateMunicipality(sl()));
+  sl.registerLazySingleton(() => UpdateMunicipality(sl()));
+  sl.registerLazySingleton(() => DeleteMunicipality(sl()));
+  sl.registerLazySingleton(
+    () => GetAssignedMunicipalitiesByVehicleProfileId(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<MunicipalityRepo>(() => MunicipalityRepoImpl(remoteDataSource: sl()));
+
+  // Data sources
+  sl.registerLazySingleton<MunicipalityRemoteDataSource>(
+    () => MunicipalityRemoteDataSourceImpl(pocketBaseClient: sl()),
   );
 }
 

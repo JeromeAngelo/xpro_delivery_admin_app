@@ -53,7 +53,6 @@ class VehicleAssignedTripsTable extends StatelessWidget {
           debugPrint('📊 [TABLE] Profile loaded - Checking IDs:');
           debugPrint('   Expected vehicleId: $vehicleId');
           debugPrint('   Profile ID: ${state.vehicleProfile.id}');
-          //debugPrint('   Delivery Vehicle ID: ${state.vehicleProfile.deliveryVehicleId}');
           debugPrint(
             '   Delivery Vehicle Data ID: ${state.vehicleProfile.deliveryVehicleData?.id}',
           );
@@ -69,6 +68,23 @@ class VehicleAssignedTripsTable extends StatelessWidget {
           } else {
             debugPrint(
               '⚠️ [TABLE] Profile loaded but IDs don\'t match - ignoring this profile',
+            );
+          }
+        } else if (state is VehicleProfileByDeliveryVehicleIdLoaded) {
+          // The new "by delivery vehicle data id" usecase is also keyed on the
+          // delivery vehicle id, so its result is equivalent for this table.
+          final candidate = state.vehicleProfile;
+          if (candidate.deliveryVehicleData?.id == vehicleId) {
+            profile = candidate;
+            loading = false;
+            debugPrint(
+              '✅ [TABLE] Profile matched (delivery vehicle data id flavour). '
+              'Trips count: ${profile.assignedTrips?.length ?? 0}',
+            );
+          } else {
+            debugPrint(
+              '⚠️ [TABLE] Profile loaded via deliveryVehicleData id but IDs '
+              'don\'t match - ignoring this profile',
             );
           }
         } else if (state is VehicleProfileError) {
@@ -93,6 +109,44 @@ class VehicleAssignedTripsTable extends StatelessWidget {
 
               return tripNo.contains(q) || personnels.contains(q);
             }).toList();
+
+        // -------------------------------------------------------------------
+        // Pagination – 25 rows per page.
+        // The `totalPages` and `currentPage` props on this widget are still
+        // owned by the parent (so the host can hook up its own state), but
+        // we always slice the *filtered* list against a constant page size
+        // and recompute total pages from the filtered length. When the host
+        // hands us an out-of-range `currentPage` we clamp it to a valid one
+        // before slicing so the table never shows an empty page after a
+        // search filter narrows the result set.
+        // -------------------------------------------------------------------
+        const int pageSize = 25;
+        final int computedTotalPages =
+            filteredTrips.isEmpty
+                ? 1
+                : (filteredTrips.length / pageSize).ceil();
+
+        final int effectivePage =
+            currentPage < 1
+                ? 1
+                : (currentPage > computedTotalPages
+                    ? computedTotalPages
+                    : currentPage);
+
+        final int startIndex = (effectivePage - 1) * pageSize;
+        final int endIndex = (startIndex + pageSize).clamp(
+          0,
+          filteredTrips.length,
+        );
+        final pagedTrips =
+            startIndex >= filteredTrips.length
+                ? const []
+                : filteredTrips.sublist(startIndex, endIndex);
+
+        debugPrint(
+          '📄 [TABLE] Page $effectivePage of $computedTotalPages '
+          '– showing rows ${startIndex + 1}–$endIndex of ${filteredTrips.length}',
+        );
 
         return DataTableLayout(
           title: 'Assigned Trips',
@@ -133,7 +187,7 @@ class VehicleAssignedTripsTable extends StatelessWidget {
           ],
 
           rows:
-              filteredTrips.map((trip) {
+              pagedTrips.map((trip) {
                 return DataRow(
                   cells: [
                     // Trip Number
@@ -179,8 +233,8 @@ class VehicleAssignedTripsTable extends StatelessWidget {
                 );
               }).toList(),
 
-          currentPage: currentPage,
-          totalPages: totalPages,
+          currentPage: effectivePage,
+          totalPages: computedTotalPages,
           onPageChanged: onPageChanged,
 
           isLoading: loading,
@@ -188,7 +242,10 @@ class VehicleAssignedTripsTable extends StatelessWidget {
           onRetry:
               errorMessage != null
                   ? () => context.read<VehicleProfileBloc>().add(
-                    GetVehicleProfileByIdEvent(vehicleId),
+                    // Refresh via the same event the rest of the screen uses
+                    // (deliveryVehicleData id) so we stay in sync with the
+                    // VehicleProfileDashboard above.
+                    GetVehicleProfileByDeliveryVehicleIdEvent(vehicleId),
                   )
                   : null,
 

@@ -30,6 +30,24 @@ class DeliveryVehiclesLoaded extends DeliveryVehicleState {
   List<Object?> get props => [vehicles];
 }
 
+class DeliveryVehicleCreated extends DeliveryVehicleState {
+  final DeliveryVehicleEntity vehicle;
+
+  const DeliveryVehicleCreated(this.vehicle);
+
+  @override
+  List<Object?> get props => [vehicle];
+}
+
+class DeliveryVehicleUpdated extends DeliveryVehicleState {
+  final DeliveryVehicleEntity vehicle;
+
+  const DeliveryVehicleUpdated(this.vehicle);
+
+  @override
+  List<Object?> get props => [vehicle];
+}
+
 class DeliveryVehicleError extends DeliveryVehicleState {
   final String message;
 

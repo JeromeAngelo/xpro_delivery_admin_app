@@ -60,6 +60,28 @@ class VehicleProfileRepoImpl implements VehicleProfileRepo {
   }
 
   @override
+  ResultFuture<VehicleProfileEntity> getVehicleProfileByDeliveryVehicleId(
+    String deliveryVehicleDataId,
+  ) async {
+    try {
+      debugPrint(
+        '🔄 Fetching vehicle profile by deliveryVehicleData ID: $deliveryVehicleDataId',
+      );
+      final profile = await _remoteDatasource
+          .getVehicleProfileByDeliveryVehicleId(deliveryVehicleDataId);
+      debugPrint(
+        '✅ Successfully fetched vehicle profile by deliveryVehicleData ID: ${profile.id}',
+      );
+      return Right(profile);
+    } on ServerException catch (e) {
+      debugPrint(
+        '❌ Server error fetching vehicle profile by deliveryVehicleData ID: ${e.message}',
+      );
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    }
+  }
+
+  @override
   ResultFuture<List<VehicleProfileEntity>> getVehicleProfiles() async {
     try {
       debugPrint('🔄 Fetching all vehicle profiles');

@@ -12,6 +12,7 @@ import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app
 
 import '../../widgets/specific_vehicle_widgets/assigned_trips_tbl.dart';
 import '../../widgets/specific_vehicle_widgets/vehicle_dashboard.dart';
+import '../../widgets/specific_vehicle_widgets/vehicle_profile_dashboard.dart';
 
 class SpecificVehicleView extends StatefulWidget {
   final String vehicleId;
@@ -35,10 +36,18 @@ class _SpecificVehicleViewState extends State<SpecificVehicleView>
   // Pagination / search for assigned trips
   int _assignedCurrentPage = 1;
   int _assignedTotalPages = 1;
-  final int _assignedItemsPerPage = 10;
+  static const int _assignedItemsPerPage =
+      25; // must match the table's page size
   final TextEditingController _assignedSearchController =
       TextEditingController();
   String _assignedSearchQuery = '';
+
+  // Pagination / search for the vehicle profile dashboard
+  int _profileCurrentPage = 1;
+  int _profileTotalPages = 1;
+  final TextEditingController _profileSearchController =
+      TextEditingController();
+  String _profileSearchQuery = '';
 
   @override
   void initState() {
@@ -61,10 +70,12 @@ class _SpecificVehicleViewState extends State<SpecificVehicleView>
       _vehicleErrorMessage = null;
     });
 
-    // Request vehicle profile by deliveryVehicle id
-    // Event name: GetVehicleProfileByIdEvent - assumed to exist
+    // Request vehicle profile by deliveryVehicle id. Use the
+    // `GetVehicleProfileByDeliveryVehicleIdEvent` flavour so both the
+    // VehicleProfileDashboard and the VehicleAssignedTripsTable stay in
+    // sync (they share the same BLoC state).
     context.read<VehicleProfileBloc>().add(
-      GetVehicleProfileByIdEvent(widget.vehicleId),
+      GetVehicleProfileByDeliveryVehicleIdEvent(widget.vehicleId),
     );
 
     // Request delivery vehicle info by id
@@ -154,7 +165,11 @@ class _SpecificVehicleViewState extends State<SpecificVehicleView>
                       IconButton(
                         icon: const Icon(Icons.edit),
                         tooltip: 'Edit Vehicle',
-                        onPressed: () {},
+                        onPressed: () {
+                          if (widget.vehicleId.isNotEmpty) {
+                            context.go('/update-vehicle/${widget.vehicleId}');
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -219,6 +234,29 @@ class _SpecificVehicleViewState extends State<SpecificVehicleView>
 
                         const SizedBox(height: 16),
 
+                        // Vehicle Profile dashboard - uses VehicleProfileBloc
+                        // (fetches the profile via
+                        // GetVehicleProfileByDeliveryVehicleIdEvent so it is
+                        // keyed on the delivery vehicle data id).
+                        VehicleProfileDashboard(
+                          deliveryVehicleDataId: widget.vehicleId,
+                          currentPage: _profileCurrentPage,
+                          totalPages: _profileTotalPages,
+                          onPageChanged: (page) {
+                            setState(() => _profileCurrentPage = page);
+                          },
+                          searchController: _profileSearchController,
+                          searchQuery: _profileSearchQuery,
+                          onSearchChanged: (q) {
+                            setState(() {
+                              _profileSearchQuery = q;
+                              _profileCurrentPage = 1;
+                            });
+                          },
+                        ),
+
+                        const SizedBox(height: 16),
+
                         // Assigned trips table - uses VehicleProfileBloc
                         VehicleAssignedTripsTable(
                           vehicleId: widget.vehicleId,
@@ -228,7 +266,9 @@ class _SpecificVehicleViewState extends State<SpecificVehicleView>
                             setState(() => _assignedCurrentPage = page);
                             // optionally request fresh data on page change
                             context.read<VehicleProfileBloc>().add(
-                              GetVehicleProfileByIdEvent(widget.vehicleId),
+                              GetVehicleProfileByDeliveryVehicleIdEvent(
+                                widget.vehicleId,
+                              ),
                             );
                           },
                           searchController: _assignedSearchController,

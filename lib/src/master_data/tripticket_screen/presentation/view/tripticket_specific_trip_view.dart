@@ -84,7 +84,6 @@ class _TripTicketSpecificTripViewState
   int _endTripOtpTotalPages = 1;
   final int _endTripOtpItemsPerPage = 5; // Smaller number for embedded table
 
-  Timer? _mapRefreshTimer;
   List<TripUpdateEntity> _tripUpdates = [];
   bool _isMapLoading = true;
   String? _mapErrorMessage;
@@ -141,8 +140,6 @@ class _TripTicketSpecificTripViewState
     _loadTripUpdatesForMap();
     // Load trip coordinates for map
     _loadTripCoordinatesForMap();
-    // Start auto-refresh timer for map data
-    _startMapRefreshTimer();
   }
 
   // Update the _loadTripUpdatesForMap method
@@ -174,24 +171,6 @@ class _TripTicketSpecificTripViewState
     });
   }
 
-  // Update the _startMapRefreshTimer method
-  void _startMapRefreshTimer() {
-    // Cancel any existing timer
-    _mapRefreshTimer?.cancel();
-
-    // Create a new timer that refreshes the data every minute
-    _mapRefreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      if (mounted) {
-        debugPrint('🔄 Auto-refreshing trip map data');
-        // Don't set loading state for auto-refresh to avoid flickering
-        context.read<TripUpdatesBloc>().add(GetTripUpdatesEvent(widget.tripId));
-        context.read<TripCoordinatesUpdateBloc>().add(
-          GetTripCoordinatesByTripIdEvent(widget.tripId),
-        );
-      }
-    });
-  }
-
   /// ✅ Re-fetches every data source this screen depends on. Called when an
   /// action that mutates the trip (like "unassign") completes successfully.
   void _refreshAllTripData() {
@@ -218,7 +197,6 @@ class _TripTicketSpecificTripViewState
 
   @override
   void dispose() {
-    _mapRefreshTimer?.cancel();
     _coordinatesLoadingTimer?.cancel();
     _deliveryDataLoadingTimer?.cancel();
     _mapLoadingTimer?.cancel();

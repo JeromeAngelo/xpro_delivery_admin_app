@@ -97,30 +97,21 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
       return _buildLoadingSkeleton(context);
     }
 
-    String formatDateTime(DateTime? dateTime) {
-      if (dateTime == null) return 'N/A';
+     String _formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) return 'N/A';
 
-      // Convert UTC to Philippine Time (UTC+8)
-      final phDateTime = dateTime.add(const Duration(hours: 8));
+    final hour24 = dateTime.hour;
+    final hour12 = hour24 == 0 ? 12 : (hour24 > 12 ? hour24 - 12 : hour24);
+    final amPm = hour24 >= 12 ? 'PM' : 'AM';
 
-      final hour24 = phDateTime.hour;
-      final hour12 =
-          hour24 == 0
-              ? 12
-              : hour24 > 12
-              ? hour24 - 12
-              : hour24;
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final year = dateTime.year;
 
-      final amPm = hour24 >= 12 ? 'PM' : 'AM';
-
-      final month = phDateTime.month.toString().padLeft(2, '0');
-      final day = phDateTime.day.toString().padLeft(2, '0');
-      final year = phDateTime.year;
-
-      return '$month/$day/$year '
-          '${hour12.toString().padLeft(2, '0')}:'
-          '${phDateTime.minute.toString().padLeft(2, '0')} $amPm';
-    }
+    return '$month/$day/$year '
+        '${hour12.toString().padLeft(2, '0')}:'
+        '${dateTime.minute.toString().padLeft(2, '0')} $amPm';
+  }
 
     String dateFormat(DateTime? date) {
       if (date == null) return 'Not set';
@@ -371,17 +362,17 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
             ),
             DashboardInfoItem(
               icon: Icons.local_shipping,
-              value: formatDateTime(widget.trip?.otp?.verifiedAt),
+              value: _formatDateTime(widget.trip?.otp?.verifiedAt),
               label: 'Dispatch Time',
             ),
             DashboardInfoItem(
               icon: Icons.play_circle_filled,
-              value: formatDateTime(widget.trip?.timeAccepted),
+              value: _formatDateTime(widget.trip?.timeAccepted),
               label: 'Start of Trip',
             ),
             DashboardInfoItem(
               icon: Icons.stop_circle,
-              value: formatDateTime(widget.trip?.timeEndTrip),
+              value: _formatDateTime(widget.trip?.timeEndTrip),
               label: 'End of Trip',
             ),
             DashboardInfoItem(
@@ -425,12 +416,12 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
             ),
             DashboardInfoItem(
               icon: Icons.calendar_view_day,
-              value: formatDateTime(widget.trip?.created),
+              value: _formatDateTime(widget.trip?.created),
               label: 'Created At',
             ),
             DashboardInfoItem(
               icon: Icons.update_outlined,
-              value: formatDateTime(widget.trip?.updated),
+              value: _formatDateTime(widget.trip?.updated),
               label: 'Updated At',
             ),
           ],

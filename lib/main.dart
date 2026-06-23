@@ -2,6 +2,8 @@ import 'package:provider/provider.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_status_choices/presentation/bloc/delivery_status_choices_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/delivery_team/presentation/bloc/delivery_team_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/personels/presentation/bloc/personel_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/place_lookups/province/presentation/bloc/province_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/place_lookups/region/presentation/bloc/region_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/delivery_vehicle_data/presentation/bloc/vehicle_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_update/presentation/bloc/delivery_update_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/return_product/presentation/bloc/return_bloc.dart';
@@ -34,6 +36,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'core/common/app/features/invoice_status/presentation/bloc/invoice_status_bloc.dart';
 import 'core/common/app/features/notfication/presentation/bloc/notification_bloc.dart';
+import 'core/common/app/features/place_lookups/municipality/presentation/bloc/municipality_bloc.dart';
 import 'core/common/app/features/users_trip_collection/presentation/bloc/users_trip_collection_bloc.dart';
 import 'core/common/app/features/vehicle/vehicle_profile/presentation/bloc/vehicle_profile_bloc.dart';
 
@@ -100,6 +103,10 @@ class MyApp extends StatelessWidget {
             BlocProvider(create: (_) => sl<PersonnelTripBloc>()),
             BlocProvider<NotificationBloc>.value(value: sl<NotificationBloc>()),
             BlocProvider(create: (_) => sl<UsersTripCollectionBloc>()),
+                        BlocProvider(create: (_) => sl<MunicipalityBloc>()),
+                        BlocProvider(create: (_) => sl<ProvinceBloc>()),
+                        BlocProvider(create: (_) => sl<RegionBloc>()),
+
           ],
           child: MaterialApp.router(
             debugShowCheckedModeBanner: false,
