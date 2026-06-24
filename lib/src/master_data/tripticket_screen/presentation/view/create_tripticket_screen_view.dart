@@ -411,6 +411,7 @@ class _CreateTripTicketScreenViewState
         return VehicleForm(
           availableVehicles: availableVehicles,
           selectedVehicles: _selectedVehicle != null ? [_selectedVehicle!] : [],
+          selectedDeliveries: _selectedDeliveries,
           onVehiclesChanged: (vehicles) {
             setState(() {
               _selectedVehicle = vehicles.isNotEmpty ? vehicles.first : null;

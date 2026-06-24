@@ -5,6 +5,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/delivery_team/p
 import 'package:xpro_delivery_admin_app/core/common/app/features/place_lookups/province/presentation/bloc/province_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/place_lookups/region/presentation/bloc/region_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/delivery_vehicle_data/presentation/bloc/vehicle_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/presentation/bloc/vehicle_tag_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_update/presentation/bloc/delivery_update_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/return_product/presentation/bloc/return_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/presentation/bloc/trip_bloc.dart';
@@ -87,9 +88,12 @@ class MyApp extends StatelessWidget {
             BlocProvider(create: (_) => sl<OtpBloc>()),
             BlocProvider(create: (_) => sl<EndTripOtpBloc>()),
             BlocProvider(create: (_) => sl<VehicleBloc>()),
+            BlocProvider(create: (_) => sl<VehicleTagBloc>()),
             BlocProvider(create: (_) => sl<VehicleProfileBloc>()),
             BlocProvider(create: (_) => sl<PersonelBloc>()),
-            BlocProvider(create: (_) => sl<TripCoordinatesUpdateBloc>()),          //new entities
+            BlocProvider(
+              create: (_) => sl<TripCoordinatesUpdateBloc>(),
+            ), //new entities
             BlocProvider(create: (_) => sl<CustomerDataBloc>()),
             BlocProvider(create: (_) => sl<InvoiceDataBloc>()),
             BlocProvider(create: (_) => sl<InvoiceItemsBloc>()),
@@ -103,10 +107,10 @@ class MyApp extends StatelessWidget {
             BlocProvider(create: (_) => sl<PersonnelTripBloc>()),
             BlocProvider<NotificationBloc>.value(value: sl<NotificationBloc>()),
             BlocProvider(create: (_) => sl<UsersTripCollectionBloc>()),
-                        BlocProvider(create: (_) => sl<MunicipalityBloc>()),
-                        BlocProvider(create: (_) => sl<ProvinceBloc>()),
-                        BlocProvider(create: (_) => sl<RegionBloc>()),
-
+            BlocProvider(create: (_) => sl<MunicipalityBloc>()),
+            BlocProvider(create: (_) => sl<ProvinceBloc>()),
+            BlocProvider(create: (_) => sl<RegionBloc>()),
+            BlocProvider(create: (_) => sl<VehicleTagBloc>()),
           ],
           child: MaterialApp.router(
             debugShowCheckedModeBanner: false,
@@ -126,7 +130,7 @@ class MyApp extends StatelessWidget {
               ),
             ),
             themeMode: themeProvider.themeMode,
-            
+
             routerConfig: router,
             builder: (context, child) {
               // Initialize auth interceptor with context

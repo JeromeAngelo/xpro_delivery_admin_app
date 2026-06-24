@@ -32,6 +32,17 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/deliver
 import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/delivery_vehicle_data/domain/usecase/load_vehicle_by_trip_id.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/delivery_vehicle_data/domain/usecase/update_vehicle.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/delivery_vehicle_data/presentation/bloc/vehicle_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/data/datasource/remote_datasource/vehicle_tag_remote_datasource.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/data/repo/vehicle_tag_repo_impl.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/domain/repo/vehicle_tag_repo.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/domain/usecases/assign_tag_to_vehicle.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/domain/usecases/create_vehicle_tag.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/domain/usecases/delete_vehicle_tag.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/domain/usecases/get_vehicle_tags.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/domain/usecases/load_vehicle_tag_by_id.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/domain/usecases/unassign_tag_from_vehicle.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/domain/usecases/update_vehicle_tag.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/presentation/bloc/vehicle_tag_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/cancelled_invoices/domain/usecases/resassign_trip_for_cancelled_invoice.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_update/data/datasource/remote_datasource/delivery_update_datasource.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_update/data/repo/delivery_update_repo_impl.dart';
@@ -353,6 +364,7 @@ Future<void> init() async {
   await initGeneralAuth();
   await initUserRoles();
   await initVehicle();
+  await initVehicleTags();
   await initPersonels();
   await initDeliveryTeam();
   await initChecklist();
@@ -512,6 +524,40 @@ Future<void> initVehicle() async {
   // Data sources
   sl.registerLazySingleton<VehicleRemoteDatasource>(
     () => VehicleRemoteDatasourceImpl(pocketBaseClient: sl()),
+  );
+}
+
+Future<void> initVehicleTags() async {
+  // BLoC
+  sl.registerLazySingleton(
+    () => VehicleTagBloc(
+      getVehicleTags: sl(),
+      loadVehicleTagById: sl(),
+      createVehicleTag: sl(),
+      updateVehicleTag: sl(),
+      deleteVehicleTag: sl(),
+      assignTagToVehicle: sl(),
+      unassignTagFromVehicle: sl(),
+    ),
+  );
+
+  // Usecases
+  sl.registerLazySingleton(() => GetVehicleTags(sl()));
+  sl.registerLazySingleton(() => LoadVehicleTagById(sl()));
+  sl.registerLazySingleton(() => CreateVehicleTag(sl()));
+  sl.registerLazySingleton(() => UpdateVehicleTag(sl()));
+  sl.registerLazySingleton(() => DeleteVehicleTag(sl()));
+  sl.registerLazySingleton(() => AssignTagToVehicle(sl()));
+  sl.registerLazySingleton(() => UnassignTagFromVehicle(sl()));
+
+  // Repository
+  sl.registerLazySingleton<VehicleTagRepo>(
+    () => VehicleTagRepoImpl(remoteDataSource: sl()),
+  );
+
+  // Data sources
+  sl.registerLazySingleton<VehicleTagRemoteDataSource>(
+    () => VehicleTagRemoteDataSourceImpl(pocketBaseClient: sl()),
   );
 }
 
@@ -1104,7 +1150,9 @@ Future<void> initRegion() async {
   sl.registerLazySingleton(() => GetAssignedRegionsByVehicleProfileId(sl()));
 
   // Repository
-  sl.registerLazySingleton<RegionRepo>(() => RegionRepoImpl(remoteDataSource: sl()));
+  sl.registerLazySingleton<RegionRepo>(
+    () => RegionRepoImpl(remoteDataSource: sl()),
+  );
 
   // Data sources
   sl.registerLazySingleton<RegionRemoteDataSource>(
@@ -1136,7 +1184,9 @@ Future<void> initProvince() async {
   sl.registerLazySingleton(() => GetAssignedProvincesByVehicleProfileId(sl()));
 
   // Repository
-  sl.registerLazySingleton<ProvinceRepo>(() => ProvinceRepoImpl(remoteDataSource: sl()));
+  sl.registerLazySingleton<ProvinceRepo>(
+    () => ProvinceRepoImpl(remoteDataSource: sl()),
+  );
 
   // Data sources
   sl.registerLazySingleton<ProvinceRemoteDataSource>(
@@ -1170,7 +1220,9 @@ Future<void> initMunicipality() async {
   );
 
   // Repository
-  sl.registerLazySingleton<MunicipalityRepo>(() => MunicipalityRepoImpl(remoteDataSource: sl()));
+  sl.registerLazySingleton<MunicipalityRepo>(
+    () => MunicipalityRepoImpl(remoteDataSource: sl()),
+  );
 
   // Data sources
   sl.registerLazySingleton<MunicipalityRemoteDataSource>(

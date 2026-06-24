@@ -97,21 +97,21 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
       return _buildLoadingSkeleton(context);
     }
 
-     String _formatDateTime(DateTime? dateTime) {
-    if (dateTime == null) return 'N/A';
+    String _formatDateTime(DateTime? dateTime) {
+      if (dateTime == null) return 'N/A';
 
-    final hour24 = dateTime.hour;
-    final hour12 = hour24 == 0 ? 12 : (hour24 > 12 ? hour24 - 12 : hour24);
-    final amPm = hour24 >= 12 ? 'PM' : 'AM';
+      final hour24 = dateTime.hour;
+      final hour12 = hour24 == 0 ? 12 : (hour24 > 12 ? hour24 - 12 : hour24);
+      final amPm = hour24 >= 12 ? 'PM' : 'AM';
 
-    final month = dateTime.month.toString().padLeft(2, '0');
-    final day = dateTime.day.toString().padLeft(2, '0');
-    final year = dateTime.year;
+      final month = dateTime.month.toString().padLeft(2, '0');
+      final day = dateTime.day.toString().padLeft(2, '0');
+      final year = dateTime.year;
 
-    return '$month/$day/$year '
-        '${hour12.toString().padLeft(2, '0')}:'
-        '${dateTime.minute.toString().padLeft(2, '0')} $amPm';
-  }
+      return '$month/$day/$year '
+          '${hour12.toString().padLeft(2, '0')}:'
+          '${dateTime.minute.toString().padLeft(2, '0')} $amPm';
+    }
 
     String dateFormat(DateTime? date) {
       if (date == null) return 'Not set';
@@ -132,6 +132,26 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
       } else {
         return '${hours}h ${minutes}m';
       }
+    }
+
+    String calculateDaysUntilReturn(DateTime? expectedReturnDate) {
+      if (expectedReturnDate == null) return 'Not set';
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final expected = DateTime(
+        expectedReturnDate.year,
+        expectedReturnDate.month,
+        expectedReturnDate.day,
+      );
+
+      final days = expected.difference(today).inDays;
+
+      if (days == 0) return 'Today';
+      if (days == 1) return 'In 1 day';
+      if (days > 1) return 'In $days days';
+      if (days == -1) return 'Overdue by 1 day';
+      return 'Overdue by ${days.abs()} days';
     }
 
     return Column(
@@ -361,6 +381,11 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
               label: 'Expected Return Date',
             ),
             DashboardInfoItem(
+              icon: Icons.calendar_today,
+              value: calculateDaysUntilReturn(widget.trip?.expectedReturnDate),
+              label: 'Days Until Return',
+            ),
+            DashboardInfoItem(
               icon: Icons.local_shipping,
               value: _formatDateTime(widget.trip?.otp?.verifiedAt),
               label: 'Dispatch Time',
@@ -418,11 +443,6 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
               icon: Icons.calendar_view_day,
               value: _formatDateTime(widget.trip?.created),
               label: 'Created At',
-            ),
-            DashboardInfoItem(
-              icon: Icons.update_outlined,
-              value: _formatDateTime(widget.trip?.updated),
-              label: 'Updated At',
             ),
           ],
         ),

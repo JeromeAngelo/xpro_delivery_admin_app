@@ -260,6 +260,11 @@ class AppNavigationItems {
             icon: Icons.local_shipping,
             route: '/vehicle-list',
           ),
+          NavigationItem(
+            title: 'Vehicle Tags',
+            icon: Icons.attachment_outlined,
+            route: '/vehicle-tags',
+          ),
         ],
       ),
     ];

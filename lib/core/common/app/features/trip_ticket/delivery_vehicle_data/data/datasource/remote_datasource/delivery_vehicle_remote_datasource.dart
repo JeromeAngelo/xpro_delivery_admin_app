@@ -42,7 +42,7 @@ class DeliveryVehicleRemoteDataSourceImpl
 
       final record = await _pocketBaseClient
           .collection('deliveryVehicleData')
-          .getOne(id);
+          .getOne(id, expand: 'vehicleTags');
 
       final vehicle = DeliveryVehicleModel.fromJson({
         'id': record.id,
@@ -55,6 +55,9 @@ class DeliveryVehicleRemoteDataSourceImpl
         'wheels': record.data['wheels'],
         'volumeCapacity': record.data['volumeCapacity'],
         'weightCapacity': record.data['weightCapacity'],
+        'isAssignedTrip': record.data['isAssignedTrip'],
+        'status': record.data['status'],
+        'vehicleTags': record.expand['vehicleTags'],
         'created': record.created,
         'updated': record.updated,
       });
@@ -79,7 +82,7 @@ class DeliveryVehicleRemoteDataSourceImpl
 
       final records = await _pocketBaseClient
           .collection('deliveryVehicleData')
-          .getFullList(filter: 'trip = "$tripId"');
+          .getFullList(filter: 'trip = "$tripId"', expand: 'vehicleTags');
 
       final vehicles =
           records
@@ -95,6 +98,9 @@ class DeliveryVehicleRemoteDataSourceImpl
                   'wheels': record.data['wheels'],
                   'volumeCapacity': record.data['volumeCapacity'],
                   'weightCapacity': record.data['weightCapacity'],
+                  'isAssignedTrip': record.data['isAssignedTrip'],
+                  'status': record.data['status'],
+                  'vehicleTags': record.expand['vehicleTags'],
                   'created': record.created,
                   'updated': record.updated,
                 }),
@@ -119,10 +125,9 @@ class DeliveryVehicleRemoteDataSourceImpl
     try {
       debugPrint('🔄 Loading all delivery vehicles');
 
-      final records =
-          await _pocketBaseClient
-              .collection('deliveryVehicleData')
-              .getFullList();
+      final records = await _pocketBaseClient
+          .collection('deliveryVehicleData')
+          .getFullList(expand: 'vehicleTags');
 
       final vehicles =
           records
@@ -138,6 +143,9 @@ class DeliveryVehicleRemoteDataSourceImpl
                   'wheels': record.data['wheels'],
                   'volumeCapacity': record.data['volumeCapacity'],
                   'weightCapacity': record.data['weightCapacity'],
+                  'isAssignedTrip': record.data['isAssignedTrip'],
+                  'status': record.data['status'],
+                  'vehicleTags': record.expand['vehicleTags'],
                   'created': record.created,
                   'updated': record.updated,
                 }),
@@ -177,6 +185,15 @@ class DeliveryVehicleRemoteDataSourceImpl
           'volumeCapacity': vehicle.volumeCapacity,
         if (vehicle.weightCapacity != null)
           'weightCapacity': vehicle.weightCapacity,
+        if (vehicle.isAssignedTrip != null)
+          'isAssignedTrip': vehicle.isAssignedTrip,
+        if (vehicle.status != null) 'status': vehicle.status!.name,
+        if (vehicle.vehicleTags != null)
+          'vehicleTags':
+              vehicle.vehicleTags!
+                  .map((tag) => tag.id)
+                  .whereType<String>()
+                  .toList(),
       };
 
       debugPrint('📦 Payload to PocketBase: $body');
@@ -187,19 +204,26 @@ class DeliveryVehicleRemoteDataSourceImpl
 
       debugPrint('✅ Delivery vehicle created: ${record.id}');
 
+      final createdRecord = await _pocketBaseClient
+          .collection('deliveryVehicleData')
+          .getOne(record.id, expand: 'vehicleTags');
+
       return DeliveryVehicleModel.fromJson({
-        'id': record.id,
-        'collectionId': record.collectionId,
-        'collectionName': record.collectionName,
-        'name': record.data['name'],
-        'plate_no': record.data['plate_no'],
-        'make': record.data['make'],
-        'type': record.data['type'],
-        'wheels': record.data['wheels'],
-        'volumeCapacity': record.data['volumeCapacity'],
-        'weightCapacity': record.data['weightCapacity'],
-        'created': record.created,
-        'updated': record.updated,
+        'id': createdRecord.id,
+        'collectionId': createdRecord.collectionId,
+        'collectionName': createdRecord.collectionName,
+        'name': createdRecord.data['name'],
+        'plate_no': createdRecord.data['plate_no'],
+        'make': createdRecord.data['make'],
+        'type': createdRecord.data['type'],
+        'wheels': createdRecord.data['wheels'],
+        'volumeCapacity': createdRecord.data['volumeCapacity'],
+        'weightCapacity': createdRecord.data['weightCapacity'],
+        'isAssignedTrip': createdRecord.data['isAssignedTrip'],
+        'status': createdRecord.data['status'],
+        'vehicleTags': createdRecord.expand['vehicleTags'],
+        'created': createdRecord.created,
+        'updated': createdRecord.updated,
       });
     } catch (e) {
       debugPrint('❌ Error creating delivery vehicle: ${e.toString()}');
@@ -228,6 +252,15 @@ class DeliveryVehicleRemoteDataSourceImpl
           'volumeCapacity': vehicle.volumeCapacity,
         if (vehicle.weightCapacity != null)
           'weightCapacity': vehicle.weightCapacity,
+        if (vehicle.isAssignedTrip != null)
+          'isAssignedTrip': vehicle.isAssignedTrip,
+        if (vehicle.status != null) 'status': vehicle.status!.name,
+        if (vehicle.vehicleTags != null)
+          'vehicleTags':
+              vehicle.vehicleTags!
+                  .map((tag) => tag.id)
+                  .whereType<String>()
+                  .toList(),
       };
 
       debugPrint('📦 Payload to PocketBase: $body');
@@ -238,19 +271,26 @@ class DeliveryVehicleRemoteDataSourceImpl
 
       debugPrint('✅ Delivery vehicle updated: ${record.id}');
 
+      final updatedRecord = await _pocketBaseClient
+          .collection('deliveryVehicleData')
+          .getOne(record.id, expand: 'vehicleTags');
+
       return DeliveryVehicleModel.fromJson({
-        'id': record.id,
-        'collectionId': record.collectionId,
-        'collectionName': record.collectionName,
-        'name': record.data['name'],
-        'plate_no': record.data['plate_no'],
-        'make': record.data['make'],
-        'type': record.data['type'],
-        'wheels': record.data['wheels'],
-        'volumeCapacity': record.data['volumeCapacity'],
-        'weightCapacity': record.data['weightCapacity'],
-        'created': record.created,
-        'updated': record.updated,
+        'id': updatedRecord.id,
+        'collectionId': updatedRecord.collectionId,
+        'collectionName': updatedRecord.collectionName,
+        'name': updatedRecord.data['name'],
+        'plate_no': updatedRecord.data['plate_no'],
+        'make': updatedRecord.data['make'],
+        'type': updatedRecord.data['type'],
+        'wheels': updatedRecord.data['wheels'],
+        'volumeCapacity': updatedRecord.data['volumeCapacity'],
+        'weightCapacity': updatedRecord.data['weightCapacity'],
+        'isAssignedTrip': updatedRecord.data['isAssignedTrip'],
+        'status': updatedRecord.data['status'],
+        'vehicleTags': updatedRecord.expand['vehicleTags'],
+        'created': updatedRecord.created,
+        'updated': updatedRecord.updated,
       });
     } catch (e) {
       debugPrint('❌ Error updating delivery vehicle: ${e.toString()}');

@@ -20,10 +20,10 @@ import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presen
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/view/trip_ticket_overview_screen.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/view/tripticket_screen_view.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/tripticket_screen/presentation/view/tripticket_specific_trip_view.dart';
-import 'package:xpro_delivery_admin_app/src/vehicle_management/view/specific_vehicle_view/specific_vehicle_view.dart';
-import 'package:xpro_delivery_admin_app/src/vehicle_management/view/vehicle_list_screen/vehicle_list_screen_view.dart';
-import 'package:xpro_delivery_admin_app/src/vehicle_management/view/create_vehicle_view/create_vehicle_view.dart';
-import 'package:xpro_delivery_admin_app/src/vehicle_management/view/update_vehicle_view/update_vehicle_view.dart';
+import 'package:xpro_delivery_admin_app/src/vehicle_management/view/vehicle_screens/specific_vehicle_view/specific_vehicle_view.dart';
+import 'package:xpro_delivery_admin_app/src/vehicle_management/view/vehicle_screens/vehicle_list_screen/vehicle_list_screen_view.dart';
+import 'package:xpro_delivery_admin_app/src/vehicle_management/view/vehicle_screens/create_vehicle_view/create_vehicle_view.dart';
+import 'package:xpro_delivery_admin_app/src/vehicle_management/view/vehicle_screens/update_vehicle_view/update_vehicle_view.dart';
 import 'package:xpro_delivery_admin_app/src/return_data/return_list_screen/presentation/view/return_list_view.dart';
 import 'package:xpro_delivery_admin_app/src/return_data/undelivered_customer_data/presentation/view/undelivered_customer_list_view.dart';
 import 'package:xpro_delivery_admin_app/src/users/presentation/view/all_users_view.dart';
@@ -32,6 +32,9 @@ import 'package:flutter/material.dart';
 import 'package:xpro_delivery_admin_app/src/users/presentation/view/create_user_view.dart';
 import 'package:xpro_delivery_admin_app/src/users/presentation/view/specific_user_view.dart';
 import 'package:xpro_delivery_admin_app/src/users/presentation/view/update_user_view.dart';
+import 'package:xpro_delivery_admin_app/src/vehicle_management/view/vehicle_tags_screens/vehicle_tags_screen/vehicle_tag_view.dart';
+import 'package:xpro_delivery_admin_app/src/vehicle_management/view/vehicle_tags_screens/create_vehicle_tags_screen/create_vehicle_tag_screen.dart';
+import 'package:xpro_delivery_admin_app/src/vehicle_management/view/vehicle_tags_screens/update_vehicle_tag_screen/update_vehicle_tag_screen.dart';
 import 'package:xpro_delivery_admin_app/src/vehicle_management/view/vehicle_map_view/vehicle_map_view.dart';
 
 import '../../src/master_data/delivery_data/view/specific_delivery_data_screen.dart';
@@ -310,6 +313,25 @@ final router = GoRouter(
               _createSmoothTransition(const DeliveryMonitoringScreen(), state),
     ),
 
+    GoRoute(
+      path: '/vehicle-tags',
+      pageBuilder:
+          (context, state) =>
+              _createSmoothTransition(const VehicleTagView(), state),
+    ),
+    GoRoute(
+      path: '/create-vehicle-tag',
+      pageBuilder:
+          (context, state) =>
+              _createSmoothTransition(const CreateVehicleTagScreen(), state),
+    ),
+    GoRoute(
+      path: '/update-vehicle-tag/:tagId',
+      builder: (context, state) {
+        final tagId = state.pathParameters['tagId']!;
+        return UpdateVehicleTagScreen(tagId: tagId);
+      },
+    ),
     GoRoute(
       path: '/vehicle-map',
       pageBuilder:

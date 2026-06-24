@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/data/model/delivery_data_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/presentation/bloc/delivery_data_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/data/model/delivery_vehicle_model.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_vehicle_data/presentation/bloc/delivery_vehicle_bloc.dart';
@@ -12,12 +13,14 @@ import 'vehicle_selection_dialog.dart';
 class VehicleForm extends StatefulWidget {
   final List<DeliveryVehicleModel> availableVehicles;
   final List<DeliveryVehicleModel> selectedVehicles;
+  final List<DeliveryDataModel> selectedDeliveries;
   final Function(List<DeliveryVehicleModel>) onVehiclesChanged;
 
   const VehicleForm({
     super.key,
     required this.availableVehicles,
     required this.selectedVehicles,
+    this.selectedDeliveries = const [],
     required this.onVehiclesChanged,
   });
 
@@ -35,6 +38,7 @@ class _VehicleFormState extends State<VehicleForm> {
           (context) => VehicleSelectionDialog(
             availableVehicles: widget.availableVehicles,
             selectedVehicles: widget.selectedVehicles,
+            selectedDeliveries: widget.selectedDeliveries,
             onVehiclesChanged: widget.onVehiclesChanged,
             onVehicleSelectedForCapacityCheck: (vehicle) {
               setState(() {

@@ -557,6 +557,23 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           '🚚 Processing vehicleProfile update for vehicle: $vehicleId',
         );
 
+        // Set isAssignedTrip = true on the selected deliveryVehicleData record
+        try {
+          debugPrint(
+            '🔄 Setting isAssignedTrip = true for deliveryVehicleData: $vehicleId',
+          );
+          await _pocketBaseClient
+              .collection('deliveryVehicleData')
+              .update(vehicleId, body: {'isAssignedTrip': true});
+          debugPrint(
+            '✅ deliveryVehicleData $vehicleId marked as assigned to a trip',
+          );
+        } catch (e) {
+          debugPrint(
+            '⚠️ Failed to set isAssignedTrip for deliveryVehicleData $vehicleId: $e',
+          );
+        }
+
         // 1. Check if this vehicle already has a vehicleProfile record
         RecordModel? existingVehicleProfile;
 
