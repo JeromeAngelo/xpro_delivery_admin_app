@@ -8,6 +8,10 @@ class TripCoordinatesEntity extends Equatable {
   final TripModel? trip;
   double? latitude;
   double? longitude;
+  double? speed;
+  double? accuracy;
+  double? deviceBatteryLife;
+  double? networkSpeed;
   DateTime? created;
   DateTime? updated;
 
@@ -16,6 +20,10 @@ class TripCoordinatesEntity extends Equatable {
     this.collectionId,
     this.collectionName,
     this.trip,
+    this.speed,
+    this.accuracy,
+    this.deviceBatteryLife,
+    this.networkSpeed,
     this.latitude,
     this.longitude,
     this.created,
@@ -24,13 +32,17 @@ class TripCoordinatesEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        collectionId,
-        collectionName,
-        trip?.id,
-        latitude,
-        longitude,
-        created,
-        updated,
-      ];
+    id,
+    collectionId,
+    collectionName,
+    trip?.id,
+    latitude,
+    longitude,
+    speed,
+    accuracy,
+    deviceBatteryLife,
+    networkSpeed,
+    created,
+    updated,
+  ];
 }

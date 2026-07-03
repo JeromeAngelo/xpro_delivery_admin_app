@@ -7,8 +7,8 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/inv
 
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
-import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_list/presentation/widgets/specific_customer_data_widgets/completed_customer_dashboard_widget.dart';
-import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_list/presentation/widgets/specific_customer_data_widgets/completed_customer_invoice_table.dart';
+import 'package:xpro_delivery_admin_app/src/collection_data/tripricket_list/completed_customer_list/presentation/widgets/specific_customer_data_widgets/completed_customer_dashboard_widget.dart';
+import 'package:xpro_delivery_admin_app/src/collection_data/tripricket_list/completed_customer_list/presentation/widgets/specific_customer_data_widgets/completed_customer_invoice_table.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';

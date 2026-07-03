@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip/domain/entity/trip_entity.dart';
+import 'package:xpro_delivery_admin_app/src/main_screen/presentation/widgets/vehicle_details_dialog.dart';
 import 'dart:ui' as ui;
 
 import '../../../../core/services/location_tracking_service.dart';
@@ -37,61 +38,57 @@ class _VehicleMapWidgetState extends State<VehicleMapWidget> {
   bool _isSatellite = false;
   double _zoom = 6.0;
   bool _isMapReady = false;
-  
+
   StreamSubscription<Position>? _locationSub;
   LatLng? _currentLocation;
 
   void _startTracking() async {
-  final service = LocationTrackingService();
-  await service.start();
+    final service = LocationTrackingService();
+    await service.start();
 
-  _locationSub = service.locationStream.listen((position) {
-    final latLng = LatLng(position.latitude, position.longitude);
+    _locationSub = service.locationStream.listen((position) {
+      final latLng = LatLng(position.latitude, position.longitude);
 
-    // filter small movements
-    if (_currentLocation != null) {
-      final distance = Distance().as(
-        LengthUnit.Meter,
-        _currentLocation!,
-        latLng,
-      );
+      // filter small movements
+      if (_currentLocation != null) {
+        final distance = Distance().as(
+          LengthUnit.Meter,
+          _currentLocation!,
+          latLng,
+        );
 
-      if (distance < 3) return;
-    }
+        if (distance < 3) return;
+      }
 
-    setState(() {
-      _currentLocation = latLng;
+      setState(() {
+        _currentLocation = latLng;
+      });
+
+      // smooth camera follow (optional)
+      if (_isMapReady) {
+        final currentCenter = _mapController.camera.center;
+
+        final distance = Distance().as(LengthUnit.Meter, currentCenter, latLng);
+
+        if (distance > 10) {
+          _mapController.move(latLng, _zoom);
+        }
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() => _isMapReady = true);
     });
 
-    // smooth camera follow (optional)
-    if (_isMapReady) {
-      final currentCenter = _mapController.camera.center;
+    widget.selectedTripNotifier?.addListener(_handleSelectedTrip);
 
-      final distance = Distance().as(
-        LengthUnit.Meter,
-        currentCenter,
-        latLng,
-      );
-
-      if (distance > 10) {
-        _mapController.move(latLng, _zoom);
-      }
-    }
-  });
-}
-
- @override
-void initState() {
-  super.initState();
-
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    setState(() => _isMapReady = true);
-  });
-
-  widget.selectedTripNotifier?.addListener(_handleSelectedTrip);
-
-  _startTracking(); // ✅ THIS LINE WAS MISSING
-}
+    _startTracking(); // ✅ THIS LINE WAS MISSING
+  }
 
   @override
   void didUpdateWidget(covariant VehicleMapWidget oldWidget) {
@@ -105,6 +102,7 @@ void initState() {
   @override
   void dispose() {
     widget.selectedTripNotifier?.removeListener(_handleSelectedTrip);
+    _locationSub?.cancel();
     super.dispose();
   }
 
@@ -140,6 +138,27 @@ void initState() {
     return const LatLng(14.5995, 120.9842);
   }
 
+  /// Determines the marker color based on how stale the latest coordinate
+  /// update is. Colors follow the requested thresholds:
+  ///   - ≤ 1 minute old: green
+  ///   - 1–5 minutes old: yellow/amber
+  ///   - 5–20 minutes old: orange
+  ///   - > 20 minutes old: error red
+  /// Returns `null` when no timestamp is available so the caller can fall
+  /// back to the default theme color.
+  Color? _freshnessColor(TripEntity trip) {
+    final created = trip.tripCoordinatesUpdates?.created;
+    if (created == null) return null;
+
+    final now = DateTime.now().toUtc();
+    final diff = now.difference(created.toUtc());
+
+    if (diff <= const Duration(minutes: 1)) return Colors.green;
+    if (diff <= const Duration(minutes: 5)) return Colors.amber;
+    if (diff <= const Duration(minutes: 20)) return Colors.orange;
+    return Colors.red;
+  }
+
   List<Marker> _buildMarkers() {
     final markers = <Marker>[];
 
@@ -156,6 +175,18 @@ void initState() {
                   '')
               : (trip.tripNumberId ?? '');
 
+      // Freshness color drives the entire container so the recency of the
+      // last coordinate update is immediately visible at a glance. When null
+      // we keep the default theme background to indicate "no timestamp data".
+      final freshnessColor = _freshnessColor(trip);
+      final containerColor =
+          freshnessColor ?? Theme.of(context).colorScheme.secondary;
+      final triangleColor = freshnessColor ?? Colors.white;
+      final foregroundColor =
+          freshnessColor == null
+              ? Theme.of(context).colorScheme.surface
+              : Colors.white;
+
       markers.add(
         Marker(
           point: LatLng(lat, lng),
@@ -168,7 +199,7 @@ void initState() {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondary,
+                    color: containerColor,
                     boxShadow: kElevationToShadow[2],
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -179,13 +210,17 @@ void initState() {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.local_shipping, size: 18, color: Theme.of(context).colorScheme.surface,),
+                      Icon(
+                        Icons.local_shipping,
+                        size: 18,
+                        color: foregroundColor,
+                      ),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           vehicleName,
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.surface,
+                            color: foregroundColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 10,
                           ),
@@ -196,7 +231,7 @@ void initState() {
                   ),
                 ),
                 CustomPaint(
-                  painter: _TrianglePainter(color: Colors.white),
+                  painter: _TrianglePainter(color: triangleColor),
                   child: const SizedBox(width: 12, height: 6),
                 ),
               ],
@@ -206,59 +241,11 @@ void initState() {
       );
     }
 
-
-
     return markers;
   }
 
   void _showMarkerDetails(TripEntity trip) {
-    final vehicleName =
-        (trip.vehicle != null)
-            ? ((trip.vehicle as dynamic).name?.toString() ??
-                trip.tripNumberId ??
-                '')
-            : (trip.tripNumberId ?? '');
-    showModalBottomSheet(
-      context: context,
-      builder:
-          (_) => Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  vehicleName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text('Trip: ${trip.tripNumberId ?? '-'}'),
-                if (trip.user != null)
-                  Text(
-                    'Driver: ${(trip.user as dynamic).name ?? (trip.user as dynamic).email ?? '-'}',
-                  ),
-                if (trip.latitude != null && trip.longitude != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      'Location: ${trip.latitude}, ${trip.longitude}',
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Close'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-    );
+    showVehicleDetailsDialog(context, trip);
   }
 
   void _openFullScreen() {

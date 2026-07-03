@@ -21,6 +21,8 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/del
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/collection/data/model/collection_model.dart'
     as delivery_collection;
 
+import '../../../trip_coordinates_update/data/model/trip_coordinates_model.dart';
+
 class TripModel extends TripEntity {
   String? pocketbaseId;
   final String? idempotencyKey; // Unique key for request deduplication
@@ -50,6 +52,7 @@ class TripModel extends TripEntity {
     super.weightRate,
     super.lastLocationUpdated,
     super.user,
+    super.tripCoordinatesUpdates,
     super.totalTripDistance,
     super.otp,
     super.endTripOtp,
@@ -137,6 +140,26 @@ class TripModel extends TripEntity {
       debugPrint('✅ MODEL: User name: ${usersModel?.name}');
     } else {
       debugPrint('⚠️ MODEL: No user data found');
+    }
+
+    // Handle trip coordinates updates
+    final tripCoordinatesUpdatesData =
+        expandedData?['tripCoordinatesUpdates'] ??
+        json['tripCoordinatesUpdates'];
+    TripCoordinatesModel? tripCoordinatesUpdatesModel;
+    if (tripCoordinatesUpdatesData != null) {
+      if (tripCoordinatesUpdatesData is RecordModel) {
+        tripCoordinatesUpdatesModel = TripCoordinatesModel.fromJson({
+          'id': tripCoordinatesUpdatesData.id,
+          'collectionId': tripCoordinatesUpdatesData.collectionId,
+          'collectionName': tripCoordinatesUpdatesData.collectionName,
+          ...tripCoordinatesUpdatesData.data,
+        });
+      } else if (tripCoordinatesUpdatesData is Map) {
+        tripCoordinatesUpdatesModel = TripCoordinatesModel.fromJson(
+          tripCoordinatesUpdatesData as Map<String, dynamic>,
+        );
+      }
     }
 
     // Handle Personels
@@ -351,6 +374,7 @@ class TripModel extends TripEntity {
               ? double.tryParse(json['averageFillRate'].toString())
               : null,
       user: usersModel,
+      tripCoordinatesUpdates: tripCoordinatesUpdatesModel,
       totalTripDistance: json['totalTripDistance']?.toString(),
       otp: otpModel,
       endTripOtp: endTripOtpModel,
@@ -485,6 +509,7 @@ class TripModel extends TripEntity {
       'otp': otp?.id,
       'endTripOtp': endTripOtp?.id,
       'deliveryTeam': deliveryTeam?.id,
+      'tripCoordinatesUpdates': tripCoordinatesUpdates?.id,
       'timeAccepted': timeAccepted?.toIso8601String(),
       'isEndTrip': isEndTrip,
       'expectedReturnDate': expectedReturnDate?.toIso8601String(),
@@ -530,6 +555,7 @@ class TripModel extends TripEntity {
       weightRate: entity.weightRate,
       averageFillRate: entity.averageFillRate,
       user: entity.user,
+      tripCoordinatesUpdates: entity.tripCoordinatesUpdates,
       totalTripDistance: entity.totalTripDistance,
       otp: entity.otp,
       deliveryDate: entity.deliveryDate,
@@ -577,6 +603,7 @@ class TripModel extends TripEntity {
       otp: null,
       endTripOtp: null,
       deliveryTeam: null,
+      tripCoordinatesUpdates: null,
       dispatcher: '',
       timeAccepted: null,
       expectedReturnDate: null,
@@ -618,6 +645,7 @@ class TripModel extends TripEntity {
     double? weightRate,
     double? averageFillRate,
     GeneralUserModel? user,
+    TripCoordinatesModel? tripCoordinatesUpdates,
     String? totalTripDistance,
     String? changeStatusCode,
     OtpModel? otp,
@@ -672,6 +700,8 @@ class TripModel extends TripEntity {
       weightRate: weightRate ?? this.weightRate,
       averageFillRate: averageFillRate ?? this.averageFillRate,
       user: user ?? this.user,
+      tripCoordinatesUpdates:
+          tripCoordinatesUpdates ?? this.tripCoordinatesUpdates,
       totalTripDistance: totalTripDistance ?? this.totalTripDistance,
       otp: otp ?? this.otp,
       endTripOtp: endTripOtp ?? this.endTripOtp,

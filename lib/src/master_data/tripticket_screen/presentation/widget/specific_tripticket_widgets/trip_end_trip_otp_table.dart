@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/domain/entity/end_trip_otp_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/presentation/bloc/end_trip_otp_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/end_trip_otp/presentation/bloc/end_trip_otp_event.dart';
@@ -41,7 +40,6 @@ class TripEndTripOtpTable extends StatelessWidget {
         DataColumn(label: Text('Odometer')),
 
         //    DataColumn(label: Text('End Trip Odometer')),
-        DataColumn(label: Text('Created')),
         DataColumn(label: Text('Verified At')),
         DataColumn(label: Text('Actions')),
       ],
@@ -91,7 +89,7 @@ class TripEndTripOtpTable extends StatelessWidget {
                 // Status
 
                 // Created At
-                DataCell(Text(_formatDate(otp.createdAt))),
+                // DataCell(Text(_formatDate(otp.createdAt))),
 
                 // Expires At
 
@@ -99,7 +97,7 @@ class TripEndTripOtpTable extends StatelessWidget {
                 DataCell(
                   Text(
                     otp.verifiedAt != null
-                        ? _formatDate(otp.verifiedAt!)
+                        ? formatDateTime(otp.verifiedAt!)
                         : 'Not verified',
                   ),
                 ),
@@ -150,7 +148,7 @@ class TripEndTripOtpTable extends StatelessWidget {
       totalPages: totalPages,
       onPageChanged: onPageChanged,
       isLoading: isLoading,
-      
+
       dataLength: '',
       onDeleted: () {},
     );
@@ -168,8 +166,20 @@ class TripEndTripOtpTable extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return DateFormat('MMM dd, yyyy hh:mm a').format(date);
+  String formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) return 'N/A';
+
+    final hour24 = dateTime.hour;
+    final hour12 = hour24 == 0 ? 12 : (hour24 > 12 ? hour24 - 12 : hour24);
+    final amPm = hour24 >= 12 ? 'PM' : 'AM';
+
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final year = dateTime.year;
+
+    return '$month/$day/$year '
+        '${hour12.toString().padLeft(2, '0')}:'
+        '${dateTime.minute.toString().padLeft(2, '0')} $amPm';
   }
 
   // bool _isExpired(DateTime expiryDate) {
@@ -263,5 +273,4 @@ class TripEndTripOtpTable extends StatelessWidget {
       },
     );
   }
-
 }

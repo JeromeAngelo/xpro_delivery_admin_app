@@ -23,6 +23,7 @@ class DeliveryDataEntity extends Equatable {
   final double? pinLang;
   final double? pinLong;
   final double? totalAmount; // New field for total amount from delivery data
+  final String? plType;
   // Standard fields
   final DateTime? created;
   final DateTime? updated;
@@ -37,6 +38,7 @@ class DeliveryDataEntity extends Equatable {
     this.deliveryNumber,
     this.pinLang,
     this.refID,
+    this.plType,
     this.totalAmount,
     this.pinLong,
     this.invoices,

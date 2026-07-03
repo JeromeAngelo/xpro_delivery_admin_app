@@ -103,7 +103,9 @@ class InvoicePresetGroupRemoteDataSourceImpl
           'collectionName': record.collectionName,
           'refId': record.data['refID'] ?? '',
           'name': record.data['name'] ?? '',
-
+          'plType': record.data['plType'] ?? '',
+          'created': record.created,
+          'updated': record.updated,
           'expand': {'invoices': record.expand['invoices']},
         };
 
@@ -129,16 +131,21 @@ class InvoicePresetGroupRemoteDataSourceImpl
       await _ensureAuthenticated();
 
       // ------------------------------------------------------------
-      // ✅ 1) Fetch preset groups + assigned invoice IDs in PARALLEL
+      // ✅ 1) Fetch preset groups (last 3 days) + assigned invoice IDs in PARALLEL
       // ------------------------------------------------------------
+      final threeDaysAgo =
+          DateTime.now()
+              .subtract(const Duration(days: 21)) // changed from 3 to 2
+              .toUtc()
+              .toIso8601String();
+
       final results = await Future.wait([
         _pocketBaseClient
             .collection('invoicePresetGroup')
             .getFullList(
               sort: '-created',
               expand: 'invoices',
-
-              // Keep group fields minimal
+              filter: 'created >= "$threeDaysAgo"',
               fields:
                   'id,refID,name,description,created,updated,expand.invoices',
             ),
@@ -146,15 +153,15 @@ class InvoicePresetGroupRemoteDataSourceImpl
         // IMPORTANT: DO NOT expand invoiceData (we only need IDs)
         _pocketBaseClient
             .collection('invoiceStatus')
-            .getFullList(
-              fields: 'invoiceData', // just the relation ids
-            ),
+            .getFullList(fields: 'invoiceData'),
       ]);
 
       final presetGroups = results[0];
       final assignedStatus = results[1];
 
-      debugPrint('✅ Retrieved preset groups: ${presetGroups.length}');
+      debugPrint(
+        '✅ Retrieved preset groups (last 3 days): ${presetGroups.length}',
+      );
       debugPrint('✅ Retrieved invoiceStatus rows: ${assignedStatus.length}');
 
       // ------------------------------------------------------------
@@ -165,7 +172,6 @@ class InvoicePresetGroupRemoteDataSourceImpl
       for (final statusRecord in assignedStatus) {
         final v = statusRecord.data['invoiceData'];
 
-        // invoiceData can be String (single rel) or List (multi rel) depending on schema
         if (v is String) {
           final id = v.trim();
           if (id.isNotEmpty) assignedInvoiceIds.add(id);
@@ -191,7 +197,6 @@ class InvoicePresetGroupRemoteDataSourceImpl
 
         if (invoices.isEmpty) continue;
 
-        // Only keep invoices NOT in assigned set
         final unassignedInvoices = invoices
             .where((inv) {
               final id = inv.id.trim();
@@ -201,7 +206,6 @@ class InvoicePresetGroupRemoteDataSourceImpl
 
         if (unassignedInvoices.isEmpty) continue;
 
-        // Build minimal mapped json with filtered expand
         final mappedData = <String, dynamic>{
           'id': pg.id,
           'collectionId': pg.collectionId,
@@ -252,6 +256,9 @@ class InvoicePresetGroupRemoteDataSourceImpl
       final presetGroupRecord = await _pocketBaseClient
           .collection('invoicePresetGroup')
           .getOne(presetGroupId, expand: 'invoices');
+
+      final presetGroupPlType = presetGroupRecord.data['plType']?.toString();
+      debugPrint('📦 Preset group plType: $presetGroupPlType');
 
       final invoicesData = presetGroupRecord.expand['invoices'] as List?;
       if (invoicesData == null || invoicesData.isEmpty) {
@@ -325,6 +332,8 @@ class InvoicePresetGroupRemoteDataSourceImpl
                 'customer': custId,
                 'invoices': invoiceIdsForCustomer,
                 'updated': DateTime.now().toIso8601String(),
+                if (presetGroupPlType != null && presetGroupPlType.isNotEmpty)
+                  'plType': presetGroupPlType,
               };
               if (custRec != null) {
                 updateBody.addAll({
@@ -353,6 +362,8 @@ class InvoicePresetGroupRemoteDataSourceImpl
                 'invoiceStatus': 'truck',
                 'created': DateTime.now().toIso8601String(),
                 'updated': DateTime.now().toIso8601String(),
+                if (presetGroupPlType != null && presetGroupPlType.isNotEmpty)
+                  'plType': presetGroupPlType,
               };
               if (custRec != null) {
                 newBody.addAll({
@@ -814,6 +825,7 @@ class InvoicePresetGroupRemoteDataSourceImpl
           'name': record.data['name'] ?? '',
           'description': record.data['description'] ?? '',
           'invoiceCount': record.expand['invoices']?.length ?? 0,
+          'plType': record.data['plType'] ?? '',
           'created': record.created,
           'updated': record.updated,
           'expand': {'invoices': record.expand['invoices']},
@@ -854,6 +866,7 @@ class InvoicePresetGroupRemoteDataSourceImpl
             'description': record.data['description'] ?? '',
             'invoiceCount': record.expand['invoices']?.length ?? 0,
             'created': record.created,
+            'plType': record.data['plType'] ?? '',
             'updated': record.updated,
             'expand': {'invoices': record.expand['invoices']},
           };

@@ -18,11 +18,15 @@ class VehicleDataForm extends StatefulWidget {
   final double? volumeCapacity;
   final double? weightCapacity;
 
+  // Status value (parent-owned, nullable).
+  final VehicleStatus? status;
+
   // Change callbacks. Mirrors the `AppNumberField.onChanged` contract
   // (`num?`) so callers can either pass `(v) => _x = v?.toDouble()` or
   // `(v) => _x = v` (int or double).
   final ValueChanged<num?>? onVolumeCapacityChanged;
   final ValueChanged<num?>? onWeightCapacityChanged;
+  final ValueChanged<VehicleStatus?>? onStatusChanged;
 
   // Vehicle tag multi-select data.
   final List<VehicleTagEntity> vehicleTags;
@@ -37,8 +41,10 @@ class VehicleDataForm extends StatefulWidget {
     required this.wheelsController,
     required this.volumeCapacity,
     required this.weightCapacity,
+    this.status,
     this.onVolumeCapacityChanged,
     this.onWeightCapacityChanged,
+    this.onStatusChanged,
     this.vehicleTags = const [],
     this.selectedVehicleTags = const [],
     this.onSelectedVehicleTagsChanged,
@@ -77,6 +83,8 @@ class _VehicleDataFormState extends State<VehicleDataForm> {
     return null;
   }
 
+  VehicleStatus? get _selectedStatus => widget.status;
+
   VehicleTagEntity? get _displayedVehicleTag =>
       widget.selectedVehicleTags.isNotEmpty
           ? widget.selectedVehicleTags.first
@@ -99,6 +107,11 @@ class _VehicleDataFormState extends State<VehicleDataForm> {
     setState(() {});
   }
 
+  void _onStatusChanged(VehicleStatus? status) {
+    widget.onStatusChanged?.call(status);
+    setState(() {});
+  }
+
   void _onVehicleTagToggled(VehicleTagEntity? tag) {
     if (tag == null) return;
     final current = List<VehicleTagEntity>.from(widget.selectedVehicleTags);
@@ -115,6 +128,19 @@ class _VehicleDataFormState extends State<VehicleDataForm> {
 
   void _onSelectedVehicleTagsRemovedFromChip(List<VehicleTagEntity> updated) {
     widget.onSelectedVehicleTagsChanged?.call(updated);
+  }
+
+  static String _formatStatusLabel(String name) {
+    return name
+        .replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (m) => '${m[1]} ${m[2]}')
+        .split(' ')
+        .map(
+          (word) =>
+              word.isEmpty
+                  ? word
+                  : word[0].toUpperCase() + word.substring(1).toLowerCase(),
+        )
+        .join(' ');
   }
 
   static String _formatVehicleTag(VehicleTagEntity? tag) {
@@ -197,6 +223,22 @@ class _VehicleDataFormState extends State<VehicleDataForm> {
           initialValue: widget.weightCapacity,
           onChanged: widget.onWeightCapacityChanged ?? (_) {},
           hintText: 'e.g. 1500',
+        ),
+        AppDropdownField<VehicleStatus>(
+          label: 'Condition / Status',
+          value: _selectedStatus,
+          items:
+              VehicleStatus.values
+                  .map(
+                    (s) => DropdownItem<VehicleStatus>(
+                      value: s,
+                      label: _formatStatusLabel(s.name),
+                      uniqueId: s.name,
+                    ),
+                  )
+                  .toList(),
+          onChanged: _onStatusChanged,
+          hintText: 'Select condition',
         ),
         AppDropdownField<VehicleTagEntity>(
           label: 'Vehicle Tag(s)',

@@ -36,7 +36,7 @@ class VehicleSelectionDialog extends StatefulWidget {
 
 class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
   String _searchQuery = '';
-  String? _selectedTagLabel;
+  List<VehicleTagEntity> _selectedTags = [];
   DeliveryVehicleModel? _selectedVehicle;
 
   @override
@@ -146,14 +146,15 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
                   name.contains(query);
             }).toList();
 
-    // Apply tag label filter if selected
-    if (_selectedTagLabel != null && _selectedTagLabel!.isNotEmpty) {
+    // Apply tag filter if selected
+    if (_selectedTags.isNotEmpty) {
       final tagFiltered =
           results.where((vehicle) {
-            return vehicle.vehicleTags?.any(
-                  (tag) => tag.label == _selectedTagLabel,
-                ) ??
-                false;
+            final vehicleTagIds =
+                vehicle.vehicleTags?.map((t) => t.id ?? '').toSet() ?? {};
+            return _selectedTags.any(
+              (selectedTag) => vehicleTagIds.contains(selectedTag.id ?? ''),
+            );
           }).toList();
 
       // If no vehicles match the tag filter, fall back to showing all
@@ -174,26 +175,274 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
     return results;
   }
 
-  /// Returns all tag labels from the VehicleTagBloc state, falling back to
-  /// labels found on the available vehicles if the BLoC hasn't loaded yet.
-  List<String> _getAllTagLabels(VehicleTagState tagState) {
-    final labels = <String>{};
+  /// Returns all tags from the VehicleTagBloc state, falling back to
+  /// tags found on the available vehicles if the BLoC hasn't loaded yet.
+  List<VehicleTagEntity> _getAllTags(VehicleTagState tagState) {
+    final tags = <VehicleTagEntity>[];
+    final seenIds = <String>{};
+
     if (tagState is VehicleTagsLoaded) {
       for (final tag in tagState.vehicleTags) {
-        if (tag.label != null && tag.label!.isNotEmpty) {
-          labels.add(tag.label!);
+        final id = tag.id ?? '';
+        if (id.isNotEmpty && !seenIds.contains(id)) {
+          tags.add(tag);
+          seenIds.add(id);
         }
       }
     }
-    // Fallback: labels from currently available vehicles
+
+    // Fallback: tags from currently available vehicles
     for (final vehicle in widget.availableVehicles) {
       for (final tag in vehicle.vehicleTags ?? []) {
-        if (tag.label != null && tag.label!.isNotEmpty) {
-          labels.add(tag.label!);
+        final id = tag.id ?? '';
+        if (id.isNotEmpty && !seenIds.contains(id)) {
+          tags.add(tag);
+          seenIds.add(id);
         }
       }
     }
-    return labels.toList()..sort();
+
+    tags.sort((a, b) => (a.label ?? '').compareTo(b.label ?? ''));
+    return tags;
+  }
+
+  static String _formatVehicleTag(VehicleTagEntity? tag) {
+    if (tag == null) return '';
+    final label = (tag.label ?? '').trim();
+    final types = tag.types?.map((t) => t.name).join(', ') ?? '';
+    if (label.isEmpty) return types;
+    if (types.isEmpty) return label;
+    return '$label ($types)';
+  }
+
+  /// Compact searchable tag filter dropdown.
+  /// Replaces AppDropdownField with a small inline dropdown that still
+  /// supports search and multi-select chips.
+  Widget _buildTagFilterDropdown(
+    BuildContext context,
+    List<VehicleTagEntity> tags,
+  ) {
+    final selectedLabels = _selectedTags.map(_formatVehicleTag).join(', ');
+
+    return Container(
+      width: 260,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header / trigger
+          InkWell(
+            onTap: () => _showTagFilterMenu(context, tags),
+            child: Row(
+              children: [
+                const Icon(Icons.filter_list, size: 18, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _selectedTags.isEmpty ? 'Filter by tag' : selectedLabels,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color:
+                          _selectedTags.isEmpty
+                              ? Colors.grey.shade600
+                              : Colors.black87,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+                const Icon(Icons.arrow_drop_down, color: Colors.grey),
+              ],
+            ),
+          ),
+
+          // Selected chips
+          if (_selectedTags.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children:
+                    _selectedTags.map((tag) {
+                      return Chip(
+                        label: Text(
+                          _formatVehicleTag(tag),
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        deleteIcon: const Icon(Icons.close, size: 14),
+                        onDeleted: () {
+                          setState(() {
+                            _selectedTags.removeWhere(
+                              (t) => (t.id ?? '') == (tag.id ?? ''),
+                            );
+                          });
+                        },
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      );
+                    }).toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showTagFilterMenu(BuildContext context, List<VehicleTagEntity> tags) {
+    final searchController = TextEditingController();
+    var filteredTags = List<VehicleTagEntity>.from(tags);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              insetPadding: const EdgeInsets.all(24),
+              child: Container(
+                width: 320,
+                constraints: const BoxConstraints(maxHeight: 420),
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Filter by tag',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: () => Navigator.of(context).pop(),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Search field
+                    TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search tags...',
+                        prefixIcon: const Icon(Icons.search, size: 18),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        isDense: true,
+                      ),
+                      onChanged: (value) {
+                        final query = value.toLowerCase().trim();
+                        setDialogState(() {
+                          filteredTags =
+                              tags.where((tag) {
+                                final label = (tag.label ?? '').toLowerCase();
+                                final types =
+                                    tag.types
+                                        ?.map((t) => t.name.toLowerCase())
+                                        .join(', ') ??
+                                    '';
+                                return label.contains(query) ||
+                                    types.contains(query);
+                              }).toList();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Tag list
+                    Flexible(
+                      child:
+                          filteredTags.isEmpty
+                              ? const Center(child: Text('No tags found'))
+                              : ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: filteredTags.length,
+                                itemBuilder: (context, index) {
+                                  final tag = filteredTags[index];
+                                  final isSelected = _selectedTags.any(
+                                    (t) => (t.id ?? '') == (tag.id ?? ''),
+                                  );
+
+                                  return CheckboxListTile(
+                                    dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    title: Text(
+                                      _formatVehicleTag(tag),
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                    value: isSelected,
+                                    onChanged: (checked) {
+                                      setDialogState(() {
+                                        setState(() {
+                                          if (checked == true) {
+                                            if (!_selectedTags.any(
+                                              (t) =>
+                                                  (t.id ?? '') ==
+                                                  (tag.id ?? ''),
+                                            )) {
+                                              _selectedTags.add(tag);
+                                            }
+                                          } else {
+                                            _selectedTags.removeWhere(
+                                              (t) =>
+                                                  (t.id ?? '') ==
+                                                  (tag.id ?? ''),
+                                            );
+                                          }
+                                        });
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                    ),
+
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            setState(() => _selectedTags.clear());
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('Clear'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Done'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -252,7 +501,11 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
                 const SizedBox(width: 12),
                 BlocBuilder<VehicleTagBloc, VehicleTagState>(
                   builder: (context, tagState) {
-                    return _buildTagFilterDropdown(tagState);
+                    final tags = _getAllTags(tagState);
+                    if (tags.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return _buildTagFilterDropdown(context, tags);
                   },
                 ),
               ],
@@ -458,29 +711,6 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
                                                                 CrossAxisAlignment
                                                                     .start,
                                                             children: [
-                                                              Padding(
-                                                                padding:
-                                                                    const EdgeInsets.only(
-                                                                      top: 4,
-                                                                    ),
-                                                                child: Text(
-                                                                  'Status:',
-                                                                  style: TextStyle(
-                                                                    fontSize:
-                                                                        12,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                    color:
-                                                                        Colors
-                                                                            .grey
-                                                                            .shade700,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                              const SizedBox(
-                                                                width: 6,
-                                                              ),
                                                               Expanded(
                                                                 child: Wrap(
                                                                   spacing: 6,
@@ -488,12 +718,21 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
                                                                   children: [
                                                                     if (vehicle
                                                                             .isAssignedTrip ==
-                                                                        false)
+                                                                        true)
                                                                       _buildStatusChip(
                                                                         label:
-                                                                            'No trip assigned yet',
+                                                                            'Assigned Trip',
                                                                         color:
                                                                             Colors.orange,
+                                                                        icon:
+                                                                            Icons.assignment_turned_in_outlined,
+                                                                      )
+                                                                    else
+                                                                      _buildStatusChip(
+                                                                        label:
+                                                                            'No Trip Assigned',
+                                                                        color:
+                                                                            Colors.green,
                                                                         icon:
                                                                             Icons.assignment_late_outlined,
                                                                       ),
@@ -631,46 +870,6 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
     );
   }
 
-  /// Builds the tag-label filter dropdown using all tags from the BLoC.
-  Widget _buildTagFilterDropdown(VehicleTagState tagState) {
-    final labels = _getAllTagLabels(tagState);
-    if (labels.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade400),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedTagLabel,
-          hint: const Text(
-            'Filter by tag',
-            style: TextStyle(color: Colors.grey),
-          ),
-          icon: Icon(Icons.filter_list, color: Colors.grey.shade600),
-          items: [
-            const DropdownMenuItem<String>(
-              value: null,
-              child: Text('All tags'),
-            ),
-            ...labels.map((label) {
-              return DropdownMenuItem<String>(value: label, child: Text(label));
-            }),
-          ],
-          onChanged: (value) {
-            setState(() {
-              _selectedTagLabel = value;
-            });
-          },
-        ),
-      ),
-    );
-  }
-
   /// Builds compact count badges for each tag type present on the vehicle.
   /// Example: "2 (sticker icon) 1 (restriction icon)".
   Widget _buildTagBadges(List<VehicleTagEntity> tags) {
@@ -729,7 +928,7 @@ class _VehicleSelectionDialogState extends State<VehicleSelectionDialog> {
           'color': Colors.indigo,
           'icon': Icons.sticky_note_2,
         };
-      case VehicleTagType.restriction:
+      case VehicleTagType.restrictions:
         return {
           'label': 'Restriction',
           'color': Colors.redAccent,

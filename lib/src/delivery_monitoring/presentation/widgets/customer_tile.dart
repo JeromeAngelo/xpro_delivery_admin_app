@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/domain/entity/delivery_data_entity.dart';
 
+import '../../../../core/common/app/features/trip_ticket/delivery_update/domain/entity/delivery_update_entity.dart';
+
 class CustomerTile extends StatelessWidget {
   final DeliveryDataEntity deliveryData;
   final VoidCallback? onTap;
@@ -27,7 +29,7 @@ class CustomerTile extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
-        
+
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -122,7 +124,7 @@ class CustomerTile extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      _formatDate(_getLatestDeliveryUpdateTime(deliveryData)),
+                      _getLatestDeliveryUpdateDisplayTime(deliveryData),
                       style: Theme.of(context).textTheme.bodyMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -169,15 +171,18 @@ class CustomerTile extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'N/A';
-    try {
-      // Change the format from "MMM dd, yyyy hh:mm a" to "MM/dd/yyyy hh:mm a"
-      return DateFormat('MM/dd/yyyy hh:mm a').format(date);
-    } catch (e) {
-      debugPrint('❌ Error formatting date: $e');
-      return 'Invalid Date';
-    }
+  String _formatDateTime(DateTime dateTime) {
+    // Convert to local time for display to ensure consistent timezone handling
+    final localDateTime = dateTime.isUtc ? dateTime.toLocal() : dateTime;
+    final date = DateFormat('MMM dd, yyyy').format(localDateTime);
+    final hour =
+        localDateTime.hour > 12
+            ? localDateTime.hour - 12
+            : (localDateTime.hour == 0 ? 12 : localDateTime.hour);
+    final amPm = localDateTime.hour >= 12 ? 'PM' : 'AM';
+    final time =
+        '${hour.toString().padLeft(2, '0')}:${localDateTime.minute.toString().padLeft(2, '0')} $amPm';
+    return '$date / $time';
   }
 
   String _formatAddress(DeliveryDataEntity deliveryData) {
@@ -196,20 +201,37 @@ class CustomerTile extends StatelessWidget {
     return addressParts.join(', ');
   }
 
-  DateTime? _getLatestDeliveryUpdateTime(DeliveryDataEntity deliveryData) {
-    if (deliveryData.deliveryUpdates.isEmpty) return null;
-
-    // Get the latest delivery update time
-    DateTime? latestTime;
-    for (final update in deliveryData.deliveryUpdates) {
-      if (update.time != null) {
-        if (latestTime == null || update.time!.isAfter(latestTime)) {
-          latestTime = update.time;
-        }
-      }
+  String _getLatestDeliveryUpdateDisplayTime(DeliveryDataEntity deliveryData) {
+    if (deliveryData.deliveryUpdates.isEmpty) {
+      return '';
     }
 
-    return latestTime;
+    // Create a copy so we don't modify the original list.
+    final updates = List<DeliveryUpdateEntity>.from(
+      deliveryData.deliveryUpdates,
+    );
+
+    // Sort by creation time.
+    updates.sort((a, b) {
+      final aTime = a.time ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.time ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return aTime.compareTo(bTime);
+    });
+
+    final latestUpdate = updates.last;
+
+    final latestStatus = latestUpdate.title?.trim().toLowerCase() ?? '';
+
+    switch (latestStatus) {
+      case 'in transit':
+        return _formatDateTime(latestUpdate.time!);
+
+      case 'unloading':
+        return _formatDateTime(latestUpdate.time!);
+
+      default:
+        return _formatDateTime(latestUpdate.time!);
+    }
   }
 
   int _getInvoiceCount(DeliveryDataEntity deliveryData) {

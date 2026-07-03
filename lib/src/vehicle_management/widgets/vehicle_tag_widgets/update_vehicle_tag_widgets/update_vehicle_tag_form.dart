@@ -155,8 +155,8 @@ class _UpdateVehicleTagFormState extends State<UpdateVehicleTagForm> {
     switch (type) {
       case VehicleTagType.sticker:
         return 'Sticker';
-      case VehicleTagType.restriction:
-        return 'Restriction';
+      case VehicleTagType.restrictions:
+        return 'Restrictions';
       case VehicleTagType.permit:
         return 'Permit';
       case VehicleTagType.other:

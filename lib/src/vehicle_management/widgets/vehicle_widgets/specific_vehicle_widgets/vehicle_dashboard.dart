@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_dashboard.dart';
+import 'package:xpro_delivery_admin_app/core/enums/vehicle_status.dart';
 
 import '../../../../../core/common/app/features/trip_ticket/delivery_vehicle_data/domain/enitity/delivery_vehicle_entity.dart';
 
@@ -41,16 +42,10 @@ class _VehicleDashboardWidgetState extends State<VehicleDashboardWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Top Actions Panel
-        
 
         // Vehicle Info Dashboard
         DashboardSummary(
           items: [
-            DashboardInfoItem(
-              icon: Icons.numbers,
-              value: fmt(widget.vehicle?.id),
-              label: "ID",
-            ),
             DashboardInfoItem(
               icon: Icons.branding_watermark,
               value: fmt(widget.vehicle?.make),
@@ -82,6 +77,11 @@ class _VehicleDashboardWidgetState extends State<VehicleDashboardWidget> {
               label: "Weight Capacity",
             ),
             DashboardInfoItem(
+              icon: Icons.health_and_safety,
+              value: _statusLabel(widget.vehicle?.status),
+              label: "Status",
+            ),
+            DashboardInfoItem(
               icon: Icons.date_range,
               value: fmtDate(widget.vehicle?.created),
               label: "Created At",
@@ -95,6 +95,20 @@ class _VehicleDashboardWidgetState extends State<VehicleDashboardWidget> {
         ),
       ],
     );
+  }
+
+  String _statusLabel(VehicleStatus? status) {
+    if (status == null) return 'N/A';
+    return status.name
+        .replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (m) => '${m[1]} ${m[2]}')
+        .split(' ')
+        .map(
+          (word) =>
+              word.isEmpty
+                  ? word
+                  : word[0].toUpperCase() + word.substring(1).toLowerCase(),
+        )
+        .join(' ');
   }
 
   // ---------------------------------------------------------------------------

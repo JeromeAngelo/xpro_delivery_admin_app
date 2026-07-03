@@ -27,6 +27,7 @@ class DeliveryDataModel extends DeliveryDataEntity {
     super.deliveryNumber,
     super.hasTrip,
     super.created,
+    super.plType,
     super.totalAmount,
     super.updated,
     this.objectBoxId = 0,
@@ -220,6 +221,7 @@ class DeliveryDataModel extends DeliveryDataEntity {
       refID: json['refID']?.toString(),
       hasTrip: json['hasTrip'] as bool,
       deliveryNumber: json['deliveryNumber']?.toString(),
+      plType: json['plType']?.toString(),
       pinLang: json['pinLang'] != null ? double.tryParse(json['pinLang'].toString()) : null,
       pinLong: json['pinLong'] != null ? double.tryParse(json['pinLong'].toString()) : null,     
        totalAmount: json['totalAmount'] != null ? double.tryParse(json['totalAmount'].toString()) : null,
@@ -246,6 +248,7 @@ class DeliveryDataModel extends DeliveryDataEntity {
       'pinLang': pinLang,
       'pinLong': pinLong,
       'refID': refID,
+      'plType': plType,
       'totalAmount': totalAmount,
       'invoices': invoices?.map((invoice) => invoice.id).toList(),
       'invoiceItems':
@@ -275,6 +278,7 @@ class DeliveryDataModel extends DeliveryDataEntity {
     DateTime? created,
     DateTime? updated,
     double? totalAmount,
+    String? plType,
   }) {
     return DeliveryDataModel(
       id: id ?? this.id,
@@ -360,6 +364,7 @@ class DeliveryDataModel extends DeliveryDataEntity {
       refID: refID ?? this.refID,
       pinLong: pinLong ?? this.pinLong,
       totalAmount: totalAmount ?? this.totalAmount,
+      plType: plType ?? this.plType,
       objectBoxId: objectBoxId,
     );
   }

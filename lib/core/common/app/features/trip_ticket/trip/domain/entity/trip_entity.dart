@@ -15,6 +15,7 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/del
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/delivery_data/domain/entity/delivery_data_entity.dart';
 
 import '../../../collection/domain/entity/collection_entity.dart';
+import '../../../trip_coordinates_update/data/model/trip_coordinates_model.dart';
 
 class TripEntity extends Equatable {
   String? id;
@@ -40,6 +41,7 @@ class TripEntity extends Equatable {
   final OtpModel? otp;
   final EndTripOtpModel? endTripOtp;
   final GeneralUserModel? user;
+  final TripCoordinatesModel? tripCoordinatesUpdates;
   double? latitude;
   double? longitude;
   double? volumeRate;
@@ -77,6 +79,7 @@ class TripEntity extends Equatable {
     List<ReturnModel>? returns,
     List<EndTripChecklistModel>? endTripChecklist,
     this.deliveryCollection,
+    this.tripCoordinatesUpdates,
     this.otp,
     this.endTripOtp,
     this.volumeRate,
@@ -129,6 +132,7 @@ class TripEntity extends Equatable {
     timeAccepted,
     cancelledInvoice,
     deliveryCollection,
+    tripCoordinatesUpdates,
     deliveryDate,
     expectedReturnDate,
     otp?.id,

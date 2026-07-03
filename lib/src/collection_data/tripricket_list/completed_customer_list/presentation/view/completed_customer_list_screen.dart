@@ -3,13 +3,13 @@ import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/col
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/collection/presentation/bloc/collections_state.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/desktop_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
-import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_list/presentation/widgets/completed_customer_list_widgets/completed_customer_error_widget.dart';
-import 'package:xpro_delivery_admin_app/src/collection_data/completed_customer_list/presentation/widgets/completed_customer_list_widgets/completed_customer_table.dart';
+import 'package:xpro_delivery_admin_app/src/collection_data/tripricket_list/completed_customer_list/presentation/widgets/completed_customer_list_widgets/completed_customer_error_widget.dart';
+import 'package:xpro_delivery_admin_app/src/collection_data/tripricket_list/completed_customer_list/presentation/widgets/completed_customer_list_widgets/completed_customer_table.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../../core/common/app/features/trip_ticket/collection/presentation/bloc/collections_event.dart';
+import '../../../../../../core/common/app/features/trip_ticket/collection/presentation/bloc/collections_event.dart';
 
 class CompletedCustomerListScreen extends StatefulWidget {
   const CompletedCustomerListScreen({super.key});

@@ -15,6 +15,7 @@ import 'package:pocketbase/pocketbase.dart';
 
 import '../../../../../../../../utils/id_generator.dart';
 import '../../../../../otp/data/models/otp_models.dart';
+import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/trip_coordinates_update/data/model/trip_coordinates_model.dart';
 
 abstract class TripRemoteDatasurce {
   // Get all trip tickets
@@ -148,7 +149,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           .getFullList(
             filter: filterString,
             expand:
-                'customers,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
+                'customers,tripCoordinatesUpdates,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
             sort: '-created',
           );
 
@@ -179,7 +180,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           .getFullList(
             filter: filterString,
             expand:
-                'customers,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
+                'customers,tripCoordinatesUpdates,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
             sort: '-created',
           );
 
@@ -309,7 +310,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           .getOne(
             tripId,
             expand:
-                'customers,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
+                'customers,tripCoordinatesUpdates,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
           );
 
       return _mapRecordToTripModel(fullUpdatedRecord);
@@ -334,7 +335,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           .collection('tripticket')
           .getFullList(
             expand:
-                'customers,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
+                'customers,tripCoordinatesUpdates,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
             sort: '-created',
           );
 
@@ -386,7 +387,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           .collection('tripticket')
           .getFullList(
             expand:
-                'customers,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
+                'customers,tripCoordinatesUpdates,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
             sort: '-created',
             filter: 'isAccepted = true  && isEndTrip = false',
           );
@@ -1187,7 +1188,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           .getFullList(
             filter: filterString.isNotEmpty ? filterString : null,
             expand:
-                'customers,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
+                'customers,tripCoordinatesUpdates,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData',
           );
 
       debugPrint('✅ Found ${records.length} matching trip tickets');
@@ -1214,7 +1215,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
           .getOne(
             tripId,
             expand:
-                'customers,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData,otp',
+                'customers,tripCoordinatesUpdates,deliveryTeam,personels,deliveryVehicle,checklist,invoices,user,cancelledInvoice,deliveryCollection,deliveryData,otp',
           );
 
       debugPrint('✅ Trip ticket found: ${record.id}');
@@ -1467,6 +1468,31 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
         debugPrint('⚠️ No OTP data found in record');
       }
 
+      // Handle trip coordinates updates - Use helper function to map expanded data
+      final tripCoordinatesUpdatesJsonData = _mapExpandedItem(
+        record.expand['tripCoordinatesUpdates'],
+      );
+      TripCoordinatesModel? tripCoordinatesUpdatesModel;
+
+      if (tripCoordinatesUpdatesJsonData != null) {
+        debugPrint(
+          '✅ Found trip coordinates updates data: ${tripCoordinatesUpdatesJsonData['id']}',
+        );
+
+        try {
+          tripCoordinatesUpdatesModel = TripCoordinatesModel.fromJson(
+            tripCoordinatesUpdatesJsonData,
+          );
+          debugPrint(
+            '✅ Successfully processed trip coordinates updates: ${tripCoordinatesUpdatesModel.id}',
+          );
+        } catch (e) {
+          debugPrint('❌ Error processing trip coordinates updates data: $e');
+        }
+      } else {
+        debugPrint('⚠️ No trip coordinates updates data found in record');
+      }
+
       // Handle delivery data - New relationship
       final deliveryDataList = record.expand['deliveryData'];
       List<DeliveryDataModel> deliveryDataModels = [];
@@ -1632,6 +1658,7 @@ class TripRemoteDatasurceImpl implements TripRemoteDatasurce {
         'personels': _mapExpandedList(record.expand['personels']),
         'deliveryVehicle': vehicleModel?.toJson(),
         'otp': otpData?.toJson(),
+        'tripCoordinatesUpdates': tripCoordinatesUpdatesModel?.toJson(),
         // Updated: Changed to single vehicle model
         'deliveryData':
             deliveryDataModels

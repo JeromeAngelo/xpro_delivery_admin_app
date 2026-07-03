@@ -1,1 +1,1 @@
-enum VehicleTagType { sticker, restriction, permit, other }
+enum VehicleTagType { sticker, restrictions, permit, other }

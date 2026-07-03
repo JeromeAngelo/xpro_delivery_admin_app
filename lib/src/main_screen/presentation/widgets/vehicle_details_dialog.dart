@@ -26,6 +26,17 @@ Future<void> showVehicleDetailsDialog(BuildContext context, TripEntity trip) {
           ? _formatDateTime(trip.lastLocationUpdated)
           : 'N/A';
 
+  // Latest coordinate update fields
+  final latestCoordinates = trip.tripCoordinatesUpdates;
+  final networkSpeed = latestCoordinates?.networkSpeed;
+  final deviceBatteryLife = latestCoordinates?.deviceBatteryLife;
+  final networkSpeedText =
+      networkSpeed != null ? '${networkSpeed.toStringAsFixed(2)} Mbps' : 'N/A';
+  final batteryLifeText =
+      deviceBatteryLife != null
+          ? '${deviceBatteryLife.toStringAsFixed(0)}%'
+          : 'N/A';
+
   return showDialog<void>(
     context: context,
     builder: (_) {
@@ -59,7 +70,7 @@ Future<void> showVehicleDetailsDialog(BuildContext context, TripEntity trip) {
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.18),
+                        color: Colors.white.withValues(alpha: 0.18),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -118,6 +129,20 @@ Future<void> showVehicleDetailsDialog(BuildContext context, TripEntity trip) {
                       icon: Icons.update,
                       label: 'Last Location Update',
                       value: lastUpdated,
+                    ),
+                    const SizedBox(height: 14),
+                    _buildDetailRow(
+                      context,
+                      icon: Icons.network_check,
+                      label: 'Network Speed',
+                      value: networkSpeedText,
+                    ),
+                    const SizedBox(height: 14),
+                    _buildDetailRow(
+                      context,
+                      icon: Icons.battery_full,
+                      label: 'Device Battery Life',
+                      value: batteryLifeText,
                     ),
                   ],
                 ),
@@ -178,9 +203,9 @@ Widget _buildDetailRow(
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     decoration: BoxDecoration(
-      color: scheme.surfaceContainerHighest.withOpacity(0.45),
+      color: scheme.surfaceContainerHighest.withValues(alpha: 0.45),
       borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: scheme.outline.withOpacity(0.12)),
+      border: Border.all(color: scheme.outline.withValues(alpha: 0.12)),
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +214,7 @@ Widget _buildDetailRow(
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: scheme.primary.withOpacity(0.12),
+            color: scheme.primary.withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, size: 18, color: scheme.primary),
@@ -202,7 +227,7 @@ Widget _buildDetailRow(
               Text(
                 label,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurface.withOpacity(0.65),
+                  color: scheme.onSurface.withValues(alpha: 0.65),
                   fontWeight: FontWeight.w600,
                 ),
               ),

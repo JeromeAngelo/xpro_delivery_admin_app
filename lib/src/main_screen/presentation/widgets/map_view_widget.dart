@@ -138,6 +138,27 @@ class _MapViewWidgetState extends State<MapViewWidget> {
     return const LatLng(14.5995, 120.9842);
   }
 
+  /// Determines the marker color based on how stale the latest coordinate
+  /// update is. Colors follow the requested thresholds:
+  ///   - ≤ 1 minute old: green
+  ///   - 1–5 minutes old: yellow/amber
+  ///   - 5–20 minutes old: orange
+  ///   - > 20 minutes old: error red
+  /// Returns `null` when no timestamp is available so the caller can fall
+  /// back to the default theme color.
+  Color? _freshnessColor(TripEntity trip) {
+    final created = trip.tripCoordinatesUpdates?.created;
+    if (created == null) return null;
+
+    final now = DateTime.now().toUtc();
+    final diff = now.difference(created.toUtc());
+
+    if (diff <= const Duration(minutes: 1)) return Colors.green;
+    if (diff <= const Duration(minutes: 5)) return Colors.amber;
+    if (diff <= const Duration(minutes: 20)) return Colors.orange;
+    return Colors.red;
+  }
+
   List<Marker> _buildMarkers() {
     final markers = <Marker>[];
 
@@ -154,6 +175,18 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                   '')
               : (trip.tripNumberId ?? '');
 
+      // Freshness color drives the entire container so the recency of the
+      // last coordinate update is immediately visible at a glance. When null
+      // we keep the default theme background to indicate "no timestamp data".
+      final freshnessColor = _freshnessColor(trip);
+      final containerColor =
+          freshnessColor ?? Theme.of(context).colorScheme.secondary;
+      final triangleColor = freshnessColor ?? Colors.white;
+      final foregroundColor =
+          freshnessColor == null
+              ? Theme.of(context).colorScheme.surface
+              : Colors.white;
+
       markers.add(
         Marker(
           point: LatLng(lat, lng),
@@ -166,7 +199,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondary,
+                    color: containerColor,
                     boxShadow: kElevationToShadow[2],
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -180,14 +213,14 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                       Icon(
                         Icons.local_shipping,
                         size: 18,
-                        color: Theme.of(context).colorScheme.surface,
+                        color: foregroundColor,
                       ),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           vehicleName,
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.surface,
+                            color: foregroundColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 10,
                           ),
@@ -198,7 +231,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                   ),
                 ),
                 CustomPaint(
-                  painter: _TrianglePainter(color: Colors.white),
+                  painter: _TrianglePainter(color: triangleColor),
                   child: const SizedBox(width: 12, height: 6),
                 ),
               ],
@@ -214,7 +247,6 @@ class _MapViewWidgetState extends State<MapViewWidget> {
   void _showMarkerDetails(TripEntity trip) {
     showVehicleDetailsDialog(context, trip);
   }
-
 
   void _openFullScreen() {
     final center = _defaultCenter();

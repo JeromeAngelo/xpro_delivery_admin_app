@@ -16,6 +16,7 @@ import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/deskto
 import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/form_buttons.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/create_screen_widgets/form_layout.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/reusable_widgets/app_navigation_items.dart';
+import 'package:xpro_delivery_admin_app/core/enums/vehicle_status.dart';
 import 'package:xpro_delivery_admin_app/core/services/core_utils.dart';
 
 import '../../../../../core/common/app/features/trip_ticket/delivery_vehicle_data/domain/enitity/delivery_vehicle_entity.dart';
@@ -45,6 +46,7 @@ class _UpdateVehicleViewState extends State<UpdateVehicleView> {
   final _wheelsController = TextEditingController();
   double? _volumeCapacity;
   double? _weightCapacity;
+  VehicleStatus? _status;
 
   // ---------------- Flow state ----------------
   bool _isLoading = false;
@@ -102,6 +104,7 @@ class _UpdateVehicleViewState extends State<UpdateVehicleView> {
     _wheelsController.text = vehicle.wheels ?? '';
     _volumeCapacity = vehicle.volumeCapacity;
     _weightCapacity = vehicle.weightCapacity;
+    _status = vehicle.status;
 
     // `make` and `type` are stored in PocketBase as the all-caps enum
     // label (see VehicleDataForm). We restore them as-is into the
@@ -112,6 +115,12 @@ class _UpdateVehicleViewState extends State<UpdateVehicleView> {
 
     // Pre-populate the selected vehicle tags from the loaded relation.
     _selectedVehicleTags = vehicle.vehicleTags ?? const [];
+  }
+
+  void _onStatusChanged(VehicleStatus? status) {
+    setState(() {
+      _status = status;
+    });
   }
 
   void _onSelectedVehicleTagsChanged(List<VehicleTagEntity> newSelection) {
@@ -157,6 +166,7 @@ class _UpdateVehicleViewState extends State<UpdateVehicleView> {
       wheels: _wheelsController.text.trim(),
       volumeCapacity: _volumeCapacity,
       weightCapacity: _weightCapacity,
+      status: _status,
       vehicleTags: _selectedVehicleTags,
     );
 
@@ -323,6 +333,8 @@ class _UpdateVehicleViewState extends State<UpdateVehicleView> {
                 weightCapacity: _weightCapacity,
                 onVolumeCapacityChanged: (v) => _volumeCapacity = v?.toDouble(),
                 onWeightCapacityChanged: (v) => _weightCapacity = v?.toDouble(),
+                status: _status,
+                onStatusChanged: _onStatusChanged,
                 vehicleTags: _vehicleTags,
                 selectedVehicleTags: _selectedVehicleTags,
                 onSelectedVehicleTagsChanged: _onSelectedVehicleTagsChanged,

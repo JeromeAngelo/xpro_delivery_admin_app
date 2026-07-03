@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../../../core/enums/mode_of_payment.dart';
+import '../../../../../../../core/enums/mode_of_payment.dart';
 
 class CompletedCustomerDataTable extends StatelessWidget {
   final List<CollectionEntity> collections;

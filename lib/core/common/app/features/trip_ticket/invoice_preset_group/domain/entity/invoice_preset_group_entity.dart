@@ -7,6 +7,7 @@ class InvoicePresetGroupEntity extends Equatable {
   final String? collectionName;
   final String? refId;
   final String? name;
+  final String? plType;
   final List<InvoiceDataEntity> invoices;
   final DateTime? created;
   final DateTime? updated;
@@ -17,6 +18,7 @@ class InvoicePresetGroupEntity extends Equatable {
     this.collectionName,
     this.refId,
     this.name,
+    this.plType,
     this.invoices = const [],
     this.created,
     this.updated,
@@ -24,13 +26,14 @@ class InvoicePresetGroupEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        collectionId,
-        collectionName,
-        refId,
-        name,
-        invoices,
-        created,
-        updated,
-      ];
+    id,
+    collectionId,
+    collectionName,
+    refId,
+    name,
+    plType,
+    invoices,
+    created,
+    updated,
+  ];
 }

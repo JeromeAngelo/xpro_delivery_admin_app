@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:xpro_delivery_admin_app/core/common/app/features/vehicle/vehicle_tags/domain/entity/vehicle_tag_entity.dart';
+import 'package:xpro_delivery_admin_app/core/enums/vehicle_status.dart';
 
 import '../create_vehicle_widgets/vehicle_data_form.dart';
 import 'update_vehicle_error_banner.dart';
@@ -20,8 +21,10 @@ class UpdateVehicleForm extends StatelessWidget {
   final TextEditingController wheelsController;
   final double? volumeCapacity;
   final double? weightCapacity;
+  final VehicleStatus? status;
   final ValueChanged<num?>? onVolumeCapacityChanged;
   final ValueChanged<num?>? onWeightCapacityChanged;
+  final ValueChanged<VehicleStatus?>? onStatusChanged;
 
   // ---------------- Vehicle tag multi-select data ----------------
   final List<VehicleTagEntity> vehicleTags;
@@ -46,6 +49,8 @@ class UpdateVehicleForm extends StatelessWidget {
     required this.weightCapacity,
     required this.onVolumeCapacityChanged,
     required this.onWeightCapacityChanged,
+    this.status,
+    this.onStatusChanged,
     this.vehicleTags = const [],
     this.selectedVehicleTags = const [],
     this.onSelectedVehicleTagsChanged,
@@ -67,6 +72,8 @@ class UpdateVehicleForm extends StatelessWidget {
           weightCapacity: weightCapacity,
           onVolumeCapacityChanged: onVolumeCapacityChanged,
           onWeightCapacityChanged: onWeightCapacityChanged,
+          status: status,
+          onStatusChanged: onStatusChanged,
           vehicleTags: vehicleTags,
           selectedVehicleTags: selectedVehicleTags,
           onSelectedVehicleTagsChanged: onSelectedVehicleTagsChanged,

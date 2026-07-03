@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/otp/domain/entity/otp_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/otp/presentation/bloc/otp_bloc.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/otp/presentation/bloc/otp_event.dart';
@@ -49,7 +48,7 @@ class TripOtpTable extends StatelessWidget {
         DataColumn(label: Text('Odometer')),
         DataColumn(label: Text('Verified At')),
 
-        DataColumn(label: Text('Created')),
+        // DataColumn(label: Text('Created')),
         DataColumn(label: Text('Actions')),
       ],
       rows:
@@ -96,7 +95,7 @@ class TripOtpTable extends StatelessWidget {
                 ),
                 DataCell(
                   Text(
-                    _formatDate(otp.verifiedAt ?? otp.createdAt),
+                    formatDateTime(otp.verifiedAt ?? otp.createdAt),
                     style: TextStyle(
                       fontWeight:
                           _isExpired(otp.verifiedAt ?? otp.createdAt)
@@ -106,7 +105,7 @@ class TripOtpTable extends StatelessWidget {
                   ),
                 ),
                 // Created At
-                DataCell(Text(_formatDate(otp.createdAt))),
+                //DataCell(Text(formatDateTime(otp.createdAt))),
 
                 // Verified At
 
@@ -197,8 +196,20 @@ class TripOtpTable extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return DateFormat('MMM dd, yyyy hh:mm a').format(date);
+  String formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) return 'N/A';
+
+    final hour24 = dateTime.hour;
+    final hour12 = hour24 == 0 ? 12 : (hour24 > 12 ? hour24 - 12 : hour24);
+    final amPm = hour24 >= 12 ? 'PM' : 'AM';
+
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final year = dateTime.year;
+
+    return '$month/$day/$year '
+        '${hour12.toString().padLeft(2, '0')}:'
+        '${dateTime.minute.toString().padLeft(2, '0')} $amPm';
   }
 
   bool _isExpired(DateTime expiryDate) {

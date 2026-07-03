@@ -97,7 +97,7 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
       return _buildLoadingSkeleton(context);
     }
 
-    String _formatDateTime(DateTime? dateTime) {
+    String formatDateTime(DateTime? dateTime) {
       if (dateTime == null) return 'N/A';
 
       final hour24 = dateTime.hour;
@@ -135,6 +135,8 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
     }
 
     String calculateDaysUntilReturn(DateTime? expectedReturnDate) {
+      if (widget.trip?.isEndTrip == true) return 'Trip Completed';
+
       if (expectedReturnDate == null) return 'Not set';
 
       final now = DateTime.now();
@@ -387,17 +389,17 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
             ),
             DashboardInfoItem(
               icon: Icons.local_shipping,
-              value: _formatDateTime(widget.trip?.otp?.verifiedAt),
+              value: formatDateTime(widget.trip?.otp?.verifiedAt),
               label: 'Dispatch Time',
             ),
             DashboardInfoItem(
               icon: Icons.play_circle_filled,
-              value: _formatDateTime(widget.trip?.timeAccepted),
+              value: formatDateTime(widget.trip?.timeAccepted),
               label: 'Start of Trip',
             ),
             DashboardInfoItem(
               icon: Icons.stop_circle,
-              value: _formatDateTime(widget.trip?.timeEndTrip),
+              value: formatDateTime(widget.trip?.timeEndTrip),
               label: 'End of Trip',
             ),
             DashboardInfoItem(
@@ -441,7 +443,7 @@ class _TripDashboardWidgetState extends State<TripDashboardWidget> {
             ),
             DashboardInfoItem(
               icon: Icons.calendar_view_day,
-              value: _formatDateTime(widget.trip?.created),
+              value: dateFormat(widget.trip?.created),
               label: 'Created At',
             ),
           ],

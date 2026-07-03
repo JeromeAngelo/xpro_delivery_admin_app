@@ -243,7 +243,7 @@ class VehicleTagsCard extends StatelessWidget {
           'color': Colors.indigo,
           'icon': Icons.sticky_note_2,
         };
-      case VehicleTagType.restriction:
+      case VehicleTagType.restrictions:
         return {
           'label': 'Restriction',
           'color': Colors.redAccent,

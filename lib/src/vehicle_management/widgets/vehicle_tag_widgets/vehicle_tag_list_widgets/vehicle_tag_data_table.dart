@@ -152,7 +152,7 @@ class VehicleTagDataTable extends StatelessWidget {
     switch (type.toLowerCase()) {
       case 'sticker':
         return Colors.indigo;
-      case 'restriction':
+      case 'restrictions':
         return Colors.redAccent;
       case 'permit':
         return Colors.green;

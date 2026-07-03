@@ -59,6 +59,7 @@ dependencies:
   slide_digital_clock: ^1.0.3
   latlong2: ^0.9.1
   flutter_map: ^8.1.1
+  flutter_map_cache: ^1.5.1
   share_plus: ^10.1.2
   timelines: ^0.1.0
   syncfusion_flutter_signaturepad: ^27.1.58

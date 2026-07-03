@@ -153,22 +153,22 @@ class CustomerInformationTile extends StatelessWidget {
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
-             IconButton(
-onPressed: () {
-  RevertDeliveryStatusDialog.show(
-    context,
-    deliveryData: deliveryData,
-    onConfirm: () {
-      // TODO: submit revert status
-    },
-  );
-},
-  icon: Icon(
-    Icons.repeat,
-    color: Theme.of(context).colorScheme.primary,
-  ),
-  tooltip: 'Revert Status',
-),
+              IconButton(
+                onPressed: () {
+                  RevertDeliveryStatusDialog.show(
+                    context,
+                    deliveryData: deliveryData,
+                    onConfirm: () {
+                      // TODO: submit revert status
+                    },
+                  );
+                },
+                icon: Icon(
+                  Icons.repeat,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                tooltip: 'Revert Status',
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -210,8 +210,7 @@ onPressed: () {
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       trailing: Text(
-                        status.time != null ? _formatDateTime(status.time) : '',
-                        style: Theme.of(context).textTheme.bodySmall,
+                        _formatDateTime(status.time ?? DateTime.now()),
                       ),
                     );
                   },
@@ -272,7 +271,6 @@ onPressed: () {
       ),
     );
   }
-
 
   String _humanize(String? raw) {
     if (raw == null) return 'N/A';
@@ -343,29 +341,18 @@ onPressed: () {
     return '₱${formatter.format(totalAmount)}';
   }
 
-  String _formatDateTime(dynamic dateTime) {
-    if (dateTime == null) return '';
-
-    try {
-      // If it's already a DateTime
-      if (dateTime is DateTime) {
-        return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-      }
-
-      // If it's a String, try to parse it
-      if (dateTime is String) {
-        final parsedDate = DateTime.tryParse(dateTime);
-        if (parsedDate != null) {
-          return '${parsedDate.day}/${parsedDate.month}/${parsedDate.year} ${parsedDate.hour}:${parsedDate.minute.toString().padLeft(2, '0')}';
-        }
-        return dateTime; // Return the original string if parsing fails
-      }
-
-      // For any other type, convert to string
-      return dateTime.toString();
-    } catch (e) {
-      return '';
-    }
+  String _formatDateTime(DateTime dateTime) {
+    // Convert to local time for display to ensure consistent timezone handling
+    final localDateTime = dateTime.isUtc ? dateTime.toLocal() : dateTime;
+    final date = DateFormat('MMM dd, yyyy').format(localDateTime);
+    final hour =
+        localDateTime.hour > 12
+            ? localDateTime.hour - 12
+            : (localDateTime.hour == 0 ? 12 : localDateTime.hour);
+    final amPm = localDateTime.hour >= 12 ? 'PM' : 'AM';
+    final time =
+        '${hour.toString().padLeft(2, '0')}:${localDateTime.minute.toString().padLeft(2, '0')} $amPm';
+    return '$date / $time';
   }
 
   Widget _buildDetailItem(

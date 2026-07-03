@@ -16,6 +16,7 @@ class InvoicePresetGroupModel extends InvoicePresetGroupEntity {
     List<InvoiceDataModel>? invoices,
     super.created,
     super.updated,
+    super.plType,
     this.objectBoxId = 0,
   }) : pocketbaseId = id ?? '',
        super(invoices: invoices ?? []);
@@ -66,6 +67,7 @@ class InvoicePresetGroupModel extends InvoicePresetGroupEntity {
       refId: json['refId']?.toString(),
       name: json['name']?.toString(),
       invoices: invoicesList,
+      plType: json['plType']?.toString(),
       created: parseDate(json['created']),
       updated: parseDate(json['updated']),
     );
@@ -79,6 +81,7 @@ class InvoicePresetGroupModel extends InvoicePresetGroupEntity {
       'refId': refId ?? '',
       'name': name ?? '',
       'invoices': invoices.map((invoice) => invoice.id).toList(),
+      'plType': plType ?? '',
       'created': created?.toIso8601String(),
       'updated': updated?.toIso8601String(),
     };
@@ -90,6 +93,7 @@ class InvoicePresetGroupModel extends InvoicePresetGroupEntity {
     String? collectionName,
     String? refId,
     String? name,
+    String? plType,
     List<InvoiceDataModel>? invoices,
     DateTime? created,
     DateTime? updated,
@@ -125,6 +129,7 @@ class InvoicePresetGroupModel extends InvoicePresetGroupEntity {
               .toList()),
       created: created ?? this.created,
       updated: updated ?? this.updated,
+      plType: plType ?? this.plType,
       objectBoxId: objectBoxId,
     );
   }

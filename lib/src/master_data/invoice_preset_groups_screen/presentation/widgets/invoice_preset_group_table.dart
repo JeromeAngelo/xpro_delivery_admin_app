@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:xpro_delivery_admin_app/core/common/app/features/trip_ticket/invoice_preset_group/domain/entity/invoice_preset_group_entity.dart';
 import 'package:xpro_delivery_admin_app/core/common/widgets/app_structure/data_table_layout.dart';
 import 'package:xpro_delivery_admin_app/src/master_data/invoice_preset_groups_screen/presentation/widgets/invoice_preset_group_search_bar.dart';
@@ -50,8 +49,10 @@ class InvoicePresetGroupTable extends StatelessWidget {
         DataColumn(label: Text('Reference ID')),
         DataColumn(label: Text('Name')),
         DataColumn(label: Text('Invoices Count')),
+                DataColumn(label: Text('Picklist Type')),
+
         DataColumn(label: Text('Created')),
-        DataColumn(label: Text('Updated')),
+
         DataColumn(label: Text('Actions')),
       ],
       rows: presetGroups.map((group) {
@@ -74,13 +75,14 @@ class InvoicePresetGroupTable extends StatelessWidget {
               onTap: () => _navigateToGroupDetails(context, group),
             ),
             DataCell(
-              Text(_formatDate(group.created)),
+              Text(group.plType ?? 'N/A'),
               onTap: () => _navigateToGroupDetails(context, group),
             ),
             DataCell(
-              Text(_formatDate(group.updated)),
+              Text(formatDateTime(group.created)),
               onTap: () => _navigateToGroupDetails(context, group),
             ),
+           
             DataCell(
               Row(
                 children: [
@@ -123,10 +125,21 @@ class InvoicePresetGroupTable extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'N/A';
-    return DateFormat('MMM dd, yyyy').format(date);
-  }
+ String formatDateTime(DateTime? dateTime) {
+      if (dateTime == null) return 'N/A';
+
+      final hour24 = dateTime.hour;
+      final hour12 = hour24 == 0 ? 12 : (hour24 > 12 ? hour24 - 12 : hour24);
+      final amPm = hour24 >= 12 ? 'PM' : 'AM';
+
+      final month = dateTime.month.toString().padLeft(2, '0');
+      final day = dateTime.day.toString().padLeft(2, '0');
+      final year = dateTime.year;
+
+      return '$month/$day/$year '
+          '${hour12.toString().padLeft(2, '0')}:'
+          '${dateTime.minute.toString().padLeft(2, '0')} $amPm';
+    }
 
   void _navigateToGroupDetails(
     BuildContext context,

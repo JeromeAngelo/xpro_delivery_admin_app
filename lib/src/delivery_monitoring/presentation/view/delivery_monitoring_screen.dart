@@ -43,6 +43,23 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
     return '${hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')} $amPm';
   }
 
+  String _formatDateLabel(DateTime date) {
+    return DateFormat('MMM dd, yyyy').format(date);
+  }
+
+  String get _dateFilterLabel {
+    if (_selectedStartDate == null || _selectedEndDate == null) {
+      return 'Last 3 Days';
+    }
+    final start = _formatDateLabel(_selectedStartDate!);
+    final end = _formatDateLabel(_selectedEndDate!);
+    if (start == end) return start;
+    return '$start - $end';
+  }
+
+  String get _plTypeFilterLabel =>
+      _selectedPlTypeFilter == 'ALL' ? 'All PL Types' : _selectedPlTypeFilter;
+  String _selectedPlTypeFilter = 'ALL';
   void _openTimelineDrawer(BuildContext context) {
     // ✅ trigger load before opening
     // context.read<DeliveryDataBloc>().add(const GetAllDeliveryDataWithTripsEvent());
@@ -333,6 +350,88 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
     );
   }
 
+  /// ✅ Shows a dialog to filter delivery data by plType.
+  void _showPlTypeFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String tempFilter = _selectedPlTypeFilter;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.filter_list, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('Filter by PL Type'),
+                ],
+              ),
+              content: SizedBox(
+                width: 300,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Select a PL type to filter deliveries:',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    ...['ALL', 'SAS', 'BOOKING', 'Others'].map((choice) {
+                      return RadioListTile<String>(
+                        title: Text(choice),
+                        value: choice,
+                        groupValue: tempFilter,
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() {
+                              tempFilter = value;
+                            });
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    setState(() {
+                      _selectedPlTypeFilter = tempFilter;
+                    });
+                  },
+                  child: const Text('Apply Filter'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// ✅ Filters a delivery list by the selected plType filter.
+  List<DeliveryDataEntity> _applyPlTypeFilter(
+    List<DeliveryDataEntity> deliveryDataList,
+  ) {
+    if (_selectedPlTypeFilter == 'ALL') return deliveryDataList;
+
+    return deliveryDataList.where((delivery) {
+      final plType = delivery.plType?.trim().toUpperCase() ?? '';
+      if (_selectedPlTypeFilter == 'Others') {
+        return plType.isEmpty || (plType != 'SAS' && plType != 'BOOKING');
+      }
+      return plType == _selectedPlTypeFilter.toUpperCase();
+    }).toList();
+  }
+
   /// ✅ Applies the selected date range and fetches filtered data.
   void _applyDateFilter(DateTime startDate, DateTime endDate) {
     final endOfDay = DateTime(
@@ -402,9 +501,23 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
         iconTheme: IconThemeData(color: Theme.of(context).colorScheme.surface),
-        title: Text(
-          'Delivery Monitoring',
-          style: TextStyle(color: Theme.of(context).colorScheme.surface),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Delivery Monitoring',
+              style: TextStyle(color: Theme.of(context).colorScheme.surface),
+            ),
+            Text(
+              '$_dateFilterLabel • $_plTypeFilterLabel',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.surface.withOpacity(0.85),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
         actions: [
           Padding(
@@ -432,6 +545,14 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
                 },
               ),
             ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.filter_list,
+              color: Theme.of(context).colorScheme.surface,
+            ),
+            tooltip: 'Filter PL Type',
+            onPressed: _showPlTypeFilterDialog,
           ),
           IconButton(
             icon: Icon(
@@ -500,7 +621,7 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
 
           List<DeliveryDataEntity> deliveryDataList = [];
           if (state is AllDeliveryDataWithTripsLoaded) {
-            deliveryDataList = state.deliveryData;
+            deliveryDataList = _applyPlTypeFilter(state.deliveryData);
           }
 
           // ✅ Always render the status grid. Each container shows its own
@@ -682,11 +803,19 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
     final statusLower = status.toLowerCase();
 
     return deliveryDataList.where((deliveryData) {
+      final updates = deliveryData.deliveryUpdates;
+      final hasEndDelivery = updates.any(
+        (update) => update.title?.trim().toLowerCase() == 'end delivery',
+      );
+
+      // Force deliveries with "End Delivery" into the Completed container only.
+      if (hasEndDelivery) {
+        return statusLower == 'completed';
+      }
+
       // Get the most recent delivery status
       final deliveryStatus =
-          deliveryData.deliveryUpdates.isNotEmpty
-              ? deliveryData.deliveryUpdates.last.title?.toLowerCase() ?? ''
-              : '';
+          updates.isNotEmpty ? updates.last.title?.toLowerCase() ?? '' : '';
 
       // Match status names (simplified)
       if (statusLower == 'pending' && deliveryStatus.isEmpty) {
@@ -703,18 +832,13 @@ class _DeliveryMonitoringScreenState extends State<DeliveryMonitoringScreen> {
       }
 
       // Special cases
-      if (statusLower == 'delivered' &&
+      if (statusLower == 'completed' &&
           (deliveryStatus.contains('mark as received'))) {
         return true;
       }
 
       if (statusLower == 'mark as undelivered' &&
           deliveryStatus.contains('mark as undelivered')) {
-        return true;
-      }
-
-      if (statusLower == 'completed' &&
-          deliveryStatus.contains('end delivery')) {
         return true;
       }
 

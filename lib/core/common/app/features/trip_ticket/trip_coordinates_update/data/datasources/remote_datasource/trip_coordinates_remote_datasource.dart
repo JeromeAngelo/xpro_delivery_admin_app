@@ -24,7 +24,7 @@ class TripCoordinatesRemoteDataSourceImpl
   @override
 Future<List<TripCoordinatesModel>> getTripCoordinatesByTripId(
   String tripId, {
-  int delayBeforeFetch = 3,
+  int delayBeforeFetch = 0,
 }) async {
   try {
     final String actualTripId = _extractTripId(tripId);
@@ -64,6 +64,10 @@ Future<List<TripCoordinatesModel>> getTripCoordinatesByTripId(
         tripId: actualTripId,
         latitude: latitude,
         longitude: longitude,
+        speed: _toDouble(record.data['speed']),
+        accuracy: _toDouble(record.data['accuracy']),
+        deviceBatteryLife: _toDouble(record.data['deviceBatteryLife']),
+        networkSpeed: _toDouble(record.data['networkSpeed']),
         created: _parseDate(record.created),
         updated: _parseDate(record.updated),
       );
